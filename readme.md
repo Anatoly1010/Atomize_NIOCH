@@ -1,4 +1,9 @@
 # Atomize - Split your spectrometer apart!
+
+## Version
+A special version for Novosibirsk Institute of Organic Chemistry. This version includes a command center for pulse X-band EPR spectrometer.
+
+## General
 ![](https://github.com/Anatoly1010/Atomize/blob/master/screenshots/logoAtomize.png)<br/>
 A modular open source software for working with scientific devices and combining them into spectrometer.<br/>
 The general idea is close to [FSC2 software](http://users.physik.fu-berlin.de/~jtt/fsc2.phtml) developed by Jens Thomas Törring.<br/>
