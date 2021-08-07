@@ -1,0 +1,338 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import os
+import sys
+#import time
+#import socket
+#import numpy as np
+from multiprocessing import Process, Pipe
+from PyQt5.QtWidgets import QWidget #QListView, QAction
+from PyQt5 import QtWidgets, uic #, QtCore, QtGui
+from PyQt5.QtGui import QIcon
+import atomize.general_modules.general_functions as general
+import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
+
+class MainWindow(QtWidgets.QMainWindow):
+    """
+    A main window class
+    """
+    def __init__(self, *args, **kwargs):
+        """
+        A function for connecting actions and creating a main window
+        """
+        super(MainWindow, self).__init__(*args, **kwargs)
+        
+        self.destroyed.connect(lambda: self._on_destroyed())         # connect some actions to exit
+        
+        # Load the UI Page
+        path_to_main = os.path.dirname(os.path.abspath(__file__))
+        gui_path = os.path.join(path_to_main,'gui/dig_main_window.ui')
+        icon_path = os.path.join(path_to_main, 'gui/icon_dig.png')
+        self.setWindowIcon( QIcon(icon_path) )
+
+        uic.loadUi(gui_path, self)                        # Design file
+
+        # Connection of different action to different Menus and Buttons
+        self.button_off.clicked.connect(self.turn_off)
+        self.button_off.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
+         border-style: outset; color: rgb(193, 202, 227);}\
+          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
+        self.button_stop.clicked.connect(self.dig_stop)
+        self.button_stop.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
+         border-style: outset; color: rgb(193, 202, 227);}\
+          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
+        self.button_start.clicked.connect(self.dig_start)
+        self.button_start.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
+         border-style: outset; color: rgb(193, 202, 227);}\
+          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
+
+        # text labels
+        self.label.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.label_2.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.label_3.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.label_4.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.label_6.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.label_7.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.label_8.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+
+        # Spinboxes
+        self.Timescale.lineEdit().setReadOnly( True )   # block input from keyboard
+        self.Timescale.valueChanged.connect(self.timescale)
+        self.points = int( self.Timescale.value() )
+        self.Timescale.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        self.Hor_offset.lineEdit().setReadOnly( True )   # block input from keyboard
+        self.Hor_offset.valueChanged.connect(self.hor_offset)
+        self.posttrigger = int( self.Hor_offset.value() )
+        self.Hor_offset.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+
+        self.Time_per_point.currentIndexChanged.connect(self.sample_rate)
+        self.time_per_point = int( self.Time_per_point.currentText() )
+        self.s_rate = int( 1000 / self.time_per_point )
+        self.Time_per_point.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
+        self.Chan_range.currentIndexChanged.connect(self.chan_range)
+        self.ampl = int( self.Chan_range.currentText() )
+        self.Chan_range.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
+
+        self.Ch0_offset.lineEdit().setReadOnly( True )   # block input from keyboard
+        self.Ch0_offset.valueChanged.connect(self.ch0_offset)
+        self.offset_0 = int( self.Ch0_offset.value() )
+        self.Ch0_offset.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        self.Ch1_offset.lineEdit().setReadOnly( True )   # block input from keyboard
+        self.Ch1_offset.valueChanged.connect(self.ch1_offset)
+        self.offset_1 = int( self.Ch1_offset.value() )
+        self.Ch1_offset.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        self.Acq_number.lineEdit().setReadOnly( True )   # block input from keyboard
+        self.Acq_number.valueChanged.connect(self.acq_number)
+        self.number_averages = int( self.Acq_number.value() )
+        self.Acq_number.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+
+        """
+        Create a process to interact with an experimental script that will run on a different thread.
+        We need a different thread here, since PyQt GUI applications have a main thread of execution 
+        that runs the event loop and GUI. If you launch a long-running task in this thread, then your GUI
+        will freeze until the task terminates. During that time, the user won’t be able to interact with 
+        the application
+        """
+        self.worker = Worker()
+
+    def _on_destroyed(self):
+        """
+        A function to do some actions when the main window is closing.
+        """
+        try:
+            self.parent_conn.send('exit')
+        except BrokenPipeError:
+            print('Digitizer is not running')
+        self.digitizer_process.join()
+
+    def quit(self):
+        """
+        A function to quit the programm
+        """ 
+        self._on_destroyed()
+        sys.exit()
+
+    def timescale(self):
+        """
+        A function to change a horizontal offset of the digitizer
+        """
+        self.points = int( self.Timescale.value() )
+        try:
+            self.parent_conn.send( 'PO' + str( self.points ) )
+        except BrokenPipeError:
+            print('Digitizer is not running')
+
+    def sample_rate(self):
+        """
+        A function to change sample rate (time per point)
+        """
+        self.time_per_point = int( self.Time_per_point.currentText() )
+        self.s_rate = int( 1000 / self.time_per_point )
+        try:
+            self.parent_conn.send( 'SR' + str( self.s_rate ) )
+        except BrokenPipeError:
+            print('Digitizer is not running')
+
+    def hor_offset(self):
+        """
+        A function to change horizontal offset (posttrigger)
+        """
+        self.posttrigger = int( self.Hor_offset.value() )
+        try:
+            self.parent_conn.send( 'HO' + str( self.posttrigger ) )
+        except BrokenPipeError:
+            print('Digitizer is not running')
+
+    def chan_range(self):
+        """
+        A function to change range of the channels
+        """
+        self.ampl = int( self.Chan_range.currentText() )
+        try:
+            self.parent_conn.send( 'AM' + str( self.ampl ) )
+        except BrokenPipeError:
+            print('Digitizer is not running')
+
+    def ch0_offset(self):
+        """
+        A function to change an offset of CH0
+        """
+        self.offset_0 = int( self.Ch0_offset.value() )
+        try:
+            self.parent_conn.send( 'O0' + str( self.offset_0 ) )
+        except BrokenPipeError:
+            print('Digitizer is not running')
+
+    def ch1_offset(self):
+        """
+        A function to send an offset of CH1
+        """
+        self.offset_1 = int( self.Ch1_offset.value() )
+        try:
+            self.parent_conn.send( 'O1' + str( self.offset_1 ) )
+        except BrokenPipeError:
+            print('Digitizer is not running')
+
+    def acq_number(self):
+        """
+        A function to change number of averages
+        """
+        self.number_averages = int( self.Ch0_offset.value() )
+        try:
+            self.parent_conn.send( 'NA' + str( self.number_averages ) )
+        except BrokenPipeError:
+            print('Digitizer is not running')
+
+    def dig_stop(self):
+        """
+        A function to stop digitizer
+        """
+        try:
+            self.parent_conn.send('exit')
+            self.digitizer_process.join()
+        except BrokenPipeError:
+            print('Digitizer is not running')
+        
+    def dig_start(self):
+        """
+        Button Start; Run function script(pipe_addres, four parameters of the experimental script)
+        from Worker class in a different thread
+        Create a Pipe for interaction with this thread
+        self.param_i are used as parameters for script function
+        """
+
+        self.parent_conn, self.child_conn = Pipe()
+        # a process for running function script 
+        # sending parameters for initial initialization
+        self.digitizer_process = Process( target = self.worker.dig_on, args = ( self.child_conn, self.points, self.s_rate, \
+                                            self.posttrigger, self.ampl, self.offset_0, self.offset_1, self.number_averages, ) )
+               
+        self.digitizer_process.start()
+        # send a command in a different thread about the current state
+        self.parent_conn.send('start')
+
+    def turn_off(self):
+        """
+        A function to turn off a programm.
+        """
+        try:
+            self.parent_conn.send('exit')
+            self.digitizer_process.join()
+        except BrokenPipeError:
+            print('Digitizer is not running')
+            sys.exit()
+        except AttributeError:
+            print('Digitizer is not running')
+            sys.exit()
+
+        sys.exit()
+
+    def help(self):
+        """
+        A function to open a documentation
+        """
+        pass
+
+# The worker class that run the digitizer in a different thread
+class Worker(QWidget):
+    def __init__(self, parent = None):
+        super(Worker, self).__init__(parent)
+        # initialization of the attribute we use to stop the experimental script
+        # when button Stop is pressed
+        #from atomize.main.client import LivePlotClient
+
+        self.command = 'start'
+                   
+    def dig_on(self, conn, p1, p2, p3, p4, p5, p6, p7):
+        """
+        function that contains updating of the digitizer
+        """
+        
+        dig = spectrum.Spectrum_M4I_4450_X8()
+        # parameters for initial initialization
+        #points_value =      p1
+        dig.digitizer_number_of_points( p1 )
+        #posstrigger_value = p3
+        dig.digitizer_posttrigger(      p3 )
+        #offset_0_value =    p5
+        dig.digitizer_offset( 'CH0',    p5 )
+        #offset_1_value =    p6
+        dig.digitizer_offset( 'CH1',    p6 )
+        #sample_rate =       p2
+        dig.digitizer_sample_rate(      p2 )
+        #ampl_value =        p4
+        dig.digitizer_amplitude(        p4 )
+        #num_ave =           p7
+        # AVERAGE MODE
+
+        dig.digitizer_setup()
+
+        i = 0
+        # the idea of automatic and dynamic changing is
+        # sending a new value of repetition rate via self.command
+        # in each cycle we will check the current value of self.command
+        # self.command = 'exit' will stop the digitizer
+        while self.command != 'exit':
+            # always test our self.command attribute for stopping the script when neccessary
+            if self.command[0:2] == 'PO':
+                points_value = int( self.command[2:] )
+                dig.digitizer_stop()
+                #start_time = time.time()
+                dig.digitizer_number_of_points( points_value )
+                #dig.digitizer_setup()
+                #print( str( time.time() - start_time ) )
+            elif self.command[0:2] == 'HO':
+                posstrigger_value = int( self.command[2:] )
+                dig.digitizer_stop()
+                dig.digitizer_posttrigger( posstrigger_value )
+                #dig.digitizer_setup()
+            elif self.command[0:2] == 'O0':
+                offset_0_value = int( self.command[2:] )
+                dig.digitizer_stop()
+                dig.digitizer_offset( 'CH0', offset_0_value )
+                #dig.digitizer_setup()
+            elif self.command[0:2] == 'O1':
+                offset_1_value = int( self.command[2:] )
+                dig.digitizer_stop()
+                dig.digitizer_offset( 'CH1', offset_1_value )
+                #dig.digitizer_setup()
+            elif self.command[0:2] == 'SR':
+                sample_rate = int( self.command[2:] )
+                dig.digitizer_stop()
+                dig.digitizer_sample_rate( sample_rate )
+                #dig.digitizer_setup()
+            elif self.command[0:2] == 'AM':
+                ampl_value = int( self.command[2:] )
+                dig.digitizer_stop()
+                dig.digitizer_amplitude( ampl_value )
+                #dig.digitizer_setup()
+
+            xs, data1, data2 = dig.digitizer_get_curve()
+
+            #plot_1d('Buffer_test', np.array([1,2,3,4,5]), np.array([1,2,3,4,5]), label = 'ch0', xscale = 's', yscale = 'V')
+            general.plot_1d('Digitizer Live', xs, data1, label = 'ch0', xscale = 's', yscale = 'V')
+            general.plot_1d('Digitizer Live', xs, data2, label = 'ch1', xscale = 's', yscale = 'V')
+            
+            self.command = 'start'
+            # poll() checks whether there is data in the Pipe to read
+            # we use it to stop the script if the exit command was sent from the main window
+            # we read data by conn.recv() only when there is the data to read
+            if conn.poll() == True:
+                self.command = conn.recv()
+        if self.command == 'exit':
+            #print('exit')
+            dig.digitizer_stop()
+            dig.digitizer_close()
+
+def main():
+    """
+    A function to run the main window of the programm.
+    """
+    app = QtWidgets.QApplication(sys.argv)
+    main = MainWindow()
+    main.show()
+    sys.exit(app.exec_())
+
+if __name__ == '__main__':
+    main()
