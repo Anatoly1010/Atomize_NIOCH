@@ -66,7 +66,7 @@ QTabBar::tab:selected {
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <property name="iconSize">
        <size>
@@ -247,8 +247,8 @@ QTabBar::tab:selected {
              <font>
               <family>Arial</family>
               <pointsize>11</pointsize>
-              <weight>75</weight>
-              <bold>true</bold>
+              <weight>50</weight>
+              <bold>false</bold>
              </font>
             </property>
             <property name="focusPolicy">
@@ -287,6 +287,12 @@ QTabBar::tab:selected {
             <property name="readOnly">
              <bool>false</bool>
             </property>
+            <property name="tabStopWidth">
+             <number>10</number>
+            </property>
+            <property name="tabStopDistance">
+             <double>10.000000000000000</double>
+            </property>
            </widget>
           </item>
           <item row="0" column="1">
@@ -317,8 +323,9 @@ QTabBar::tab:selected {
              <font>
               <family>Arial</family>
               <pointsize>9</pointsize>
-              <weight>75</weight>
-              <bold>true</bold>
+              <weight>50</weight>
+              <bold>false</bold>
+              <kerning>false</kerning>
              </font>
             </property>
             <property name="mouseTracking">
