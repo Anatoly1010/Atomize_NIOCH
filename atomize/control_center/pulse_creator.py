@@ -32,8 +32,8 @@ class MainWindow(QtWidgets.QMainWindow):
         uic.loadUi(gui_path, self)                        # Design file
 
         self.pb = pb_pro.PB_ESR_500_Pro()
-        #self.bh15 = bh.BH_15()
-        #self.bh15.magnet_setup( 3500, 0.5 )
+        self.bh15 = bh.BH_15()
+        self.bh15.magnet_setup( 3500, 0.5 )
 
         # Connection of different action to different Menus and Buttons
         self.button_off.clicked.connect(self.turn_off)
@@ -319,6 +319,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if int( self.p6_length.split(' ')[0] ) != 0:
             self.pb.pulser_pulse( name = 'P5', channel = self.p6_typ, start = self.p6_start, length = self.p6_length )
 
+        self.pb.pulser_update()
         self.bh15.magnet_field( self.mag_field )
 
     def update(self):
@@ -335,6 +336,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # in order to finish a test
         time.sleep( 0.1 )
+
+        print( self.test_process.exitcode )
+
         if self.test_process.exitcode == 0:
             self.test_process.join()
 
@@ -343,16 +347,17 @@ class MainWindow(QtWidgets.QMainWindow):
             self.pb.pulser_test_flag('None') 
             self.pulse_sequence()
 
-            #ans = self.pb.pulser_update()
             #self.errors.appendPlainText( str( ans ) )
             self.errors.appendPlainText( self.pb.pulser_pulse_list() )
 
         else:
             self.test_process.join()
+            self.pb.pulser_stop()
             self.errors.appendPlainText( 'Incorrect pulse setting. Check that your pulses:\n' + \
                                         '1. Not overlapped\n' + \
                                         '2. Distance between MW pulses is more than 40 ns\n' + \
-                                        '3. Pulses are longer than 8 ns\n')
+                                        '3. Pulses are longer than 8 ns\n' + \
+                                        '\nPulser is stopped\n')
 
     def pulser_test(self, conn, flag):
         """
