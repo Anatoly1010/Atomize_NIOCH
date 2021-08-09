@@ -4,14 +4,16 @@
 import os
 import sys
 #import time
-#import socket
+import socket
 #import numpy as np
 from multiprocessing import Process, Pipe
 from PyQt5.QtWidgets import QWidget #QListView, QAction
 from PyQt5 import QtWidgets, uic #, QtCore, QtGui
 from PyQt5.QtGui import QIcon
-import atomize.general_modules.general_functions as general
-import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
+# should be inside dig_on() function;
+# freezing after digitizer restart otherwise
+#import atomize.general_modules.general_functions as general
+#import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
 
 class MainWindow(QtWidgets.QMainWindow):
     """
@@ -103,7 +105,9 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             self.parent_conn.send('exit')
         except BrokenPipeError:
-            print('Digitizer is not running')
+            self.message('Digitizer is not running')
+        except AttributeError:
+            self.message('Digitizer is not running')
         self.digitizer_process.join()
 
     def quit(self):
@@ -113,6 +117,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._on_destroyed()
         sys.exit()
 
+
     def timescale(self):
         """
         A function to change a horizontal offset of the digitizer
@@ -120,8 +125,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.points = int( self.Timescale.value() )
         try:
             self.parent_conn.send( 'PO' + str( self.points ) )
-        except BrokenPipeError:
-            print('Digitizer is not running')
+        except AttributeError:
+            self.message('Digitizer is not running')
+
 
     def sample_rate(self):
         """
@@ -131,8 +137,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.s_rate = int( 1000 / self.time_per_point )
         try:
             self.parent_conn.send( 'SR' + str( self.s_rate ) )
-        except BrokenPipeError:
-            print('Digitizer is not running')
+        except AttributeError:
+            self.message('Digitizer is not running')
 
     def hor_offset(self):
         """
@@ -141,8 +147,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.posttrigger = int( self.Hor_offset.value() )
         try:
             self.parent_conn.send( 'HO' + str( self.posttrigger ) )
-        except BrokenPipeError:
-            print('Digitizer is not running')
+        except AttributeError:
+            self.message('Digitizer is not running')
 
     def chan_range(self):
         """
@@ -151,8 +157,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ampl = int( self.Chan_range.currentText() )
         try:
             self.parent_conn.send( 'AM' + str( self.ampl ) )
-        except BrokenPipeError:
-            print('Digitizer is not running')
+        except AttributeError:
+            self.message('Digitizer is not running')
 
     def ch0_offset(self):
         """
@@ -161,8 +167,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.offset_0 = int( self.Ch0_offset.value() )
         try:
             self.parent_conn.send( 'O0' + str( self.offset_0 ) )
-        except BrokenPipeError:
-            print('Digitizer is not running')
+        except AttributeError:
+            self.message('Digitizer is not running')
 
     def ch1_offset(self):
         """
@@ -171,8 +177,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.offset_1 = int( self.Ch1_offset.value() )
         try:
             self.parent_conn.send( 'O1' + str( self.offset_1 ) )
-        except BrokenPipeError:
-            print('Digitizer is not running')
+        except AttributeError:
+            self.message('Digitizer is not running')
 
     def acq_number(self):
         """
@@ -181,8 +187,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.number_averages = int( self.Ch0_offset.value() )
         try:
             self.parent_conn.send( 'NA' + str( self.number_averages ) )
-        except BrokenPipeError:
-            print('Digitizer is not running')
+        except AttributeError:
+            self.message('Digitizer is not running')
 
     def dig_stop(self):
         """
@@ -191,8 +197,8 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             self.parent_conn.send('exit')
             self.digitizer_process.join()
-        except BrokenPipeError:
-            print('Digitizer is not running')
+        except AttributeError:
+            self.message('Digitizer is not running')
         
     def dig_start(self):
         """
@@ -219,11 +225,8 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             self.parent_conn.send('exit')
             self.digitizer_process.join()
-        except BrokenPipeError:
-            print('Digitizer is not running')
-            sys.exit()
         except AttributeError:
-            print('Digitizer is not running')
+            self.message('Digitizer is not running')
             sys.exit()
 
         sys.exit()
@@ -233,6 +236,17 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to open a documentation
         """
         pass
+
+    def message(*text):
+        sock = socket.socket()
+        sock.connect(('localhost', 9091))
+        if len(text) == 1:
+            sock.send(str(text[0]).encode())
+            sock.close()
+        else:
+            sock.send(str(text).encode())
+            sock.close()
+
 
 # The worker class that run the digitizer in a different thread
 class Worker(QWidget):
@@ -248,7 +262,11 @@ class Worker(QWidget):
         """
         function that contains updating of the digitizer
         """
-        
+        # should be inside dig_on() function;
+        # freezing after digitizer restart otherwise
+        import atomize.general_modules.general_functions as general
+        import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
+
         dig = spectrum.Spectrum_M4I_4450_X8()
         # parameters for initial initialization
         #points_value =      p1
@@ -268,13 +286,13 @@ class Worker(QWidget):
 
         dig.digitizer_setup()
 
-        i = 0
         # the idea of automatic and dynamic changing is
         # sending a new value of repetition rate via self.command
         # in each cycle we will check the current value of self.command
         # self.command = 'exit' will stop the digitizer
         while self.command != 'exit':
             # always test our self.command attribute for stopping the script when neccessary
+
             if self.command[0:2] == 'PO':
                 points_value = int( self.command[2:] )
                 dig.digitizer_stop()
@@ -309,7 +327,7 @@ class Worker(QWidget):
                 #dig.digitizer_setup()
 
             xs, data1, data2 = dig.digitizer_get_curve()
-
+                       
             #plot_1d('Buffer_test', np.array([1,2,3,4,5]), np.array([1,2,3,4,5]), label = 'ch0', xscale = 's', yscale = 'V')
             general.plot_1d('Digitizer Live', xs, data1, label = 'ch0', xscale = 's', yscale = 'V')
             general.plot_1d('Digitizer Live', xs, data2, label = 'ch1', xscale = 's', yscale = 'V')
@@ -321,7 +339,7 @@ class Worker(QWidget):
             if conn.poll() == True:
                 self.command = conn.recv()
         if self.command == 'exit':
-            #print('exit')
+            #general.message('exit')
             dig.digitizer_stop()
             dig.digitizer_close()
 
