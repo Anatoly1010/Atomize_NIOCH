@@ -66,8 +66,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.label_7.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_8.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
 
-        self.telemetry_text.setStyleSheet("QPlainTextEdit { color : rgb(193, 202, 227); }")
-
+        self.telemetry_text.setStyleSheet("QPlainTextEdit { color : rgb(211, 194, 78); }") # rgb(193, 202, 227)
+        
         # Spinboxes
         self.Att1_prd.valueChanged.connect(self.att1_prd)
         self.Att1_prd.lineEdit().setReadOnly( True )   # block input from keyboard

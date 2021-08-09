@@ -32,8 +32,8 @@ class MainWindow(QtWidgets.QMainWindow):
         uic.loadUi(gui_path, self)                        # Design file
 
         self.pb = pb_pro.PB_ESR_500_Pro()
-        self.bh15 = bh.BH_15()
-        self.bh15.magnet_setup( 3500, 0.5 )
+        #self.bh15 = bh.BH_15()
+        #self.bh15.magnet_setup( 3500, 0.5 )
 
         # Connection of different action to different Menus and Buttons
         self.button_off.clicked.connect(self.turn_off)
@@ -50,7 +50,7 @@ class MainWindow(QtWidgets.QMainWindow):
           QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
 
         # text labels
-        self.errors.setStyleSheet("QPlainTextEdit { color : rgb(193, 202, 227); }")
+        self.errors.setStyleSheet("QPlainTextEdit { color : rgb(211, 194, 78); }")  # rgb(193, 202, 227)
         self.label.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_2.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_3.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
@@ -289,6 +289,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self.mag_field = float( self.Field.value() )
         self.bh15.magnet_field( self.mag_field )
+        self.errors.appendPlainText( str( self.mag_field ) )
 
     def stop(self):
         """
