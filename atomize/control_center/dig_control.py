@@ -117,7 +117,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self._on_destroyed()
         sys.exit()
 
-
     def timescale(self):
         """
         A function to change a horizontal offset of the digitizer
@@ -127,7 +126,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.parent_conn.send( 'PO' + str( self.points ) )
         except AttributeError:
             self.message('Digitizer is not running')
-
 
     def sample_rate(self):
         """
