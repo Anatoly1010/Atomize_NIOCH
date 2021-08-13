@@ -60,7 +60,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.Set_point.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
         self.point = float( self.Set_point.value() )
 
-        self.ptc10.tc_setpoint( 'Heater', self.point )
+        #self.ptc10.tc_setpoint( 'Heater', self.point )
 
     def _on_destroyed(self):
         """

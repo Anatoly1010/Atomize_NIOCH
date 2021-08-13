@@ -99,7 +99,7 @@ def append_2d(strname, data, start_step=None,\
 
 def text_label(strlabel, text, value):
     if test_flag != 'test':
-        plotter.label(strlabel, str(str(text) + ' %d' %value))
+        plotter.label(strlabel, str(str(text) + str(value) )) 
 
     elif test_flag == 'test':
         pass
