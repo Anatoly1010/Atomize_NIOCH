@@ -205,7 +205,13 @@ class MainWindow(QtWidgets.QMainWindow):
         Create a Pipe for interaction with this thread
         self.param_i are used as parameters for script function
         """
-
+        # prevent running two processes
+        try:
+            if self.digitizer_process.is_alive() == True:
+                return
+        except AttributeError:
+            pass
+        
         self.parent_conn, self.child_conn = Pipe()
         # a process for running function script 
         # sending parameters for initial initialization

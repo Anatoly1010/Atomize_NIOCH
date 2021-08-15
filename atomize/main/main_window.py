@@ -343,11 +343,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 (x0, dx), (y0, dy) = start_step
                 pw.setAxisLabels(xname=xnam, xscale =xscal, yname=ynam, yscale =yscal,\
                 zname=znam, zscale =zscal)
-                pw.setImage(arr, pos=(x0, y0), scale=(dx, dy), axes={'y':0, 'x':1})
+                pw.setImage(arr, pos=(x0, y0), scale=(dx, dy)) #, axes={'y':0, 'x':1}
             else:
                 pw.setAxisLabels(xname=xnam, xscale =xscal, yname=ynam, yscale =yscal,\
                  zname=znam, zscale =zscal)
-                pw.setImage(arr, axes={'y':0, 'x':1})
+                pw.setImage(arr) #, axes={'y':0, 'x':1}
 
 
         elif operation == 'append_y':

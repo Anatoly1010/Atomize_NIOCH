@@ -148,6 +148,10 @@ class CrosshairDock(CloseableDock):
         self.del_menu.setTitle('Delete Plot')
         self.menu.addMenu(self.del_menu)
 
+        self.shift_menu = QtWidgets.QMenu()
+        self.shift_menu.setTitle('Shift Plot')
+        self.menu.addMenu(self.shift_menu)
+
         open_action = QtWidgets.QAction('Open 1D Data', self)
         open_action.triggered.connect(self.file_dialog) # self.open_file_dialog
         self.menu.addAction(open_action)
@@ -166,6 +170,11 @@ class CrosshairDock(CloseableDock):
         self.curves = {}
         self.del_dict = {}
         self.name_dict = {}
+        self.shifter_dict = {}
+        self.shifter_action_dict = {}
+        self.index_shift = 0
+        self.adaptive_scale = 1
+        self.value_prev = 0
 
     def plot(self, *args, **kwargs):
         self.plot_widget.parametric = kwargs.pop('parametric', False)
@@ -208,13 +217,62 @@ class CrosshairDock(CloseableDock):
             del_action.triggered.connect(lambda: self.del_item(self.del_dict[del_action]))
             self.del_menu.addAction(del_action)
 
+            shifter = QtWidgets.QDoubleSpinBox()
+            shifter.setDecimals(3)
+            shifter.setRange(-1, 1)
+            shifter.setSingleStep(0.001)
+            shifter.setKeyboardTracking(0)
+            self.shifter_dict[shifter] = self.plot_widget.listDataItems()[-1]
+            #shifter.valueChanged.connect( self.shift_curve )
+            shifter.valueChanged.connect( lambda: self.shift_curve(self.shifter_dict[shifter]) )
+            shiftAction = QtWidgets.QWidgetAction(self)
+            shiftAction.setDefaultWidget(shifter)
+            self.shift_menu.addAction(shiftAction)
+            self.shifter_action_dict[shiftAction] = self.plot_widget.listDataItems()[-1]
+            self.index_shift = 0
+    
+    def shift_curve(self, item):
+
+        qboxname = list(self.shifter_dict.keys())[list(self.shifter_dict.values()).index(item)]
+        key_name = list(self.curves.keys())[list(self.curves.values()).index(item)]
+
+        value = float( qboxname.value() )
+        data = self.get_data( key_name )
+
+        # percentage shifting:
+        if self.index_shift == 0:
+            self.adaptive_scale = np.sum( data[1][0:4] ) / 5
+            self.index_shift = 1
+            self.plot( data[0], data[1] + abs( value ) * self.adaptive_scale, \
+                name = str( key_name ), scatter = 'False', xname = 'X', xscale = 'arb. u.', yname = 'Y', yscale = 'arb. u.' )
+        else:
+            if value > self.value_prev:
+                if value > 0:
+                    self.plot( data[0], data[1] + abs( value ) * self.adaptive_scale, \
+                        name = str( key_name ), scatter = 'False', xname = 'X', xscale = 'arb. u.', yname = 'Y', yscale = 'arb. u.' )
+                else:
+                    self.plot( data[0], data[1] + abs( value - 0.001 ) * self.adaptive_scale, \
+                        name = str( key_name ), scatter = 'False', xname = 'X', xscale = 'arb. u.', yname = 'Y', yscale = 'arb. u.' )
+            else:
+                if value < 0:
+                    self.plot( data[0], data[1] - abs( value ) * self.adaptive_scale, \
+                        name = str( key_name ), scatter = 'False', xname = 'X', xscale = 'arb. u.', yname = 'Y', yscale = 'arb. u.' )
+                else:
+                    self.plot( data[0], data[1] - ( abs( value ) + 0.001 ) * self.adaptive_scale, \
+                        name = str( key_name ), scatter = 'False', xname = 'X', xscale = 'arb. u.', yname = 'Y', yscale = 'arb. u.' )
+
+        self.value_prev = value
+
     def del_item(self, item):
         self.plot_widget.removeItem(item)
         key_action = list(self.del_dict.keys())[list(self.del_dict.values()).index(item)]
         key_name = list(self.curves.keys())[list(self.curves.values()).index(item)]
+        qbox_action_name = list(self.shifter_action_dict.keys())[list(self.shifter_action_dict.values()).index(item)]
         self.del_dict.pop(key_action, None)
         self.del_menu.removeAction(key_action)
         self.curves.pop(key_name, None)
+        self.shifter_dict.pop(key_name, None)
+        self.shift_menu.removeAction(qbox_action_name)
         self.avail_colors.append(self.used_colors[self.name_dict[key_action]])
         #TO DO the same for scatter plot
 
@@ -438,16 +496,23 @@ class CrossSectionDock(CloseableDock):
         LastExportDirectory = os.path.split(fileName)[0]
 
         data = self.img_view.getProcessedImage()
-        np.savetxt(fileName,\
-         data, fmt = '%.4e', delimiter = ',', newline = '\n',\
-         header = str(datetime.now().strftime("%d-%m-%Y_%H-%M-%S")),\
-          footer = '', comments = '#', encoding = None)
+        try:
+            np.savetxt(fileName,\
+             data, fmt = '%.4e', delimiter = ',', newline = '\n',\
+             header = str(datetime.now().strftime("%d-%m-%Y_%H-%M-%S")),\
+              footer = '', comments = '#', encoding = None)
+        except ValueError:
+            for i in range( len(data) ):
+                np.savetxt(fileName + str(i),\
+                 data[i], fmt = '%.4e', delimiter = ',', newline = '\n',\
+                 header = str(datetime.now().strftime("%d-%m-%Y_%H-%M-%S")),\
+                  footer = '', comments = '#', encoding = None)
 
     def fileSaveDialog(self):
         self.fileDialog = QFileDialog()
-        #self.fileDialog.setOption(QtGui.QFileDialog.DontUseNativeDialog)
+        #self.fileDialog.setOption(QtWidgets.QFileDialog.DontUseNativeDialog)
         self.fileDialog.setNameFilters(['*.csv','*.txt','*.dat'])
-        self.fileDialog.setAcceptMode(QtGui.QFileDialog.AcceptSave)
+        self.fileDialog.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
         global LastExportDirectory
         exportDir = LastExportDirectory
         if exportDir is not None:
