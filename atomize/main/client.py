@@ -9,8 +9,6 @@ from PyQt5.QtNetwork import QLocalSocket
 from PyQt5.QtCore import QCoreApplication, QSharedMemory
 import time
 
-__author__ = 'phil'
-
 logging.root.setLevel(logging.WARNING)
 
 class LivePlotClient(object):

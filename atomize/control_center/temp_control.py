@@ -3,7 +3,7 @@
 
 import os
 import sys
-#import random
+import time
 import configparser
 from threading import Timer
 #from PyQt5.QtWidgets import QListView, QAction
@@ -60,6 +60,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.Set_point.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
         self.point = float( self.Set_point.value() )
 
+        self.start_flag = 0
+
         #self.ptc10.tc_setpoint( 'Heater', self.point )
 
     def _on_destroyed(self):
@@ -82,33 +84,47 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to change a set point
         """
         self.point = float( self.Set_point.value() )
-        self.ptc10.tc_setpoint('Heater', self.point)
+        # preventing coincidences of the commands
+        if self.start_flag == 1:
+            self.update_stop()
+            time.sleep(0.1)
+            self.ptc10.tc_setpoint('Heater', self.point)
+            time.sleep(0.1)
+            self.update_start()
+        else:
+            self.ptc10.tc_setpoint('Heater', self.point)
 
     def update_stop(self):
         """
         A function to stop oscilloscope
         """
         self._on_destroyed()
+        self.start_flag = 0
 
     def ch2a_temp(self):
         self.label_temp2a.setText( ' ' + str( self.ptc10.tc_temperature('2A') ) )
         #self.label_temp2a.setText( ' ' + str( round( random.random(), 2 ) ) )
 
     def ch3a_temp(self):
-        self.label_temp2a.setText( ' ' + str( self.ptc10.tc_temperature('3A') ) )
+        self.label_temp3a.setText( ' ' + str( self.ptc10.tc_temperature('3A') ) )
         #self.label_temp3a.setText( ' ' + str( round( random.random(), 2 ) ) )
 
     def heater_value(self):
-        self.label_temp2a.setText( ' ' + str( self.ptc10.tc_heater_power('Heater') ) )
+        self.label_heater.setText( ' ' + str( self.ptc10.tc_heater_power('Heater').split(' ')[0] ) )
         #self.label_heater.setText( ' ' + str( round( random.random(), 2 ) ) )
 
     def update_start(self):
         """
         A function to start getting data from temperature controller
         """
-        self.rt = RepeatedTimer( 0.5, self.ch2a_temp )
-        self.rt2 = RepeatedTimer( 0.5, self.ch3a_temp )
-        self.rt3 = RepeatedTimer( 0.5, self.heater_value )
+        self.start_flag = 1
+        self.rt = RepeatedTimer( 2, self.ch2a_temp )
+        # give some time to answer
+        time.sleep(0.1)
+        self.rt2 = RepeatedTimer( 2, self.ch3a_temp )
+        time.sleep(0.1)
+        self.rt3 = RepeatedTimer( 2, self.heater_value )
+        time.sleep(0.1)
 
     def turn_off(self):
         """

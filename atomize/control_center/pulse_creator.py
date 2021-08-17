@@ -33,6 +33,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.pb = pb_pro.PB_ESR_500_Pro()
         self.bh15 = bh.BH_15()
+        
+        # First initialization problem
+        # corrected directly in the module BH-15
+        #try:
+            #self.bh15.magnet_setup( 3500, 0.5 )
+        #except BrokenPipeError:
+        #    pass
+
         self.bh15.magnet_setup( 3500, 0.5 )
 
         # Connection of different action to different Menus and Buttons
@@ -320,7 +328,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.pb.pulser_pulse( name = 'P5', channel = self.p6_typ, start = self.p6_start, length = self.p6_length )
 
         self.pb.pulser_update()
-        self.bh15.magnet_field( self.mag_field )
+        # the next line gives rise to a bag with FC
+        #self.bh15.magnet_field( self.mag_field )
 
     def update(self):
         """
@@ -357,6 +366,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                         '1. Not overlapped\n' + \
                                         '2. Distance between MW pulses is more than 40 ns\n' + \
                                         '3. Pulses are longer than 8 ns\n' + \
+                                        '4. Field Controller is stucked\n' + \
                                         '\nPulser is stopped\n')
 
     def pulser_test(self, conn, flag):

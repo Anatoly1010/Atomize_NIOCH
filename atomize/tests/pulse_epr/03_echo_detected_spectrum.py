@@ -54,6 +54,19 @@ pb.pulser_pulse(name ='P2', channel = 'TRIGGER', start = PULSE_SIGNAL_START, len
 pb.pulser_repetition_rate( REP_RATE )
 pb.pulser_update()
 
+# Data saving
+header = 'Date: ' + str(datetime.datetime.now().strftime("%d-%m-%Y %H-%M-%S")) + '\n' + 'Echo Detected Spectrum\n' + \
+            'Start Field: ' + str(START_FIELD) + ' G \n' + 'End Field: ' + str(END_FIELD) + ' G \n' + \
+            'Field Step: ' + str(FIELD_STEP) + ' G \n' + str(mw.mw_bridge_att_prm()) + '\n' + \
+            str(mw.mw_bridge_synthesizer()) + '\n' + \
+           'Repetition Rate: ' + str(pb.pulser_repetition_rate()) + '\n' + 'Number of Scans: ' + str(SCANS) + '\n' +\
+           'Averages: ' + str(AVERAGES) + '\n' + 'Window: ' + str(t3034.oscilloscope_timebase()*1000) + ' ns\n' + \
+           'Temperature: ' + str(ptc10.tc_temperature('2A')) + ' K\n' +\
+           'Pulse List: ' + '\n' + str(pb.pulser_pulse_list()) + 'Field (G), X (V*s), Y (V*s) '
+
+file_data, file_param = file_handler.create_file_parameters('.param')
+file_handler.save_header(file_param, header = header, mode = 'w')
+
 j = 1
 while j <= SCANS:
 
@@ -72,9 +85,9 @@ while j <= SCANS:
         data_y[i] = ( data_y[i] * (j - 1) + area_y ) / j
 
         general.plot_1d('Echo Detected Spectrum', x_axis, data_x, xname = 'Field',\
-            xscale = 'T.', yname = 'Area', yscale = 'V*s', label = 'X')
+            xscale = 'G', yname = 'Area', yscale = 'V*s', label = 'X')
         general.plot_1d('Echo Detected Spectrum', x_axis, data_y, xname = 'Field',\
-            xscale = 'T.', yname = 'Area', yscale = 'V*s', label = 'Y')
+            xscale = 'G', yname = 'Area', yscale = 'V*s', label = 'Y')
         general.text_label( 'Echo Detected Spectrum', "Scan / Field: ", str(j) + ' / '+ str(field) )
 
         field = round( (FIELD_STEP + field), 3 )
@@ -86,14 +99,5 @@ while j <= SCANS:
 
 pb.pulser_stop()
 
-# Data saving
-header = 'Date: ' + str(datetime.datetime.now().strftime("%d-%m-%Y %H-%M-%S")) + '\n' + 'Echo Detected Spectrum\n' + \
-            'Start Field: ' + str(START_FIELD) + ' G \n' + 'End Field: ' + str(END_FIELD) + ' G \n' + \
-            'Field Step: ' + str(FIELD_STEP) + ' G \n' + str(mw.mw_bridge_att_prm()) + '\n' + \
-            str(mw.mw_bridge_synthesizer()) + '\n' + \
-           'Repetition Rate: ' + str(pb.pulser_repetition_rate()) + '\n' + 'Number of Scans: ' + str(SCANS) + '\n' +\
-           'Averages: ' + str(AVERAGES) + '\n' + 'Window: ' + str(t3034.oscilloscope_timebase()*1000) + ' ns\n' + \
-           'Temperature: ' + str(ptc10.tc_temperature('2A')) + ' K\n' +\
-           'Pulse List: ' + '\n' + str(pb.pulser_pulse_list()) + 'Field (G), X (V*s), Y (V*s) '
-
-file_handler.save_1D_dialog( (x_axis, data_x, data_y), header = header )
+file_handler.save_data(file_data, np.c_[x_axis, data_x, data_y], header = header, mode = 'w')
+#file_handler.save_1D_dialog( (x_axis, data_x, data_y), header = header )
