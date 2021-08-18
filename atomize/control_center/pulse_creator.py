@@ -67,31 +67,31 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Spinboxes
         self.P1_st.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
-        self.P1_st.lineEdit().setReadOnly( True )   # block input from keyboard
+        #self.P1_st.lineEdit().setReadOnly( True )   # block input from keyboard
         self.P2_st.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
-        self.P2_st.lineEdit().setReadOnly( True )
+        #self.P2_st.lineEdit().setReadOnly( True )
         self.P3_st.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
-        self.P3_st.lineEdit().setReadOnly( True )
+        #self.P3_st.lineEdit().setReadOnly( True )
         self.P4_st.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
-        self.P4_st.lineEdit().setReadOnly( True )
+        #self.P4_st.lineEdit().setReadOnly( True )
         self.P5_st.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
-        self.P5_st.lineEdit().setReadOnly( True )
+        #self.P5_st.lineEdit().setReadOnly( True )
         self.P6_st.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
-        self.P6_st.lineEdit().setReadOnly( True )
+        #self.P6_st.lineEdit().setReadOnly( True )
         self.Rep_rate.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
         self.Field.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
         self.P1_len.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
-        self.P1_len.lineEdit().setReadOnly( True )
+        #self.P1_len.lineEdit().setReadOnly( True )
         self.P2_len.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
-        self.P2_len.lineEdit().setReadOnly( True ) 
+        #self.P2_len.lineEdit().setReadOnly( True ) 
         self.P3_len.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
-        self.P3_len.lineEdit().setReadOnly( True ) 
+        #self.P3_len.lineEdit().setReadOnly( True ) 
         self.P4_len.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
-        self.P4_len.lineEdit().setReadOnly( True ) 
+        #self.P4_len.lineEdit().setReadOnly( True ) 
         self.P5_len.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
-        self.P5_len.lineEdit().setReadOnly( True ) 
+        #self.P5_len.lineEdit().setReadOnly( True ) 
         self.P6_len.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
-        self.P6_len.lineEdit().setReadOnly( True ) 
+        #self.P6_len.lineEdit().setReadOnly( True ) 
         self.P1_type.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
         self.P2_type.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
         self.P3_type.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
@@ -102,30 +102,44 @@ class MainWindow(QtWidgets.QMainWindow):
         # Functions
         self.P1_st.valueChanged.connect(self.p1_st)
         self.p1_start = self.add_ns( self.P1_st.value() )
+
         self.P2_st.valueChanged.connect(self.p2_st)
         self.p2_start = self.add_ns( self.P2_st.value() )
+
         self.P3_st.valueChanged.connect(self.p3_st)
         self.p3_start = self.add_ns( self.P3_st.value() )
+
         self.P4_st.valueChanged.connect(self.p4_st)
         self.p4_start = self.add_ns( self.P4_st.value() )
+
         self.P5_st.valueChanged.connect(self.p5_st)
         self.p5_start = self.add_ns( self.P5_st.value() )
+
         self.P6_st.valueChanged.connect(self.p6_st)
         self.p6_start = self.add_ns( self.P6_st.value() )
+
+
         self.P1_len.valueChanged.connect(self.p1_len)
         self.p1_length = self.add_ns( self.P1_len.value() )
+
         self.P2_len.valueChanged.connect(self.p2_len)
         self.p2_length = self.add_ns( self.P2_len.value() )
+
         self.P3_len.valueChanged.connect(self.p3_len)
         self.p3_length = self.add_ns( self.P3_len.value() )
+
         self.P4_len.valueChanged.connect(self.p4_len)
         self.p4_length = self.add_ns( self.P4_len.value() )
+
         self.P5_len.valueChanged.connect(self.p5_len)
         self.p5_length = self.add_ns( self.P5_len.value() )
+
         self.P6_len.valueChanged.connect(self.p6_len)
         self.p6_length = self.add_ns( self.P6_len.value() )
+
         self.Rep_rate.valueChanged.connect(self.rep_rate)
         self.repetition_rate = str( self.Rep_rate.value() ) + ' Hz'
+
         self.Field.valueChanged.connect(self.field)
         self.mag_field = float( self.Field.value() )
         self.P1_type.currentIndexChanged.connect(self.p1_type)
@@ -173,42 +187,77 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         A function to set pulse 1 start
         """
+        self.p1_start = self.P1_st.value()
+        if self.p1_start % 2 != 0:
+            self.p1_start = self.p1_start + 1
+            self.P1_st.setValue( self.p1_start )
+
         self.p1_start = self.add_ns( self.P1_st.value() )
 
     def p2_st(self):
         """
         A function to set pulse 2 start
         """
+        self.p2_start = self.P2_st.value()
+        if self.p2_start % 2 != 0:
+            self.p2_start = self.p2_start + 1
+            self.P2_st.setValue( self.p2_start )
+
         self.p2_start = self.add_ns( self.P2_st.value() )
 
     def p3_st(self):
         """
         A function to set pulse 3 start
         """
+        self.p3_start = self.P3_st.value()
+        if self.p3_start % 2 != 0:
+            self.p3_start = self.p3_start + 1
+            self.P3_st.setValue( self.p3_start )
+
         self.p3_start = self.add_ns( self.P3_st.value() )
 
     def p4_st(self):
         """
         A function to set pulse 4 start
         """
+        self.p4_start = self.P4_st.value()
+        if self.p4_start % 2 != 0:
+            self.p4_start = self.p4_start + 1
+            self.P4_st.setValue( self.p4_start )
+
         self.p4_start = self.add_ns( self.P4_st.value() )
 
     def p5_st(self):
         """
         A function to set pulse 5 start
         """
+        self.p5_start = self.P5_st.value()
+        if self.p5_start % 2 != 0:
+            self.p5_start = self.p5_start + 1
+            self.P5_st.setValue( self.p5_start )
+
         self.p5_start = self.add_ns( self.P5_st.value() )
 
     def p6_st(self):
         """
         A function to set pulse 6 start
         """
+        self.p6_start = self.P6_st.value()
+        if self.p6_start % 2 != 0:
+            self.p6_start = self.p6_start + 1
+            self.P6_st.setValue( self.p6_start )
+
         self.p6_start = self.add_ns( self.P6_st.value() )
 
     def p1_len(self):
         """
         A function to change a pulse 1 length
         """
+        self.p1_length = self.P1_len.value()
+        if self.p1_length % 2 != 0:
+            self.p1_length = self.p1_length + 1
+            self.P1_len.setValue( self.p1_length )
+
         pl = self.check_length( self.P1_len.value() )
         self.p1_length = self.add_ns( pl )
 
@@ -216,6 +265,11 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         A function to change a pulse 2 length
         """
+        self.p2_length = self.P2_len.value()
+        if self.p2_length % 2 != 0:
+            self.p2_length = self.p2_length + 1
+            self.P2_len.setValue( self.p2_length )
+
         pl = self.check_length( self.P2_len.value() )
         self.p2_length = self.add_ns( pl )
 
@@ -223,6 +277,11 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         A function to change a pulse 3 length
         """
+        self.p3_length = self.P3_len.value()
+        if self.p3_length % 2 != 0:
+            self.p3_length = self.p3_length + 1
+            self.P3_len.setValue( self.p3_length )
+
         pl = self.check_length( self.P3_len.value() )
         self.p3_length = self.add_ns( pl )
 
@@ -230,6 +289,11 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         A function to change a pulse 4 length
         """
+        self.p4_length = self.P4_len.value()
+        if self.p4_length % 2 != 0:
+            self.p4_length = self.p4_length + 1
+            self.P4_len.setValue( self.p4_length )
+
         pl = self.check_length( self.P4_len.value() )
         self.p4_length = self.add_ns( pl )
 
@@ -237,6 +301,11 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         A function to change a pulse 5 length
         """
+        self.p5_length = self.P5_len.value()
+        if self.p5_length % 2 != 0:
+            self.p5_length = self.p5_length + 1
+            self.P5_len.setValue( self.p5_length )
+
         pl = self.check_length( self.P5_len.value() )
         self.p5_length = self.add_ns( pl )
 
@@ -244,6 +313,11 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         A function to change a pulse 6 length
         """
+        self.p6_length = self.P6_len.value()
+        if self.p6_length % 2 != 0:
+            self.p6_length = self.p6_length + 1
+            self.P6_len.setValue( self.p6_length )
+
         pl = self.check_length( self.P6_len.value() )
         self.p6_length = self.add_ns( pl )
 

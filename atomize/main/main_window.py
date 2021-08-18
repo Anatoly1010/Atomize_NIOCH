@@ -28,10 +28,10 @@ from PyQt5.Qt import Qt as QtConst
 from pyqtgraph.dockarea import DockArea
 import atomize.main.messenger_socket_server as socket_server
 ###AWG
-sys.path.append('/home/pulseepr/Sources/AWG/Examples/python')
+#sys.path.append('/home/pulseepr/Sources/AWG/Examples/python')
 
-from pyspcm import *
-from spcm_tools import *
+#from pyspcm import *
+#from spcm_tools import *
 
 class MainWindow(QtWidgets.QMainWindow):
     """
@@ -133,8 +133,23 @@ class MainWindow(QtWidgets.QMainWindow):
         self.button_pulse.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
          border-style: outset; color: rgb(193, 202, 227);}\
           QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
+        
+        self.button_t2.clicked.connect(self.start_t2_preset)
+        self.button_t2.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
+         border-style: outset; color: rgb(193, 202, 227);}\
+          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
+        self.button_t1.clicked.connect(self.start_t1_preset)
+        self.button_t1.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
+         border-style: outset; color: rgb(193, 202, 227);}\
+          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
+        self.button_echo.clicked.connect(self.start_echo_preset)
+        self.button_echo.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
+         border-style: outset; color: rgb(193, 202, 227);}\
+          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
+
         self.label_creator.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.label_2.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.script_chooser.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
         self.script_chooser.currentIndexChanged.connect(self.script_open_combo)
         self.script = self.text_to_script_name( self.script_chooser.currentText() )
@@ -187,7 +202,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.process_dig = QtCore.QProcess(self)
         self.process_mw = QtCore.QProcess(self)
         self.process_temp = QtCore.QProcess(self)
-
+        self.process_t2 = QtCore.QProcess(self)
+        self.process_t1 = QtCore.QProcess(self)
+        self.process_echo = QtCore.QProcess(self)
         # check where we are
         self.system = platform.system()
         if self.system == 'Windows':
@@ -199,6 +216,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.process_dig.setProgram('python.exe')
             self.process_mw.setProgram('python.exe')
             self.process_temp.setProgram('python.exe')
+            self.process_t2.setProgram('python.exe')
+            self.process_t1.setProgram('python.exe')
+            self.process_echo.setProgram('python.exe')
         elif self.system == 'Linux':
             self.editor = str(config['DEFAULT']['editor'])
             if self.editor == 'nano' or self.editor == 'vi':
@@ -212,6 +232,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.process_dig.setProgram('python3')
             self.process_mw.setProgram('python3')
             self.process_temp.setProgram('python3')
+            self.process_t2.setProgram('python3')
+            self.process_t1.setProgram('python3')
+            self.process_echo.setProgram('python3')
 
         self.process.finished.connect(self.on_finished_checking)
         self.process_python.finished.connect(self.on_finished_script)
@@ -439,6 +462,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.process_dig.close()
         self.process_mw.close()
         self.process_temp.close()
+        self.process_t2.terminate()
+        self.process_t1.terminate()
+        self.process_echo.terminate()
 
     def quit(self):
         """
@@ -450,6 +476,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.process_dig.terminate()
         self.process_mw.terminate()
         self.process_temp.terminate()
+        self.process_t2.terminate()
+        self.process_t1.terminate()
+        self.process_echo.terminate()
         sys.exit()
         ####
         #### QProcess: Destroyed while process ("python3") is still running.
@@ -509,6 +538,18 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self.process_temp.setArguments(['atomize/control_center/temp_control.py'])
         self.process_temp.start()
+
+    def start_t2_preset(self):
+        self.process_t2.setArguments(['atomize/control_center/t2_preset.py'])
+        self.process_t2.start()
+    
+    def start_t1_preset(self):
+        self.process_t1.setArguments(['atomize/control_center/t1_preset.py'])
+        self.process_t1.start()
+    
+    def start_echo_preset(self):
+        self.process_echo.setArguments(['atomize/control_center/echo_det_preset.py'])
+        self.process_echo.start()
 
     def script_open_combo(self):
         self.script = self.text_to_script_name( self.script_chooser.currentText() )

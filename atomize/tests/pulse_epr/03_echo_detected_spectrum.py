@@ -22,7 +22,7 @@ PULSE_1_LENGTH = '16 ns'
 PULSE_2_LENGTH = '32 ns'
 PULSE_1_START = '0 ns'
 PULSE_2_START = '300 ns'
-PULSE_SIGNAL_START = '632 ns'
+PULSE_SIGNAL_START = '600 ns'
 
 # NAMES
 EXP_NAME = 'Echo Detected Spectrum Scan'
