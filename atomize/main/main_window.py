@@ -146,10 +146,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.button_echo.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
          border-style: outset; color: rgb(193, 202, 227);}\
           QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
+        self.button_eseem.clicked.connect(self.start_eseem_preset)
+        self.button_eseem.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
+         border-style: outset; color: rgb(193, 202, 227);}\
+          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
+        self.button_tune.clicked.connect(self.start_tune_preset)
+        self.button_tune.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
+         border-style: outset; color: rgb(193, 202, 227);}\
+          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
 
         self.label_creator.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
-        self.label_2.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.script_chooser.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
         self.script_chooser.currentIndexChanged.connect(self.script_open_combo)
         self.script = self.text_to_script_name( self.script_chooser.currentText() )
@@ -205,6 +212,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.process_t2 = QtCore.QProcess(self)
         self.process_t1 = QtCore.QProcess(self)
         self.process_echo = QtCore.QProcess(self)
+        self.process_eseem = QtCore.QProcess(self)
+        self.process_tune = QtCore.QProcess(self)
         # check where we are
         self.system = platform.system()
         if self.system == 'Windows':
@@ -219,6 +228,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.process_t2.setProgram('python.exe')
             self.process_t1.setProgram('python.exe')
             self.process_echo.setProgram('python.exe')
+            self.process_eseem.setProgram('python.exe')
+            self.process_tune.setProgram('python.exe')
         elif self.system == 'Linux':
             self.editor = str(config['DEFAULT']['editor'])
             if self.editor == 'nano' or self.editor == 'vi':
@@ -235,6 +246,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.process_t2.setProgram('python3')
             self.process_t1.setProgram('python3')
             self.process_echo.setProgram('python3')
+            self.process_eseem.setProgram('python3')
+            self.process_tune.setProgram('python3')
 
         self.process.finished.connect(self.on_finished_checking)
         self.process_python.finished.connect(self.on_finished_script)
@@ -462,9 +475,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.process_dig.close()
         self.process_mw.close()
         self.process_temp.close()
-        self.process_t2.terminate()
-        self.process_t1.terminate()
-        self.process_echo.terminate()
+        self.process_t2.close()
+        self.process_t1.close()
+        self.process_echo.close()
+        self.process_eseem.close()
+        self.process_tune.close()
 
     def quit(self):
         """
@@ -479,6 +494,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.process_t2.terminate()
         self.process_t1.terminate()
         self.process_echo.terminate()
+        self.process_eseem.terminate()
+        self.process_tune.terminate()
         sys.exit()
         ####
         #### QProcess: Destroyed while process ("python3") is still running.
@@ -550,6 +567,14 @@ class MainWindow(QtWidgets.QMainWindow):
     def start_echo_preset(self):
         self.process_echo.setArguments(['atomize/control_center/echo_det_preset.py'])
         self.process_echo.start()
+
+    def start_eseem_preset(self):
+        self.process_eseem.setArguments(['atomize/control_center/eseem_preset.py'])
+        self.process_eseem.start()
+
+    def start_tune_preset(self):
+        self.process_tune.setArguments(['atomize/control_center/tune_preset.py'])
+        self.process_tune.start()
 
     def script_open_combo(self):
         self.script = self.text_to_script_name( self.script_chooser.currentText() )

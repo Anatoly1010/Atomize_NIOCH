@@ -25,8 +25,8 @@ class MainWindow(QtWidgets.QMainWindow):
         #self.destroyed.connect(lambda: self._on_destroyed())         # connect some actions to exit
         # Load the UI Page
         path_to_main = os.path.dirname(os.path.abspath(__file__))
-        gui_path = os.path.join(path_to_main,'gui/echo_det_main_window.ui')
-        icon_path = os.path.join(path_to_main, 'gui/icon_ed.png')
+        gui_path = os.path.join(path_to_main,'gui/tune_main_window.ui')
+        icon_path = os.path.join(path_to_main, 'gui/icon_temp.png')
         self.setWindowIcon( QIcon(icon_path) )
 
         uic.loadUi(gui_path, self)                        # Design file
@@ -60,7 +60,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # text labels
         self.label.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
-        self.label_2.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
         self.label_4.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
         self.label_5.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
         self.label_6.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
@@ -79,12 +78,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.text_edit_curve.textChanged.connect(self.curve_name)
         self.text_edit_exp_name.textChanged.connect(self.exp_name)
 
-        # Spinboxes
-        self.box_delta.valueChanged.connect(self.delta)
-        self.box_delta.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
-        self.cur_delta = int( self.box_delta.value() )
-        self.box_delta.lineEdit().setReadOnly( True )
-        
+        # Spinboxes        
         self.box_length.valueChanged.connect(self.pulse_length)
         self.box_length.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
         self.cur_length = int( self.box_length.value() )
@@ -94,17 +88,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.box_rep_rate.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
         self.cur_rep_rate = int( self.box_rep_rate.value() )
         
-        self.box_st_field.valueChanged.connect(self.start_field)
-        self.box_st_field.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
-        self.cur_st_field = round( float( self.box_st_field.value() ), 3 )
+        self.box_st_freq.valueChanged.connect(self.start_freq)
+        self.box_st_freq.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        self.cur_st_freq = int( self.box_st_freq.value() )
 
-        self.box_end_field.valueChanged.connect(self.end_field)
-        self.box_end_field.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
-        self.cur_end_field = round( float( self.box_end_field.value() ), 3 )
+        self.box_end_freq.valueChanged.connect(self.end_freq)
+        self.box_end_freq.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        self.cur_end_freq = int( self.box_end_freq.value() )
 
-        self.box_step_field.valueChanged.connect(self.step_field)
-        self.box_step_field.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
-        self.cur_step_field = round( float( self.box_step_field.value() ), 3 )
+        self.box_step_freq.valueChanged.connect(self.step_freq)
+        self.box_step_freq.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        self.cur_step_freq = int( self.box_step_freq.value() )
         
         self.box_scan.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
         self.box_scan.valueChanged.connect(self.scan)
@@ -163,16 +157,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cur_averages = int( self.box_averag.value() )
         #print(self.cur_start_field)
 
-    def start_field(self):
-        self.cur_st_field = round( float( self.box_st_field.value() ), 3 )
+    def start_freq(self):
+        self.cur_st_freq = int( self.box_st_freq.value() )
         #print(self.cur_lock_ampl)
 
-    def end_field(self):
-        self.cur_end_field = round( float( self.box_end_field.value() ), 3 )
+    def end_freq(self):
+        self.cur_end_freq = int( self.box_end_freq.value() )
         #print(self.cur_lock_ampl)
 
-    def step_field(self):
-        self.cur_step_field = round( float( self.box_step_field.value() ), 3 )
+    def step_freq(self):
+        self.cur_step_freq = int( self.box_step_freq.value() )
         #print(self.cur_lock_ampl)
 
     def scan(self):
@@ -234,18 +228,18 @@ class MainWindow(QtWidgets.QMainWindow):
         except AttributeError:
             pass
 
-        if self.cur_st_field >= self.cur_end_field:
-            self.cur_st_field, self.cur_end_field = self.cur_end_field, self.cur_st_field
+        if self.cur_st_freq >= self.cur_end_freq:
+            self.cur_st_freq, self.cur_end_freq = self.cur_end_freq, self.cur_st_freq
 
-            self.box_end_field.setValue( self.cur_end_field )
-            self.box_st_field.setValue( self.cur_st_field )
+            self.box_end_freq.setValue( self.cur_end_freq )
+            self.box_st_freq.setValue( self.cur_st_freq )
 
         self.parent_conn, self.child_conn = Pipe()
         # a process for running function script 
         # sending parameters for initial initialization
         self.exp_process = Process( target = self.worker.exp_on, args = ( self.child_conn, self.cur_curve_name, self.cur_exp_name, \
-                                            self.cur_delta, self.cur_length, self.cur_st_field, self.cur_rep_rate, self.cur_scan, \
-                                            self.cur_end_field, self.cur_step_field, self.cur_averages, self.cur_graph, ) )
+                                            self.cur_length, self.cur_st_freq, self.cur_rep_rate, self.cur_scan, \
+                                            self.cur_end_freq, self.cur_step_freq, self.cur_averages, self.cur_graph, ) )
                
         self.exp_process.start()
         # send a command in a different thread about the current state
@@ -269,14 +263,14 @@ class Worker(QWidget):
 
         self.command = 'start'
                    
-    def exp_on(self, conn, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11):
+    def exp_on(self, conn, p1, p2, p4, p5, p6, p7, p8, p9, p10, p11):
         """
         function that contains experimental script
         """
-        # [                1,                 2,              3,               4, ]
-        #self.cur_curve_name, self.cur_exp_name, self.cur_delta, self.cur_length, 
-        # [              5,                 6,             7,                  8,                   9,                10,             11 ]
-        #self.cur_st_field, self.cur_rep_rate, self.cur_scan, self.cur_end_field, self.cur_step_field, self.cur_averages, self.cur_graph
+        # [                1,                 2,               4, ]
+        #self.cur_curve_name, self.cur_exp_name, self.cur_length, 
+        # [             5,                 6,             7,                 8,                  9,                10,             11 ]
+        #self.cur_st_freq, self.cur_rep_rate, self.cur_scan, self.cur_end_freq, self.cur_step_freq, self.cur_averages, self.cur_graph
 
         # should be inside dig_on() function;
         # freezing after digitizer restart otherwise

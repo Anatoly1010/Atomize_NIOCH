@@ -182,7 +182,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         A function to change number of averages
         """
-        self.number_averages = int( self.Ch0_offset.value() )
+        self.number_averages = int( self.Acq_number.value() )
         try:
             self.parent_conn.send( 'NA' + str( self.number_averages ) )
         except AttributeError:
@@ -272,6 +272,7 @@ class Worker(QWidget):
         import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
 
         dig = spectrum.Spectrum_M4I_4450_X8()
+        dig.digitizer_card_mode('Average')
         # parameters for initial initialization
         #points_value =      p1
         dig.digitizer_number_of_points( p1 )
@@ -286,7 +287,7 @@ class Worker(QWidget):
         #ampl_value =        p4
         dig.digitizer_amplitude(        p4 )
         #num_ave =           p7
-        # AVERAGE MODE
+        dig.digitizer_number_of_averages( p7 )
 
         dig.digitizer_setup()
 
@@ -328,6 +329,10 @@ class Worker(QWidget):
                 ampl_value = int( self.command[2:] )
                 dig.digitizer_stop()
                 dig.digitizer_amplitude( ampl_value )
+            elif self.command[0:2] == 'NA':
+                num_ave = int( self.command[2:] )
+                dig.digitizer_stop()
+                dig.digitizer_number_of_averages( num_ave )
                 #dig.digitizer_setup()
 
             xs, data1, data2 = dig.digitizer_get_curve()
