@@ -265,8 +265,6 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.cur_rep_rate <= 0:
                 self.cur_rep_rate = 2
             
-            print(self.cur_rep_rate)
-
             self.box_rep_rate.setValue( self.cur_rep_rate )
 
 
@@ -333,7 +331,6 @@ class Worker(QWidget):
         ##bh15 = bh.BH_15()
 
         # parameters for initial initialization
-
         POINTS = p9
         STEP = p5
         FIELD = p8
@@ -342,15 +339,18 @@ class Worker(QWidget):
 
         # PULSES
         REP_RATE = str(p6) + ' Hz'
-        PULSE_1_LENGTH = str( int(2*p4) ) + ' ns'
+        PULSE_1_LENGTH = str(p4) + ' ns'
         PULSE_2_LENGTH = str(p4) + ' ns'
-        PULSE_3_LENGTH = str( int(2*p4) ) + ' ns'
+        PULSE_3_LENGTH = str(p4) + ' ns'
         PULSE_1_START = '0 ns'
         PULSE_2_START = str( p3 ) + ' ns'
         PULSE_3_START = str( p3 + p12 ) + ' ns'
-        PULSE_SIGNAL_START = str( p3 + int(2 * p12) ) + ' ns'
+        PULSE_SIGNAL_START = str( int( 2 * p3 ) + p12 ) + ' ns'
 
         #
+        if p13 == 0:
+            cycle_data_x = []
+            cycle_data_y = []
         data_x = np.zeros(POINTS)
         data_y = np.zeros(POINTS)
         x_axis = np.linspace(0, (POINTS - 1)*STEP, num = POINTS)
@@ -365,16 +365,20 @@ class Worker(QWidget):
         ##t3034.oscilloscope_number_of_averages(AVERAGES)
         ##t3034.oscilloscope_stop()
 
-        ##pb.pulser_pulse(name = 'P0', channel = 'MW', start = PULSE_1_START, length = PULSE_1_LENGTH)
-        ##pb.pulser_pulse(name = 'P1', channel = 'MW', start = PULSE_2_START, length = PULSE_2_LENGTH, delta_start = str(STEP) + ' ns')
-        ##pb.pulser_pulse(name = 'P2', channel = 'MW', start = PULSE_3_START, length = PULSE_3_LENGTH, delta_start = str(STEP) + ' ns')
-        ##pb.pulser_pulse(name = 'P3', channel = 'TRIGGER', start = PULSE_SIGNAL_START, length = '100 ns', delta_start = str(STEP) + ' ns')
+        if p13 == 0:
+            pass
+            ##pb.pulser_pulse(name = 'P0', channel = 'MW', start = PULSE_1_START, length = PULSE_1_LENGTH, phase_list = ['+x', '-x', '+x', '-x'])
+            ##pb.pulser_pulse(name = 'P1', channel = 'MW', start = PULSE_2_START, length = PULSE_2_LENGTH, phase_list = ['+x', '+x', '-x', '-x'])
+            ##pb.pulser_pulse(name = 'P2', channel = 'MW', start = PULSE_3_START, length = PULSE_3_LENGTH, delta_start = str(STEP) + ' ns', phase_list = ['+x', '+x', '+x', '+x'])
+            ##pb.pulser_pulse(name = 'P3', channel = 'TRIGGER', start = PULSE_SIGNAL_START, length = '100 ns', delta_start = str(STEP) + ' ns')
+        elif p13 == 1:
+            pass
+            ##pb.pulser_pulse(name = 'P0', channel = 'MW', start = PULSE_1_START, length = PULSE_1_LENGTH)
+            ##pb.pulser_pulse(name = 'P1', channel = 'MW', start = PULSE_2_START, length = PULSE_2_LENGTH)
+            ##pb.pulser_pulse(name = 'P2', channel = 'MW', start = PULSE_3_START, length = PULSE_3_LENGTH, delta_start = str(STEP) + ' ns')
+            ##pb.pulser_pulse(name = 'P3', channel = 'TRIGGER', start = PULSE_SIGNAL_START, length = '100 ns', delta_start = str(STEP) + ' ns')
 
         ##pb.pulser_repetition_rate( REP_RATE )
-
-        ##pb.pulser_update()
-        ##tb = t3034.oscilloscope_timebase()*1000
-        ##pb.pulser_stop()
 
         # the idea of automatic and dynamic changing is
         # sending a new value of repetition rate via self.command
@@ -383,52 +387,107 @@ class Worker(QWidget):
         while self.command != 'exit':
 
             # Start of experiment
-            j = 1
-            while j <= SCANS:
+            if p13 == 0:
+                j = 1
+                while j <= SCANS:
 
-                for i in range(POINTS):
+                    for i in range(POINTS):
 
-                    ##pb.pulser_update()
+                        k = 0
+                        while k < 4:
 
-                    ##t3034.oscilloscope_start_acquisition()
-                    ##area_x = t3034.oscilloscope_area('CH4')
-                    ##area_y = t3034.oscilloscope_area('CH3')
-                    
-                    ##data_x[i] = ( data_x[i] * (j - 1) + area_x ) / j
-                    ##data_y[i] = ( data_y[i] * (j - 1) + area_y ) / j
+                            ##pb.pulser_next_phase()
 
-                    data_x[i] = ( data_x[i] * (j - 1) + random.random() ) / j
-                    data_y[i] = ( data_y[i] * (j - 1) + random.random() ) / j
+                            ##t3034.oscilloscope_start_acquisition()
+                            ##area_x = t3034.oscilloscope_area('CH4')
+                            ##area_y = t3034.oscilloscope_area('CH3')
 
-                    if i % p11 == 0:
-                        general.plot_1d(p2, x_axis, data_x, xname = 'Delay',\
-                            xscale = 'ns', yname = 'Area', yscale = 'V*s', label = p1 + '_X')
-                        general.plot_1d(p2, x_axis, data_y, xname = 'Delay',\
-                            xscale = 'ns', yname = 'Area', yscale = 'V*s', label = p1 + '_Y')
-                        general.text_label( p2, "Scan / Time: ", str(j) + ' / '+ str(i*STEP) )
-                    
-                    else:
-                        pass
+                            area_x = random.random()
+                            area_y = random.random()
 
-                    ##pb.pulser_shift()
+                            cycle_data_x.append(area_x)
+                            cycle_data_y.append(area_y)
 
-                    # check our polling data
-                    if self.command[0:2] == 'SC':
-                        SCANS = int( self.command[2:] )
-                        self.command = 'start'
-                    elif self.command[0:2] == 'GR':
-                        p11 = int( self.command[2:] )
-                        self.command = 'start'
-                    elif self.command == 'exit':
-                        break
-                    
-                    if conn.poll() == True:
-                        self.command = conn.recv()
+                            k += 1
+                        
+                        # acquisition cycle [+, -, -, +]
+                        data_x[i] = ( data_x[i] * (j - 1) + (cycle_data_x[0] - cycle_data_x[1] - cycle_data_x[2] + cycle_data_x[3]) / 4 ) / j
+                        data_y[i] = ( data_y[i] * (j - 1) + (cycle_data_y[0] - cycle_data_y[1] - cycle_data_y[2] + cycle_data_y[3]) / 4 ) / j
 
-                j += 1
-                ##pb.pulser_pulse_reset()
+                        if i % p11 == 0:
+                            general.plot_1d(p2, x_axis, data_x, xname = 'Delay',\
+                                xscale = 'ns', yname = 'Area', yscale = 'V*s', timeaxis = 'False', label = p1 + '_X')
+                            general.plot_1d(p2, x_axis, data_y, xname = 'Delay',\
+                                xscale = 'ns', yname = 'Area', yscale = 'V*s', timeaxis = 'False', label = p1 + '_Y')
+                            general.text_label( p2, "Scan / Time: ", str(j) + ' / '+ str(i*STEP) )
+                        else:
+                            pass
 
-            ##pb.pulser_stop()
+                        ##pb.pulser_shift()
+
+                        cycle_data_x = []
+                        cycle_data_y = []
+
+                        # check our polling data
+                        if self.command[0:2] == 'SC':
+                            SCANS = int( self.command[2:] )
+                            self.command = 'start'
+                        elif self.command[0:2] == 'GR':
+                            p11 = int( self.command[2:] )
+                            self.command = 'start'
+                        elif self.command == 'exit':
+                            break
+                        
+                        if conn.poll() == True:
+                            self.command = conn.recv()
+
+                    j += 1
+                    ##pb.pulser_pulse_reset()
+
+            elif p13 == 1:
+                j = 1
+                while j <= SCANS:
+
+                    for i in range(POINTS):
+
+                        ##pb.pulser_update()
+
+                        ##t3034.oscilloscope_start_acquisition()
+                        ##area_x = t3034.oscilloscope_area('CH4')
+                        ##area_y = t3034.oscilloscope_area('CH3')
+
+                        ##data_x[i] = ( data_x[i] * (j - 1) + area_x ) / j
+                        ##data_y[i] = ( data_y[i] * (j - 1) + area_y ) / j
+
+                        data_x[i] = ( data_x[i] * (j - 1) + random.random() ) / j
+                        data_y[i] = ( data_y[i] * (j - 1) + random.random() ) / j
+
+                        if i % p11 == 0:
+                            general.plot_1d(p2, x_axis, data_x, xname = 'Delay',\
+                                xscale = 'ns', yname = 'Area', yscale = 'V*s', timeaxis = 'False', label = p1 + '_X')
+                            general.plot_1d(p2, x_axis, data_y, xname = 'Delay',\
+                                xscale = 'ns', yname = 'Area', yscale = 'V*s', timeaxis = 'False', label = p1 + '_Y')
+                            general.text_label( p2, "Scan / Time: ", str(j) + ' / '+ str(i*STEP) )
+                        else:
+                            pass
+
+                        ##pb.pulser_shift()
+
+                        # check our polling data
+                        if self.command[0:2] == 'SC':
+                            SCANS = int( self.command[2:] )
+                            self.command = 'start'
+                        elif self.command[0:2] == 'GR':
+                            p11 = int( self.command[2:] )
+                            self.command = 'start'
+                        elif self.command == 'exit':
+                            break
+                        
+                        if conn.poll() == True:
+                            self.command = conn.recv()
+
+                    j += 1
+                    ##pb.pulser_pulse_reset()
 
             # finish succesfully
             self.command = 'exit'
@@ -436,28 +495,28 @@ class Worker(QWidget):
 
         if self.command == 'exit':
             general.message('Script finished')
+            ##tb = t3034.oscilloscope_timebase()*1000
             ##pb.pulser_stop()
 
             # Data saving
-            #header = 'Date: ' + str(datetime.datetime.now().strftime("%d-%m-%Y %H-%M-%S")) + '\n' +\
-            #         'T1 Inversion Recovery Measurement\n' + 'Field: ' + str(FIELD) + ' G\n' + \
-            #         str(mw.mw_bridge_att_prm()) + '\n' + str(mw.mw_bridge_synthesizer()) + '\n' + \
-            #         'Repetition Rate: ' + str(pb.pulser_repetition_rate()) + '\n' + 'Number of Scans: ' + str(SCANS) + '\n' +\
-            #         'Averages: ' + str(AVERAGES) + '\n' + 'Window: ' + str(tb) + ' ns\n' +\
-            #         'Temperature: ' + str(ptc10.tc_temperature('2A')) + ' K\n' +\
-            #         'Pulse List: ' + '\n' + str(pb.pulser_pulse_list()) + 'Time (trig. delta_start), X (V*s), Y (V*s)'
+            #header = 'Date: ' + str(datetime.datetime.now().strftime("%d-%m-%Y %H-%M-%S")) + '\n' + 'ESEEM\n' + \
+            #            'Field: ' + str(FIELD) + ' G \n' + str(mw.mw_bridge_att_prm()) + '\n' + \
+            #            str(mw.mw_bridge_synthesizer()) + '\n' + \
+            #           'Repetition Rate: ' + str(pb.pulser_repetition_rate()) + '\n' + 'Number of Scans: ' + str(SCANS) + '\n' +\
+            #           'Averages: ' + str(AVERAGES) + '\n' + 'Window: ' + str(tb) + ' ns\n' + \
+            #           'Temperature: ' + str(ptc10.tc_temperature('2A')) + ' K\n' +\
+            #           'Pulse List: ' + '\n' + str(pb.pulser_pulse_list()) + 'Time (trig. delta_start), X (V*s), Y (V*s) '
 
-            header = 'Date: ' + str(datetime.datetime.now().strftime("%d-%m-%Y %H-%M-%S")) + '\n' +\
-                     'T1 Inversion Recovery Measurement\n' + 'Field: ' + str(FIELD) + ' G\n' + \
-                     str('2 dB') + '\n' + str(9750) + '\n' + \
-                     'Repetition Rate: ' + str(REP_RATE) + '\n' + 'Number of Scans: ' + str(SCANS) + '\n' +\
-                     'Averages: ' + str(AVERAGES) + '\n' + 'Window: ' + str(80) + ' ns\n' +\
-                     'Temperature: ' + str(298) + ' K\n' +\
-                     'Pulse List: ' + '\n' + str('test') + 'Time (trig. delta_start), X (V*s), Y (V*s)'
+            header = 'Date: ' + str(datetime.datetime.now().strftime("%d-%m-%Y %H-%M-%S")) + '\n' + 'ESEEM\n' + \
+                        'Field: ' + str(FIELD) + ' G \n' + str('2 dB') + '\n' + \
+                        str(9750) + '\n' + \
+                       'Repetition Rate: ' + str(REP_RATE) + '\n' + 'Number of Scans: ' + str(SCANS) + '\n' +\
+                       'Averages: ' + str(AVERAGES) + '\n' + 'Window: ' + str(80) + ' ns\n' + \
+                       'Temperature: ' + str(298) + ' K\n' +\
+                       'Pulse List: ' + '\n' + str('test') + 'Time (trig. delta_start), X (V*s), Y (V*s) '
 
             file_data, file_param = file_handler.create_file_parameters('.param')
             file_handler.save_header(file_param, header = header, mode = 'w')
-
             file_handler.save_data(file_data, np.c_[x_axis, data_x, data_y], header = header, mode = 'w')
 
 def main():

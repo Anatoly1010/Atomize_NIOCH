@@ -66,16 +66,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.label_7.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
         self.label_8.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
         self.label_9.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
-        self.label_10.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
         self.label_11.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
         self.label_12.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
 
         # text edits
-        self.text_edit_curve.setStyleSheet("QTextEdit { color : rgb(211, 194, 78) ; }") # rgb(193, 202, 227)
         self.text_edit_exp_name.setStyleSheet("QTextEdit { color : rgb(211, 194, 78) ; }") # rgb(193, 202, 227)
-        self.cur_curve_name = self.text_edit_curve.toPlainText()
         self.cur_exp_name = self.text_edit_exp_name.toPlainText()
-        self.text_edit_curve.textChanged.connect(self.curve_name)
         self.text_edit_exp_name.textChanged.connect(self.exp_name)
 
         # Spinboxes        
@@ -132,10 +128,6 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self._on_destroyed()
         sys.exit()
-
-    def curve_name(self):
-        self.cur_curve_name = self.text_edit_curve.toPlainText()
-        #print( self.cur_curve_name )
 
     def exp_name(self):
         self.cur_exp_name = self.text_edit_exp_name.toPlainText()
@@ -237,7 +229,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.parent_conn, self.child_conn = Pipe()
         # a process for running function script 
         # sending parameters for initial initialization
-        self.exp_process = Process( target = self.worker.exp_on, args = ( self.child_conn, self.cur_curve_name, self.cur_exp_name, \
+        self.exp_process = Process( target = self.worker.exp_on, args = ( self.child_conn, self.cur_exp_name, \
                                             self.cur_length, self.cur_st_freq, self.cur_rep_rate, self.cur_scan, \
                                             self.cur_end_freq, self.cur_step_freq, self.cur_averages, self.cur_graph, ) )
                
@@ -263,74 +255,64 @@ class Worker(QWidget):
 
         self.command = 'start'
                    
-    def exp_on(self, conn, p1, p2, p4, p5, p6, p7, p8, p9, p10, p11):
+    def exp_on(self, conn, p2, p4, p5, p6, p7, p8, p9, p10, p11):
         """
         function that contains experimental script
         """
-        # [                1,                 2,               4, ]
-        #self.cur_curve_name, self.cur_exp_name, self.cur_length, 
+        # [               2,               4, ]
+        # self.cur_exp_name, self.cur_length, 
         # [             5,                 6,             7,                 8,                  9,                10,             11 ]
         #self.cur_st_freq, self.cur_rep_rate, self.cur_scan, self.cur_end_freq, self.cur_step_freq, self.cur_averages, self.cur_graph
 
         # should be inside dig_on() function;
         # freezing after digitizer restart otherwise
         import random
-        import time
-        import datetime
+        import sys
         import numpy as np
         import atomize.general_modules.general_functions as general
-        import atomize.device_modules.PB_ESR_500_pro as pb_pro
-        import atomize.device_modules.Keysight_3000_Xseries as key
+        import atomize.device_modules.Keysight_3000_Xseries as t3034
         import atomize.device_modules.Mikran_X_band_MW_bridge as mwBridge
-        import atomize.device_modules.BH_15 as bh
-        import atomize.device_modules.SR_PTC_10 as sr
-        import atomize.general_modules.csv_opener_saver_tk_kinter as openfile
+        import atomize.device_modules.PB_ESR_500_pro as pb_pro
 
-        file_handler = openfile.Saver_Opener()
-        ##ptc10 = sr.SR_PTC_10()
-        ##mw = mwBridge.Mikran_X_band_MW_bridge()
+        ##t3034 = t3034.Keysight_3000_Xseries()
         ##pb = pb_pro.PB_ESR_500_Pro()
-        ##bh15 = bh.BH_15()
-        ##t3034 = key.Keysight_3000_Xseries()
+        ##mw = mwBridge.Mikran_X_band_MW_bridge()
 
         ### Experimental parameters
-        START_FIELD = p5
-        END_FIELD = p8
-        FIELD_STEP = p9
-        AVERAGES = p10
+        START_FREQ = p5
+        END_FREQ = p8
+        STEP = p9
         SCANS = p7
+        AVERAGES = p10
 
         # PULSES
         REP_RATE = str(p6) + ' Hz'
         PULSE_1_LENGTH = str(p4) + ' ns'
-        PULSE_2_LENGTH = str( int(2*p4) ) + ' ns'
         PULSE_1_START = '0 ns'
-        PULSE_2_START = str( p3 ) + ' ns'
-        PULSE_SIGNAL_START = str( int(2*p3) ) + ' ns'
 
-        #
-        points = int( (END_FIELD - START_FIELD) / FIELD_STEP ) + 1
-        data_x = np.zeros(points)
-        data_y = np.zeros(points)
-        x_axis = np.linspace(START_FIELD, END_FIELD, num = points)
-        ###
-
-        ##bh15.magnet_setup(START_FIELD, FIELD_STEP)
-
-        ##t3034.oscilloscope_trigger_channel('CH1')
-        #tb = t3034.oscilloscope_time_resolution()
-        ##t3034.oscilloscope_record_length(250)
-        ##t3034.oscilloscope_acquisition_type('Average')
-        ##t3034.oscilloscope_number_of_averages(AVERAGES)
-        ##t3034.oscilloscope_stop()
-
-        ##pb.pulser_pulse(name ='P0', channel = 'MW', start = PULSE_1_START, length = PULSE_1_LENGTH)
-        ##pb.pulser_pulse(name ='P1', channel = 'MW', start = PULSE_2_START, length = PULSE_2_LENGTH)
-        ##pb.pulser_pulse(name ='P2', channel = 'TRIGGER', start = PULSE_SIGNAL_START, length = '100 ns')
+        # setting pulses:
+        ##pb.pulser_pulse(name ='P0', channel = 'TRIGGER', start = PULSE_1_START, length = PULSE_1_LENGTH)
+        ##pb.pulser_pulse(name ='P1', channel = 'MW', start = PULSE_1_START, length = PULSE_1_LENGTH)
 
         ##pb.pulser_repetition_rate( REP_RATE )
         ##pb.pulser_update()
-        ##tb = t3034.oscilloscope_timebase()*1000
+
+        #
+        ##t3034.oscilloscope_record_length( 1000 )
+        ##real_length = t3034.oscilloscope_record_length( )
+
+        real_length = 1000
+        points = int( (END_FREQ - START_FREQ) / STEP ) + 1
+        data = np.zeros( (points, real_length) )
+        ###
+
+        ##t3034.oscilloscope_acquisition_type('Average')
+        ##t3034.oscilloscope_trigger_channel('CH1')
+        ##t3034.oscilloscope_number_of_averages(AVERAGES)
+        ##t3034.oscilloscope_stop()
+        
+        # initialize the power
+        ##mw.mw_bridge_synthesizer( START_FREQ )
 
         # the idea of automatic and dynamic changing is
         # sending a new value of repetition rate via self.command
@@ -343,34 +325,27 @@ class Worker(QWidget):
             while j <= SCANS:
 
                 i = 0
-                field = START_FIELD
+                freq = START_FREQ
+                ##mw.mw_bridge_synthesizer( freq )
 
-                while field <= END_FIELD:
-
-                    ##bh15.magnet_field(field)
+                while freq <= END_FREQ:
+                    
+                    ##mw.mw_bridge_synthesizer( freq )
 
                     ##t3034.oscilloscope_start_acquisition()
-                    ##area_x = t3034.oscilloscope_area('CH4')
-                    ##area_y = t3034.oscilloscope_area('CH3')
-
-                    ##data_x[i] = ( data_x[i] * (j - 1) + area_x ) / j
-                    ##data_y[i] = ( data_y[i] * (j - 1) + area_y ) / j
-
-                    data_x[i] = ( data_x[i] * (j - 1) + random.random() ) / j
-                    data_y[i] = ( data_y[i] * (j - 1) + random.random() ) / j
+                    ##y = t3034.oscilloscope_get_curve('CH2')
+                    y = np.random.normal(3, 2.5, size = (real_length)) 
+                    
+                    data[i] = ( data[i] * (j - 1) + y ) / j
 
                     if i % p11 == 0:
-
-                        general.plot_1d(p2, x_axis, data_x, xname = 'Field',\
-                            xscale = 'G', yname = 'Area', yscale = 'V*s', label = p1 + '_X')
-                        general.plot_1d(p2, x_axis, data_y, xname = 'Field',\
-                            xscale = 'G', yname = 'Area', yscale = 'V*s', label = p1 + '_Y')
-                        general.text_label( p2, "Scan / Field: ", str(j) + ' / '+ str(field) )
-
+                        general.plot_2d(p2, np.transpose( data ), start_step = ( (0, 1), (START_FREQ*1000000, STEP*1000000) ), xname = 'Time',\
+                            xscale = 's', yname = 'Frequency', yscale = 'Hz', zname = 'Intensity', zscale = 'V')
+                        general.text_label( p2, "Scan / Frequency: ", str(j) + ' / '+ str(freq) )
                     else:
                         pass
-
-                    field = round( (FIELD_STEP + field), 3 )
+                    
+                    freq = round( (STEP + freq), 3 )
                     
                     # check our polling data
                     if self.command[0:2] == 'SC':
@@ -387,42 +362,15 @@ class Worker(QWidget):
 
                     i += 1
 
-                ##bh15.magnet_field(START_FIELD)
-
+                ##mw.mw_bridge_synthesizer( START_FREQ )
                 j += 1
-
-            ##pb.pulser_stop()
 
             # finish succesfully
             self.command = 'exit'
 
-
         if self.command == 'exit':
             general.message('Script finished')
             ##pb.pulser_stop()
-
-            # Data saving
-            #header = 'Date: ' + str(datetime.datetime.now().strftime("%d-%m-%Y %H-%M-%S")) + '\n' + 'Echo Detected Spectrum\n' + \
-            #            'Start Field: ' + str(START_FIELD) + ' G \n' + 'End Field: ' + str(END_FIELD) + ' G \n' + \
-            #            'Field Step: ' + str(FIELD_STEP) + ' G \n' + str(mw.mw_bridge_att_prm()) + '\n' + \
-            #            str(mw.mw_bridge_synthesizer()) + '\n' + \
-            #           'Repetition Rate: ' + str(pb.pulser_repetition_rate()) + '\n' + 'Number of Scans: ' + str(SCANS) + '\n' +\
-            #           'Averages: ' + str(AVERAGES) + '\n' + 'Window: ' + str(tb) + ' ns\n' + \
-            #           'Temperature: ' + str(ptc10.tc_temperature('2A')) + ' K\n' +\
-            #           'Pulse List: ' + '\n' + str(pb.pulser_pulse_list()) + 'Field (G), X (V*s), Y (V*s) '
-
-            header = 'Date: ' + str(datetime.datetime.now().strftime("%d-%m-%Y %H-%M-%S")) + '\n' + 'Echo Detected Spectrum\n' + \
-                        'Start Field: ' + str(START_FIELD) + ' G \n' + 'End Field: ' + str(END_FIELD) + ' G \n' + \
-                        'Field Step: ' + str(FIELD_STEP) + ' G \n' + str('2 dB') + '\n' + \
-                        str(9750) + '\n' + \
-                       'Repetition Rate: ' + str(REP_RATE) + '\n' + 'Number of Scans: ' + str(SCANS) + '\n' +\
-                       'Averages: ' + str(AVERAGES) + '\n' + 'Window: ' + str(80) + ' ns\n' + \
-                       'Temperature: ' + str(298) + ' K\n' +\
-                       'Pulse List: ' + '\n' + str('test') + 'Field (G), X (V*s), Y (V*s) '
-
-            file_data, file_param = file_handler.create_file_parameters('.param')
-            file_handler.save_header(file_param, header = header, mode = 'w')
-            file_handler.save_data(file_data, np.c_[x_axis, data_x, data_y], header = header, mode = 'w')
 
 def main():
     """

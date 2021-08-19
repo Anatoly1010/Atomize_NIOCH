@@ -59,11 +59,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.label_8.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
 
         # Spinboxes
-        self.Timescale.lineEdit().setReadOnly( True )   # block input from keyboard
+        #self.Timescale.lineEdit().setReadOnly( True )   # block input from keyboard
         self.Timescale.valueChanged.connect(self.timescale)
         self.points = int( self.Timescale.value() )
         self.Timescale.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
-        self.Hor_offset.lineEdit().setReadOnly( True )   # block input from keyboard
+        #self.Hor_offset.lineEdit().setReadOnly( True )   # block input from keyboard
         self.Hor_offset.valueChanged.connect(self.hor_offset)
         self.posttrigger = int( self.Hor_offset.value() )
         self.Hor_offset.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
@@ -84,7 +84,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.Ch1_offset.valueChanged.connect(self.ch1_offset)
         self.offset_1 = int( self.Ch1_offset.value() )
         self.Ch1_offset.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
-        self.Acq_number.lineEdit().setReadOnly( True )   # block input from keyboard
+        #self.Acq_number.lineEdit().setReadOnly( True )   # block input from keyboard
         self.Acq_number.valueChanged.connect(self.acq_number)
         self.number_averages = int( self.Acq_number.value() )
         self.Acq_number.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
@@ -122,6 +122,13 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to change a horizontal offset of the digitizer
         """
         self.points = int( self.Timescale.value() )
+        if self.points % 16 != 0:
+            self.points = self.round_to_closest( self.points, 16 )
+            self.Timescale.setValue( self.points )
+
+        if self.points - self.posttrigger < 16:
+            self.points = self.points + 16
+            self.Timescale.setValue( self.points )
         try:
             self.parent_conn.send( 'PO' + str( self.points ) )
         except AttributeError:
@@ -143,6 +150,13 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to change horizontal offset (posttrigger)
         """
         self.posttrigger = int( self.Hor_offset.value() )
+        if self.posttrigger % 16 != 0:
+            self.posttrigger = self.round_to_closest( self.posttrigger, 16 )
+            self.Hor_offset.setValue( self.posttrigger )
+
+        if self.points - self.posttrigger <= 16:
+            self.posttrigger = self.points - 16
+            self.Hor_offset.setValue( self.posttrigger )
         try:
             self.parent_conn.send( 'HO' + str( self.posttrigger ) )
         except AttributeError:
@@ -197,6 +211,19 @@ class MainWindow(QtWidgets.QMainWindow):
             self.digitizer_process.join()
         except AttributeError:
             self.message('Digitizer is not running')
+
+        path_to_main = os.path.abspath( os.getcwd() )
+        path_file = os.path.join(path_to_main, 'atomize/control_center/digitizer.param')
+
+        file_to_read = open(path_file, 'w')
+        file_to_read.write('Points: ' + str( self.points ) +'\n')
+        file_to_read.write('Sample Rate: ' + str( self.s_rate ) +'\n')
+        file_to_read.write('Posstriger: ' + str( self.posttrigger ) +'\n')
+        file_to_read.write('Range: ' + str( self.ampl ) +'\n')
+        file_to_read.write('CH0 Offset: ' + str( self.offset_0 ) +'\n')
+        file_to_read.write('CH1 Offset: ' + str( self.offset_1 ) +'\n')
+
+        file_to_read.close()
         
     def dig_start(self):
         """
@@ -251,6 +278,11 @@ class MainWindow(QtWidgets.QMainWindow):
             sock.send(str(text).encode())
             sock.close()
 
+    def round_to_closest(self, x, y):
+        """
+        A function to round x to divisible by y
+        """
+        return int( y * ( ( x // y) + (x % y > 0) ) )
 
 # The worker class that run the digitizer in a different thread
 class Worker(QWidget):

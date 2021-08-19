@@ -1,14 +1,12 @@
-# Date: 18-08-2021 18-48-23
-# Echo Detected Spectrum
-# Start Field: 3300.0 G 
-# End Field: 3500.0 G 
-# Field Step: 0.5 G 
+# Date: 19-08-2021 15-27-52
+# T1 Inversion Recovery Measurement
+# Field: 3400.0 G
 # 2 dB
 # 9750
-# Repetition Rate: 500 Hz
-# Number of Scans: 1
+# Repetition Rate: 1000 Hz
+# Number of Scans: 2
 # Averages: 10
 # Window: 80 ns
 # Temperature: 298 K
 # Pulse List: 
-# testField (G), X (V*s), Y (V*s) 
+# testTime (trig. delta_start), X (V*s), Y (V*s)

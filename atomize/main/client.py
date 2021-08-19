@@ -137,7 +137,7 @@ class LivePlotClient(object):
             'TimeAxis': timeaxis
         }
         self.send_to_plotter(meta, np.array([xs, ys]).astype('float64')) 
-        #self.send_to_plotter({'name':'none', 'operation':'none'}, np.array([0.]))
+        self.send_to_plotter({'name':'none', 'operation':'none'}, np.array([0.]))
 
     def append_y(self, name, point, start_step=(0, 1), label='', xname='X axis',\
      xscale='arb. u.', yname='Y axis', yscale='arb. u.',scatter='False', timeaxis='False'):

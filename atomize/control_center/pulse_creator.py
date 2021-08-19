@@ -41,8 +41,6 @@ class MainWindow(QtWidgets.QMainWindow):
         #except BrokenPipeError:
         #    pass
 
-        self.bh15.magnet_setup( 3500, 0.5 )
-
         # Connection of different action to different Menus and Buttons
         self.button_off.clicked.connect(self.turn_off)
         self.button_off.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
@@ -142,6 +140,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.Field.valueChanged.connect(self.field)
         self.mag_field = float( self.Field.value() )
+        self.bh15.magnet_setup( self.mag_field, 0.5 )
+        
         self.P1_type.currentIndexChanged.connect(self.p1_type)
         self.p1_typ = str( self.P1_type.currentText() )
         self.P2_type.currentIndexChanged.connect(self.p2_type)

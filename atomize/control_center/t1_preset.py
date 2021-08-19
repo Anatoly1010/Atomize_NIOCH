@@ -257,8 +257,6 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.cur_rep_rate <= 0:
                 self.cur_rep_rate = 2
             
-            print(self.cur_rep_rate)
-
             self.box_rep_rate.setValue( self.cur_rep_rate )
 
 
@@ -363,10 +361,6 @@ class Worker(QWidget):
 
         ##pb.pulser_repetition_rate( REP_RATE )
 
-        ##pb.pulser_update()
-        ##tb = t3034.oscilloscope_timebase()*1000
-        ##pb.pulser_stop()
-
         # the idea of automatic and dynamic changing is
         # sending a new value of repetition rate via self.command
         # in each cycle we will check the current value of self.command
@@ -419,14 +413,13 @@ class Worker(QWidget):
                 j += 1
                 ##pb.pulser_pulse_reset()
 
-            ##pb.pulser_stop()
-
             # finish succesfully
             self.command = 'exit'
 
 
         if self.command == 'exit':
             general.message('Script finished')
+            ##tb = t3034.oscilloscope_timebase()*1000
             ##pb.pulser_stop()
 
             # Data saving
