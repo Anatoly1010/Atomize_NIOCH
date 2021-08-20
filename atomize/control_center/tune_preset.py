@@ -272,11 +272,13 @@ class Worker(QWidget):
         import atomize.general_modules.general_functions as general
         import atomize.device_modules.Keysight_3000_Xseries as t3034
         import atomize.device_modules.Mikran_X_band_MW_bridge as mwBridge
+        ###import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
         import atomize.device_modules.PB_ESR_500_pro as pb_pro
 
         ##t3034 = t3034.Keysight_3000_Xseries()
         ##pb = pb_pro.PB_ESR_500_Pro()
         ##mw = mwBridge.Mikran_X_band_MW_bridge()
+        ###dig4450 = spectrum.Spectrum_M4I_4450_X8()
 
         ### Experimental parameters
         START_FREQ = p5
@@ -298,6 +300,10 @@ class Worker(QWidget):
         ##pb.pulser_update()
 
         #
+        ###dig4450.digitizer_read_settings()
+        ###dig4450.digitizer_number_of_averages(AVERAGES)
+        ###real_length = int (dig4450.digitizer_number_of_points( ) )
+
         ##t3034.oscilloscope_record_length( 1000 )
         ##real_length = t3034.oscilloscope_record_length( )
 
@@ -334,6 +340,7 @@ class Worker(QWidget):
 
                     ##t3034.oscilloscope_start_acquisition()
                     ##y = t3034.oscilloscope_get_curve('CH2')
+                    ###x, y, z = dig4450.digitizer_get_curve( )
                     y = np.random.normal(3, 2.5, size = (real_length)) 
                     
                     data[i] = ( data[i] * (j - 1) + y ) / j
@@ -369,7 +376,9 @@ class Worker(QWidget):
             self.command = 'exit'
 
         if self.command == 'exit':
-            general.message('Script finished')
+            general.message('Script finished')           
+            ###dig4450.digitizer_stop()
+            ###dig4450.digitizer_close()
             ##pb.pulser_stop()
 
 def main():

@@ -288,6 +288,7 @@ class Worker(QWidget):
         import atomize.device_modules.PB_ESR_500_pro as pb_pro
         import atomize.device_modules.Keysight_3000_Xseries as key
         import atomize.device_modules.Mikran_X_band_MW_bridge as mwBridge
+        ###import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
         import atomize.device_modules.BH_15 as bh
         import atomize.device_modules.SR_PTC_10 as sr
         import atomize.general_modules.csv_opener_saver_tk_kinter as openfile
@@ -298,6 +299,7 @@ class Worker(QWidget):
         ##pb = pb_pro.PB_ESR_500_Pro()
         ##bh15 = bh.BH_15()
         ##t3034 = key.Keysight_3000_Xseries()
+        ###dig4450 = spectrum.Spectrum_M4I_4450_X8()
 
         ### Experimental parameters
         START_FIELD = p5
@@ -315,6 +317,8 @@ class Worker(QWidget):
         PULSE_SIGNAL_START = str( int(2*p3) ) + ' ns'
 
         #
+        ####cycle_data_x = []
+        ####cycle_data_y = []
         points = int( (END_FIELD - START_FIELD) / FIELD_STEP ) + 1
         data_x = np.zeros(points)
         data_y = np.zeros(points)
@@ -324,15 +328,21 @@ class Worker(QWidget):
         ##bh15.magnet_setup(START_FIELD, FIELD_STEP)
 
         ##t3034.oscilloscope_trigger_channel('CH1')
-        #tb = t3034.oscilloscope_time_resolution()
         ##t3034.oscilloscope_record_length(250)
         ##t3034.oscilloscope_acquisition_type('Average')
         ##t3034.oscilloscope_number_of_averages(AVERAGES)
         ##t3034.oscilloscope_stop()
 
+        ###dig4450.digitizer_read_settings()
+        ###dig4450.digitizer_number_of_averages(AVERAGES)
+
         ##pb.pulser_pulse(name ='P0', channel = 'MW', start = PULSE_1_START, length = PULSE_1_LENGTH)
         ##pb.pulser_pulse(name ='P1', channel = 'MW', start = PULSE_2_START, length = PULSE_2_LENGTH)
         ##pb.pulser_pulse(name ='P2', channel = 'TRIGGER', start = PULSE_SIGNAL_START, length = '100 ns')
+
+        ####pb.pulser_pulse(name ='P0', channel = 'MW', start = PULSE_1_START, length = PULSE_1_LENGTH, phase_list = ['-x', '+x'])
+        ####pb.pulser_pulse(name ='P1', channel = 'MW', start = PULSE_2_START, length = PULSE_2_LENGTH, phase_list = ['+x', '+x'])
+        ####pb.pulser_pulse(name ='P2', channel = 'TRIGGER', start = PULSE_SIGNAL_START, length = '100 ns', phase_list = ['+x', '+x'])
 
         ##pb.pulser_repetition_rate( REP_RATE )
         ##pb.pulser_update()
@@ -351,12 +361,33 @@ class Worker(QWidget):
                 field = START_FIELD
 
                 while field <= END_FIELD:
+                    # phase cycle
+                    ####k = 0
+                    ####while k < 2:
+
+                        ####pb.pulser_next_phase()
+
+                        ####t3034.oscilloscope_start_acquisition()
+                        ####area_x = t3034.oscilloscope_area('CH4')
+                        ####area_y = t3034.oscilloscope_area('CH3')
+
+                        ####cycle_data_x.append(area_x)
+                        ####cycle_data_y.append(area_y)
+
+                        ####k += 1
+
+                    # acquisition cycle [-, +]
+                    ####data_x[i] = ( data_x[i] * (j - 1) + (- cycle_data_x[0] + cycle_data_x[1]) / 2 ) / j
+                    ####data_y[i] = ( data_y[i] * (j - 1) + (- cycle_data_y[0] + cycle_data_y[1]) / 2 ) / j
+
 
                     ##bh15.magnet_field(field)
 
                     ##t3034.oscilloscope_start_acquisition()
                     ##area_x = t3034.oscilloscope_area('CH4')
                     ##area_y = t3034.oscilloscope_area('CH3')
+
+                    ###area_x, area_y = dig4450.digitizer_get_curve( integral = True )
 
                     ##data_x[i] = ( data_x[i] * (j - 1) + area_x ) / j
                     ##data_y[i] = ( data_y[i] * (j - 1) + area_y ) / j
@@ -392,6 +423,8 @@ class Worker(QWidget):
 
                     i += 1
 
+                    ####pb.pulser_pulse_reset()
+
                 ##bh15.magnet_field(START_FIELD)
 
                 j += 1
@@ -403,6 +436,10 @@ class Worker(QWidget):
         if self.command == 'exit':
             general.message('Script finished')
             ##tb = t3034.oscilloscope_timebase()*1000
+
+            ###tb = dig4450.digitizer_number_of_points() * int(  1000 / float( dig4450.digitizer_sample_rate().split(' ')[0] ) )
+            ###dig4450.digitizer_stop()
+            ###dig4450.digitizer_close()
             ##pb.pulser_stop()
 
             # Data saving

@@ -481,10 +481,10 @@ p, li { white-space: pre-wrap; }
          <bool>false</bool>
         </property>
         <property name="minimum">
-         <number>2</number>
+         <number>1</number>
         </property>
         <property name="maximum">
-         <number>3000</number>
+         <number>5000</number>
         </property>
         <property name="singleStep">
          <number>10</number>

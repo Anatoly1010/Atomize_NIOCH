@@ -136,6 +136,12 @@ class CrosshairDock(CloseableDock):
         self.open_dir = str(config['DEFAULT']['open_dir'])
 
         self.plot_widget = CrosshairPlotWidget()
+
+        # Disabling AutoRange:
+        #item = self.plot_widget.getPlotItem()
+        #vb = item.getViewBox()
+        #vb.disableAutoRange( axis = vb.YAxis )
+
         self.legend = self.plot_widget.addLegend(offset = (50, 10), horSpacing = 35)
         #self.plot_widget.setBackground(None)
         kwargs['widget'] = self.plot_widget

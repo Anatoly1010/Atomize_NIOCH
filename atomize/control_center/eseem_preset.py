@@ -319,6 +319,7 @@ class Worker(QWidget):
         import atomize.device_modules.PB_ESR_500_pro as pb_pro
         import atomize.device_modules.Keysight_3000_Xseries as key
         import atomize.device_modules.Mikran_X_band_MW_bridge as mwBridge
+        ###import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
         import atomize.device_modules.BH_15 as bh
         import atomize.device_modules.SR_PTC_10 as sr
         import atomize.general_modules.csv_opener_saver_tk_kinter as openfile
@@ -329,6 +330,7 @@ class Worker(QWidget):
         ##pb = pb_pro.PB_ESR_500_Pro()
         ##t3034 = key.Keysight_3000_Xseries()
         ##bh15 = bh.BH_15()
+        ###dig4450 = spectrum.Spectrum_M4I_4450_X8()
 
         # parameters for initial initialization
         POINTS = p9
@@ -364,6 +366,9 @@ class Worker(QWidget):
         ##t3034.oscilloscope_acquisition_type('Average')
         ##t3034.oscilloscope_number_of_averages(AVERAGES)
         ##t3034.oscilloscope_stop()
+
+        ###dig4450.digitizer_read_settings()
+        ###dig4450.digitizer_number_of_averages(AVERAGES)
 
         if p13 == 0:
             pass
@@ -401,6 +406,8 @@ class Worker(QWidget):
                             ##t3034.oscilloscope_start_acquisition()
                             ##area_x = t3034.oscilloscope_area('CH4')
                             ##area_y = t3034.oscilloscope_area('CH3')
+
+                            ###area_x, area_y = dig4450.digitizer_get_curve( integral = True )
 
                             area_x = random.random()
                             area_y = random.random()
@@ -456,6 +463,8 @@ class Worker(QWidget):
                         ##area_x = t3034.oscilloscope_area('CH4')
                         ##area_y = t3034.oscilloscope_area('CH3')
 
+                        ###area_x, area_y = dig4450.digitizer_get_curve( integral = True )
+
                         ##data_x[i] = ( data_x[i] * (j - 1) + area_x ) / j
                         ##data_y[i] = ( data_y[i] * (j - 1) + area_y ) / j
 
@@ -496,6 +505,10 @@ class Worker(QWidget):
         if self.command == 'exit':
             general.message('Script finished')
             ##tb = t3034.oscilloscope_timebase()*1000
+
+            ###tb = dig4450.digitizer_number_of_points() * int(  1000 / float( dig4450.digitizer_sample_rate().split(' ')[0] ) )
+            ###dig4450.digitizer_stop()
+            ###dig4450.digitizer_close()
             ##pb.pulser_stop()
 
             # Data saving
