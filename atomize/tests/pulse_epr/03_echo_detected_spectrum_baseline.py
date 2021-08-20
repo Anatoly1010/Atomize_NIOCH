@@ -12,12 +12,12 @@ import atomize.general_modules.csv_opener_saver as openfile
 ### Experimental parameters
 START_FIELD = 3336
 END_FIELD = 3536
-FIELD_STEP = 1
-AVERAGES = 2
-SCANS = 2
+FIELD_STEP = 2
+AVERAGES = 10
+SCANS = 1
 
 # PULSES
-REP_RATE = '1000 Hz'
+REP_RATE = '500 Hz'
 PULSE_1_LENGTH = '16 ns'
 PULSE_2_LENGTH = '32 ns'
 PULSE_1_START = '0 ns'
@@ -53,7 +53,7 @@ t3034.oscilloscope_acquisition_type('Average')
 t3034.oscilloscope_number_of_averages(AVERAGES)
 t3034.oscilloscope_stop()
 
-pb.pulser_pulse(name ='P0', channel = 'MW', start = PULSE_1_START, length = PULSE_1_LENGTH, phase_list = ['-x', '+x'])
+pb.pulser_pulse(name ='P0', channel = 'MW', start = PULSE_1_START, length = PULSE_1_LENGTH, phase_list = ['+x', '-x'])
 pb.pulser_pulse(name ='P1', channel = 'MW', start = PULSE_2_START, length = PULSE_2_LENGTH, phase_list = ['+x', '+x'])
 pb.pulser_pulse(name ='P2', channel = 'TRIGGER', start = PULSE_SIGNAL_START, length = '100 ns', phase_list = ['+x', '+x'])
 
@@ -98,9 +98,9 @@ while j <= SCANS:
 
             k += 1
 
-        # acquisition cycle [-, +]
-        data_x[i] = ( data_x[i] * (j - 1) + (- cycle_data_x[0] + cycle_data_x[1]) / 2 ) / j
-        data_y[i] = ( data_y[i] * (j - 1) + (- cycle_data_y[0] + cycle_data_y[1]) / 2 ) / j
+        # acquisition cycle [+, -]
+        data_x[i] = ( data_x[i] * (j - 1) + (+ cycle_data_x[0] - cycle_data_x[1]) / 2 ) / j
+        data_y[i] = ( data_y[i] * (j - 1) + (+ cycle_data_y[0] - cycle_data_y[1]) / 2 ) / j
 
         general.plot_1d(EXP_NAME, x_axis, data_x, xname = 'Field',\
             xscale = 'G', yname = 'Area', yscale = 'V*s', label = CURVE_NAME + '_X')
@@ -112,6 +112,9 @@ while j <= SCANS:
         i += 1
         
         pb.pulser_pulse_reset()
+        
+        cycle_data_x = []
+        cycle_data_y = []
 
     bh15.magnet_field(START_FIELD)
 

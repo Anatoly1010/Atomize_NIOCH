@@ -56,7 +56,7 @@ t3034.oscilloscope_number_of_averages(AVERAGES)
 t3034.oscilloscope_stop()
 
 # Setting pulses
-pb.pulser_pulse(name = 'P0', channel = 'MW', start = PULSE_1_START, length = PULSE_1_LENGTH, phase_list = ['-x', '+x'])
+pb.pulser_pulse(name = 'P0', channel = 'MW', start = PULSE_1_START, length = PULSE_1_LENGTH, phase_list = ['+x', '-x'])
 pb.pulser_pulse(name = 'P1', channel = 'MW', start = PULSE_2_START, length = PULSE_2_LENGTH, delta_start = str(int(STEP/2)) + ' ns', phase_list = ['+x', '+x'])
 pb.pulser_pulse(name = 'P2', channel = 'TRIGGER', start = PULSE_SIGNAL_START, length = '100 ns', delta_start = str(STEP) + ' ns', phase_list = ['+x', '+x'])
 
@@ -95,9 +95,9 @@ while j <= SCANS:
 
             k += 1
 
-        # acquisition cycle [-, +]
-        data_x[i] = ( data_x[i] * (j - 1) + (- cycle_data_x[0] + cycle_data_x[1]) / 2 ) / j
-        data_y[i] = ( data_y[i] * (j - 1) + (- cycle_data_y[0] + cycle_data_y[1]) / 2 ) / j
+        # acquisition cycle [+, -]
+        data_x[i] = ( data_x[i] * (j - 1) + (+ cycle_data_x[0] - cycle_data_x[1]) / 2 ) / j
+        data_y[i] = ( data_y[i] * (j - 1) + (+ cycle_data_y[0] - cycle_data_y[1]) / 2 ) / j
 
         general.plot_1d(EXP_NAME, x_axis, data_x, xname = 'Delay',\
             xscale = 'ns', yname = 'Area', yscale = 'V*s', label = CURVE_NAME + '_X')

@@ -428,6 +428,9 @@ class MainWindow(QtWidgets.QMainWindow):
             # RUN
             self.pb.pulser_clear()
             self.pb.pulser_test_flag('None') 
+
+            self.bh15.magnet_setup( self.mag_field, 0.5 )
+            
             self.pulse_sequence()
 
             #self.errors.appendPlainText( str( ans ) )

@@ -275,9 +275,9 @@ class Worker(QWidget):
         ###import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
         import atomize.device_modules.PB_ESR_500_pro as pb_pro
 
-        ##t3034 = t3034.Keysight_3000_Xseries()
-        ##pb = pb_pro.PB_ESR_500_Pro()
-        ##mw = mwBridge.Mikran_X_band_MW_bridge()
+        t3034 = t3034.Keysight_3000_Xseries()
+        pb = pb_pro.PB_ESR_500_Pro()
+        mw = mwBridge.Mikran_X_band_MW_bridge()
         ###dig4450 = spectrum.Spectrum_M4I_4450_X8()
 
         ### Experimental parameters
@@ -293,32 +293,32 @@ class Worker(QWidget):
         PULSE_1_START = '0 ns'
 
         # setting pulses:
-        ##pb.pulser_pulse(name ='P0', channel = 'TRIGGER', start = PULSE_1_START, length = PULSE_1_LENGTH)
-        ##pb.pulser_pulse(name ='P1', channel = 'MW', start = PULSE_1_START, length = PULSE_1_LENGTH)
+        pb.pulser_pulse(name ='P0', channel = 'TRIGGER', start = PULSE_1_START, length = PULSE_1_LENGTH)
+        pb.pulser_pulse(name ='P1', channel = 'MW', start = PULSE_1_START, length = PULSE_1_LENGTH)
 
-        ##pb.pulser_repetition_rate( REP_RATE )
-        ##pb.pulser_update()
+        pb.pulser_repetition_rate( REP_RATE )
+        pb.pulser_update()
 
         #
         ###dig4450.digitizer_read_settings()
         ###dig4450.digitizer_number_of_averages(AVERAGES)
         ###real_length = int (dig4450.digitizer_number_of_points( ) )
 
-        ##t3034.oscilloscope_record_length( 1000 )
-        ##real_length = t3034.oscilloscope_record_length( )
+        t3034.oscilloscope_record_length( 1000 )
+        real_length = t3034.oscilloscope_record_length( )
 
-        real_length = 1000
+        ##real_length = 1000
         points = int( (END_FREQ - START_FREQ) / STEP ) + 1
         data = np.zeros( (points, real_length) )
         ###
 
-        ##t3034.oscilloscope_acquisition_type('Average')
-        ##t3034.oscilloscope_trigger_channel('CH1')
-        ##t3034.oscilloscope_number_of_averages(AVERAGES)
-        ##t3034.oscilloscope_stop()
+        t3034.oscilloscope_acquisition_type('Average')
+        t3034.oscilloscope_trigger_channel('CH1')
+        t3034.oscilloscope_number_of_averages(AVERAGES)
+        t3034.oscilloscope_stop()
         
         # initialize the power
-        ##mw.mw_bridge_synthesizer( START_FREQ )
+        mw.mw_bridge_synthesizer( START_FREQ )
 
         # the idea of automatic and dynamic changing is
         # sending a new value of repetition rate via self.command
@@ -332,16 +332,16 @@ class Worker(QWidget):
 
                 i = 0
                 freq = START_FREQ
-                ##mw.mw_bridge_synthesizer( freq )
+                mw.mw_bridge_synthesizer( freq )
 
                 while freq <= END_FREQ:
                     
-                    ##mw.mw_bridge_synthesizer( freq )
+                    mw.mw_bridge_synthesizer( freq )
 
-                    ##t3034.oscilloscope_start_acquisition()
-                    ##y = t3034.oscilloscope_get_curve('CH2')
+                    t3034.oscilloscope_start_acquisition()
+                    y = t3034.oscilloscope_get_curve('CH2')
                     ###x, y, z = dig4450.digitizer_get_curve( )
-                    y = np.random.normal(3, 2.5, size = (real_length)) 
+                    ##y = np.random.normal(3, 2.5, size = (real_length)) 
                     
                     data[i] = ( data[i] * (j - 1) + y ) / j
 
@@ -369,7 +369,7 @@ class Worker(QWidget):
 
                     i += 1
 
-                ##mw.mw_bridge_synthesizer( START_FREQ )
+                mw.mw_bridge_synthesizer( START_FREQ )
                 j += 1
 
             # finish succesfully
@@ -379,7 +379,7 @@ class Worker(QWidget):
             general.message('Script finished')           
             ###dig4450.digitizer_stop()
             ###dig4450.digitizer_close()
-            ##pb.pulser_stop()
+            pb.pulser_stop()
 
 def main():
     """

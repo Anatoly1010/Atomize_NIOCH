@@ -56,13 +56,13 @@
    <property name="minimumSize">
     <size>
      <width>280</width>
-     <height>447</height>
+     <height>446</height>
     </size>
    </property>
    <property name="maximumSize">
     <size>
      <width>280</width>
-     <height>447</height>
+     <height>446</height>
     </size>
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout">

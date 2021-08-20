@@ -28,10 +28,10 @@ from PyQt5.Qt import Qt as QtConst
 from pyqtgraph.dockarea import DockArea
 import atomize.main.messenger_socket_server as socket_server
 ###AWG
-#sys.path.append('/home/pulseepr/Sources/AWG/Examples/python')
+sys.path.append('/home/pulseepr/Sources/AWG/Examples/python')
 
-#from pyspcm import *
-#from spcm_tools import *
+from pyspcm import *
+from spcm_tools import *
 
 class MainWindow(QtWidgets.QMainWindow):
     """
@@ -595,10 +595,16 @@ class MainWindow(QtWidgets.QMainWindow):
             return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/01_resonator_tuning.py')
         elif text_to_parse == ' T2':
             return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/02_t2.py')
-        elif text_to_parse == ' T1':
+        elif text_to_parse == ' T2 Baseline':
+            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/02_t2_baseline.py')
+        elif text_to_parse == ' T1 Baseline':
             return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/04_t1_inversion_recovery.py')
+        elif text_to_parse == ' T1':
+            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/04_t1_inversion_recovery_baseline.py')
         elif text_to_parse == ' Echo Detected':
             return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/03_echo_detected_spectrum.py')
+        elif text_to_parse == ' Echo Detected Baseline':
+            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/03_echo_detected_spectrum_baseline.py')
         elif text_to_parse == ' ESEEM':
             return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/07_eseem_phase.py')
         elif text_to_parse == ' Nutations':

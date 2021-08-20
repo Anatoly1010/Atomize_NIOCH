@@ -900,7 +900,17 @@ QTabBar::tab:selected {
             </item>
             <item>
              <property name="text">
+              <string> Echo Detected Baseline</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
               <string> T2</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string> T2 Baseline</string>
              </property>
             </item>
             <item>
