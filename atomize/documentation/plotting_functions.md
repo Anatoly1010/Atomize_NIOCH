@@ -20,7 +20,7 @@ The [Liveplot](https://github.com/PhilReinhold/liveplot) provides several possib
 - [append_1d(*args, **kargs)](#1d-plotting)<br/>
 - [plot_2d(*args, **kargs)](#2d-plotting)<br/>
 - [append_2d(*args, **kargs)](#2d-plotting)<br/>
-- [text_label('label', 'text:', DynamicValue)](#dynamic-labeling)<br/>
+- [text_label('label', DynamicValue)](#dynamic-labeling)<br/>
 - [plot_remove('name_of_plot')](#clearing)<br/>
 
 ## GUI features
@@ -85,10 +85,9 @@ zscale = 'ZaxisDimension')
 
 ## Dynamic labeling
 ```python
-text_label('label', 'text:', DynamicValue)
+text_label('label', DynamicValue)
 ```
 	label is a string;
-	text is a string that will be shown on the label;
 	DynamicValue is a number that will change dynamically
 
 ## Clearing
@@ -133,5 +132,5 @@ while i <= 20:
 	general.append_2d('2D test plot', data[i-1], start_step = ((0, 1), (0.3, 0.001)),
 	xname = 'Time', xscale = 's', yname = 'Magnetic Field', yscale = 'T', zname = 'Intensity',
 	zscale = 'V')
-	general.text_label('2D test plot', 'step:', i)
+	general.text_label('2D test plot; step: ', i)
 ```

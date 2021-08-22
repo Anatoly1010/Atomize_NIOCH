@@ -342,8 +342,8 @@ class Worker(QWidget):
         PULSE_SIGNAL_START = str( p3 + int(2 * p12) ) + ' ns'
 
         #
-        ####cycle_data_x = []
-        ####cycle_data_y = []
+        cycle_data_x = np.zeros( 2 )
+        cycle_data_y = np.zeros( 2 )
         data_x = np.zeros(POINTS)
         data_y = np.zeros(POINTS)
         x_axis = np.linspace(0, (POINTS - 1)*STEP, num = POINTS)
@@ -361,16 +361,15 @@ class Worker(QWidget):
         ###dig4450.digitizer_read_settings()
         ###dig4450.digitizer_number_of_averages(AVERAGES)
 
-        pb.pulser_pulse(name = 'P0', channel = 'MW', start = PULSE_1_START, length = PULSE_1_LENGTH)
-        pb.pulser_pulse(name = 'P1', channel = 'MW', start = PULSE_2_START, length = PULSE_2_LENGTH, delta_start = str(STEP) + ' ns')
-        pb.pulser_pulse(name = 'P2', channel = 'MW', start = PULSE_3_START, length = PULSE_3_LENGTH, delta_start = str(STEP) + ' ns')
-        pb.pulser_pulse(name = 'P3', channel = 'TRIGGER', start = PULSE_SIGNAL_START, length = '100 ns', delta_start = str(STEP) + ' ns')
+        #pb.pulser_pulse(name = 'P0', channel = 'MW', start = PULSE_1_START, length = PULSE_1_LENGTH)
+        #pb.pulser_pulse(name = 'P1', channel = 'MW', start = PULSE_2_START, length = PULSE_2_LENGTH, delta_start = str(STEP) + ' ns')
+        #pb.pulser_pulse(name = 'P2', channel = 'MW', start = PULSE_3_START, length = PULSE_3_LENGTH, delta_start = str(STEP) + ' ns')
+        #pb.pulser_pulse(name = 'P3', channel = 'TRIGGER', start = PULSE_SIGNAL_START, length = '100 ns', delta_start = str(STEP) + ' ns')
 
-        ####pb.pulser_pulse(name = 'P0', channel = 'MW', start = PULSE_1_START, length = PULSE_1_LENGTH, phase_list = ['+x', '+x'])
-        ####pb.pulser_pulse(name = 'P1', channel = 'MW', start = PULSE_2_START, length = PULSE_2_LENGTH, delta_start = str(STEP) + ' ns', phase_list = ['+x', '-x'])
-        ####pb.pulser_pulse(name = 'P2', channel = 'MW', start = PULSE_3_START, length = PULSE_3_LENGTH, delta_start = str(STEP) + ' ns', phase_list = ['+x', '+x'])
-        ####pb.pulser_pulse(name = 'P3', channel = 'TRIGGER', start = PULSE_SIGNAL_START, length = '100 ns', delta_start = str(STEP) + ' ns', phase_list = ['+x', '+x'])
-
+        pb.pulser_pulse(name = 'P0', channel = 'MW', start = PULSE_1_START, length = PULSE_1_LENGTH, phase_list = ['+x', '+x'])
+        pb.pulser_pulse(name = 'P1', channel = 'MW', start = PULSE_2_START, length = PULSE_2_LENGTH, delta_start = str(STEP) + ' ns', phase_list = ['+x', '-x'])
+        pb.pulser_pulse(name = 'P2', channel = 'MW', start = PULSE_3_START, length = PULSE_3_LENGTH, delta_start = str(STEP) + ' ns', phase_list = ['+x', '+x'])
+        pb.pulser_pulse(name = 'P3', channel = 'TRIGGER', start = PULSE_SIGNAL_START, length = '100 ns', delta_start = str(STEP) + ' ns', phase_list = ['+x', '+x'])
 
         pb.pulser_repetition_rate( REP_RATE )
 
@@ -385,39 +384,35 @@ class Worker(QWidget):
             while j <= SCANS:
 
                 for i in range(POINTS):
-
                     # phase cycle
-                    #k = 0
-                    #while k < 2:
+                    k = 0
+                    while k < 2:
 
-                    #    pb.pulser_next_phase()
+                        pb.pulser_next_phase()
+                        
+                        ###cycle_data_x[k], cycle_data_y[k] = dig4450.digitizer_get_curve( integral = True )
+                        t3034.oscilloscope_start_acquisition()
+                        cycle_data_x[k] = t3034.oscilloscope_area('CH4')
+                        cycle_data_y[k] = t3034.oscilloscope_area('CH3')
 
-                    #    t3034.oscilloscope_start_acquisition()
-                    #    area_x = t3034.oscilloscope_area('CH4')
-                    #    area_y = t3034.oscilloscope_area('CH3')
-
-                    #    cycle_data_x.append(area_x)
-                    #    cycle_data_y.append(area_y)
-
-                    #    k += 1
+                        k += 1
 
                     # acquisition cycle [+, -]
-                    #data_x[i] = ( data_x[i] * (j - 1) + (+ cycle_data_x[0] - cycle_data_x[1]) / 2 ) / j
-                    #data_y[i] = ( data_y[i] * (j - 1) + (+ cycle_data_y[0] - cycle_data_y[1]) / 2 ) / j
-
+                    x, y = pb.pulse_acquisition_cycle(cycle_data_x, cycle_data_y, acq_cycle = ['+', '-'])
+                    data_x[i] = ( data_x[i] * (j - 1) + x ) / j
+                    data_y[i] = ( data_y[i] * (j - 1) + y ) / j
 
                     # no phase cycling
-                    pb.pulser_update()
+                    #pb.pulser_update()
 
-                    t3034.oscilloscope_start_acquisition()
-                    area_x = t3034.oscilloscope_area('CH4')
-                    area_y = t3034.oscilloscope_area('CH3')
+                    #t3034.oscilloscope_start_acquisition()
+                    #area_x = t3034.oscilloscope_area('CH4')
+                    #area_y = t3034.oscilloscope_area('CH3')
                     
                     ###area_x, area_y = dig4450.digitizer_get_curve( integral = True )
 
-                    data_x[i] = ( data_x[i] * (j - 1) + area_x ) / j
-                    data_y[i] = ( data_y[i] * (j - 1) + area_y ) / j
-
+                    #data_x[i] = ( data_x[i] * (j - 1) + area_x ) / j
+                    #data_y[i] = ( data_y[i] * (j - 1) + area_y ) / j
                     ##data_x[i] = ( data_x[i] * (j - 1) + random.random() ) / j
                     ##data_y[i] = ( data_y[i] * (j - 1) + random.random() ) / j
 
@@ -432,9 +427,6 @@ class Worker(QWidget):
                         pass
 
                     pb.pulser_shift()
-
-                    ####cycle_data_x = []
-                    ####cycle_data_y = []
 
                     # check our polling data
                     if self.command[0:2] == 'SC':
@@ -454,7 +446,6 @@ class Worker(QWidget):
 
             # finish succesfully
             self.command = 'exit'
-
 
         if self.command == 'exit':
             general.message('Script finished')

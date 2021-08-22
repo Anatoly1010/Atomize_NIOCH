@@ -351,8 +351,8 @@ class Worker(QWidget):
 
         #
         if p13 == 0:
-            cycle_data_x = []
-            cycle_data_y = []
+            cycle_data_x = np.zeros( 4 )
+            cycle_data_y = np.zeros( 4 )
         data_x = np.zeros(POINTS)
         data_y = np.zeros(POINTS)
         x_axis = np.linspace(0, (POINTS - 1)*STEP, num = POINTS)
@@ -402,22 +402,17 @@ class Worker(QWidget):
                             pb.pulser_next_phase()
 
                             t3034.oscilloscope_start_acquisition()
-                            area_x = t3034.oscilloscope_area('CH4')
-                            area_y = t3034.oscilloscope_area('CH3')
+                            ###cycle_data_x[k], cycle_data_y[k] = dig4450.digitizer_get_curve( integral = True )
 
-                            ###area_x, area_y = dig4450.digitizer_get_curve( integral = True )
-
-                            ##area_x = random.random()
-                            ##area_y = random.random()
-
-                            cycle_data_x.append(area_x)
-                            cycle_data_y.append(area_y)
+                            cycle_data_x[k] = t3034.oscilloscope_area('CH4')
+                            cycle_data_y[k] = t3034.oscilloscope_area('CH3')
 
                             k += 1
                         
                         # acquisition cycle [+, -, -, +]
-                        data_x[i] = ( data_x[i] * (j - 1) + (cycle_data_x[0] - cycle_data_x[1] - cycle_data_x[2] + cycle_data_x[3]) / 4 ) / j
-                        data_y[i] = ( data_y[i] * (j - 1) + (cycle_data_y[0] - cycle_data_y[1] - cycle_data_y[2] + cycle_data_y[3]) / 4 ) / j
+                        x, y = pb.pulse_acquisition_cycle(cycle_data_x, cycle_data_y, acq_cycle = ['+', '-', '-', '+'])
+                        data_x[i] = ( data_x[i] * (j - 1) + x ) / j
+                        data_y[i] = ( data_y[i] * (j - 1) + y ) / j
 
                         if i % p11 == 0:
                             general.plot_1d(p2, x_axis, data_x, xname = 'Delay',\
@@ -429,9 +424,6 @@ class Worker(QWidget):
                             pass
 
                         pb.pulser_shift()
-
-                        cycle_data_x = []
-                        cycle_data_y = []
 
                         # check our polling data
                         if self.command[0:2] == 'SC':

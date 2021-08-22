@@ -317,8 +317,8 @@ class Worker(QWidget):
         PULSE_SIGNAL_START = str( int(2*p3) ) + ' ns'
 
         #
-        cycle_data_x = [] ##
-        cycle_data_y = [] ##
+        cycle_data_x = np.zeros( 2 )
+        cycle_data_y = np.zeros( 2 )
         points = int( (END_FIELD - START_FIELD) / FIELD_STEP ) + 1
         data_x = np.zeros(points)
         data_y = np.zeros(points)
@@ -367,18 +367,17 @@ class Worker(QWidget):
 
                         pb.pulser_next_phase()
 
+                        ###cycle_data_x[k], cycle_data_y[k] = dig4450.digitizer_get_curve( integral = True )
                         t3034.oscilloscope_start_acquisition()
-                        area_x = t3034.oscilloscope_area('CH4')
-                        area_y = t3034.oscilloscope_area('CH3')
-
-                        cycle_data_x.append(area_x)
-                        cycle_data_y.append(area_y)
+                        cycle_data_x[k] = t3034.oscilloscope_area('CH4')
+                        cycle_data_y[k] = t3034.oscilloscope_area('CH3')
 
                         k += 1
 
                     # acquisition cycle [+, -]
-                    data_x[i] = ( data_x[i] * (j - 1) + (+ cycle_data_x[0] - cycle_data_x[1]) / 2 ) / j
-                    data_y[i] = ( data_y[i] * (j - 1) + (+ cycle_data_y[0] - cycle_data_y[1]) / 2 ) / j
+                    x, y = pb.pulse_acquisition_cycle(cycle_data_x, cycle_data_y, acq_cycle = ['+', '-'])
+                    data_x[i] = ( data_x[i] * (j - 1) + x ) / j
+                    data_y[i] = ( data_y[i] * (j - 1) + y ) / j
 
                     # no phase cycling
                     bh15.magnet_field(field)
@@ -407,9 +406,6 @@ class Worker(QWidget):
 
                     field = round( (FIELD_STEP + field), 3 )
                     
-                    cycle_data_x = [] ##
-                    cycle_data_y = [] ##
-                    
                     # check our polling data
                     if self.command[0:2] == 'SC':
                         SCANS = int( self.command[2:] )
@@ -425,7 +421,7 @@ class Worker(QWidget):
 
                     i += 1
 
-                    pb.pulser_pulse_reset() ##
+                    pb.pulser_pulse_reset()
 
                 bh15.magnet_field(START_FIELD)
 
@@ -433,7 +429,6 @@ class Worker(QWidget):
 
             # finish succesfully
             self.command = 'exit'
-
 
         if self.command == 'exit':
             general.message('Script finished')
