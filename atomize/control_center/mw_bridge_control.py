@@ -194,7 +194,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
         data_raw, addr = self.sock.recvfrom(3)
 
-        self.telemetry_text.appendPlainText( 'Phase 1: ' + str(data_raw[2]*5.625) + ' deg')
+        self.telemetry_text.appendPlainText( 'Pulse Test Phase: ' + str(data_raw[2]*5.625) + ' deg')
 
     def fv_prm(self):
         """
@@ -228,7 +228,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
         data_raw, addr = self.sock.recvfrom(3)
 
-        self.telemetry_text.appendPlainText( 'Phase 2: ' + str(data_raw[2]*5.625) + ' deg')
+        self.telemetry_text.appendPlainText( 'Signal Phase: ' + str(data_raw[2]*5.625) + ' deg')
 
     def att_prm(self):
         """
@@ -248,7 +248,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
         data_raw, addr = self.sock.recvfrom(3)
 
-        self.telemetry_text.appendPlainText( 'Attenuator 3: ' + str(data_raw[2]*2) + ' dB')
+        self.telemetry_text.appendPlainText( 'Video Gain: ' + str(data_raw[2]*2) + ' dB')
 
     def k_prm(self):
         """

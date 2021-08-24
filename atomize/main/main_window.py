@@ -28,10 +28,11 @@ from PyQt5.Qt import Qt as QtConst
 from pyqtgraph.dockarea import DockArea
 import atomize.main.messenger_socket_server as socket_server
 ###AWG
-#sys.path.append('/home/pulseepr/Sources/AWG/Examples/python')
+sys.path.append('/home/pulseepr/Sources/AWG/Examples/python')
+#sys.path.append('/home/anatoly/AWG/spcm_examples/python')
 
-#from pyspcm import *
-#from spcm_tools import *
+from pyspcm import *
+from spcm_tools import *
 
 class MainWindow(QtWidgets.QMainWindow):
     """
@@ -803,6 +804,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 pb = pb_pro.PB_ESR_500_Pro()
                 pb.pulser_stop()
 
+                self.process_python.terminate()
+
                 # AWG
                 hCard1 = spcm_hOpen (create_string_buffer (b'/dev/spcm0'))
                 spcm_dwSetParam_i32 (hCard1, SPC_M2CMD, M2CMD_CARD_STOP)
@@ -816,7 +819,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 ###
 
-                self.process_python.close()
+                
 
 class NameList(QDockWidget):
     def __init__(self, window):

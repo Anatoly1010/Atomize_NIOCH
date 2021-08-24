@@ -20,7 +20,7 @@ awg.awg_pulse(name = 'P2', channel = 'CH0', func = 'SINE', frequency = '200 MHz'
 
 awg.awg_channel('CH0', 'CH1')
 #awg.awg_trigger_mode('Negative')
-#awg.awg_trigger_channel('Software')
+awg.awg_trigger_channel('Software')
 #awg.awg_loop(10)
 #awg.awg_trigger_delay('5000 ns')
 #awg.awg_amplitude('CH0', 100, 'CH1', 100)
@@ -66,6 +66,5 @@ for i in range(5):
 #########
 
 
-test = awg.awg_pulse_list()
-
-general.message( test )
+awg.awg_stop()
+awg.awg_close()
