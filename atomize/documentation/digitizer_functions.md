@@ -74,14 +74,14 @@ Arguments: none; Output: none.
 Example: digitizer_stop() stops the digitizer.
 ```
 This function stops the digitizer and should be called only without arguments. The function should always be called before redefining digitizer settings by the [digitizer_setup()](#digitizer_setup) function.<br/>
-###digitizer_number_of_points(*points)
+### digitizer_number_of_points(*points)
 ```python3
 digitizer_number_of_points(*points)
 Arguments: points = integer (divisible by 16); Output: integer.
 Example: digitizer_number_of_points(128) sets the number of points to 128.
 ```
 This function queries or sets the number of points in samples in the returned oscillogram. The number of points should be divisible by 16 samples, the minimum available value is 32 samples. If there is no setting fitting the argument the nearest available value is used and warning is printed. Default value is 128.<br/>
-###digitizer_posttrigger(*post_points)
+### digitizer_posttrigger(*post_points)
 ```python3
 digitizer_posttrigger(*post_points)
 Arguments: post_points = integer (divisible by 16); Output: integer.

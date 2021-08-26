@@ -533,7 +533,7 @@ p, li { white-space: pre-wrap; }
          <bool>false</bool>
         </property>
         <property name="minimum">
-         <number>2</number>
+         <number>4</number>
         </property>
         <property name="maximum">
          <number>10000</number>

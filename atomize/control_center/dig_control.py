@@ -54,9 +54,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.label_2.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_3.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_4.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.label_5.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_6.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_7.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_8.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.label_9.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
 
         # Spinboxes
         #self.Timescale.lineEdit().setReadOnly( True )   # block input from keyboard
@@ -75,6 +77,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.Chan_range.currentIndexChanged.connect(self.chan_range)
         self.ampl = int( self.Chan_range.currentText() )
         self.Chan_range.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
+
+        self.Win_left.valueChanged.connect(self.win_left)
+        self.cur_win_left = int( self.Win_left.value() ) * self.time_per_point
+        self.Win_left.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        self.Win_right.valueChanged.connect(self.win_right)
+        self.cur_win_right = int( self.Win_right.value() ) * self.time_per_point
+        self.Win_right.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
 
         self.Ch0_offset.lineEdit().setReadOnly( True )   # block input from keyboard
         self.Ch0_offset.valueChanged.connect(self.ch0_offset)
@@ -139,9 +148,44 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to change sample rate (time per point)
         """
         self.time_per_point = int( self.Time_per_point.currentText() )
+        self.cur_win_left = int( self.Win_left.value() ) * self.time_per_point
+        if self.cur_win_left / self.time_per_point > self.points:
+            self.cur_win_left = self.points * self.time_per_point
+            self.Win_left.setValue(self.cur_win_left / self.time_per_point)
+
+        self.cur_win_right = int( self.Win_right.value() ) * self.time_per_point
+        if self.cur_win_right / self.time_per_point > self.points:
+            self.cur_win_right = self.points * self.time_per_point
+            self.Win_right.setValue(self.cur_win_right / self.time_per_point)
+
         self.s_rate = int( 1000 / self.time_per_point )
         try:
-            self.parent_conn.send( 'SR' + str( self.s_rate ) )
+            self.parent_conn.send( 'SR' + str( self.s_rate ) + ',' + str( self.cur_win_left ) + ',' + str( self.cur_win_right )  )
+        except AttributeError:
+            self.message('Digitizer is not running')
+
+    def win_left(self):
+        """
+        A function to change left integration window
+        """
+        self.cur_win_left = int( self.Win_left.value() ) * self.time_per_point
+        if self.cur_win_left / self.time_per_point > self.points:
+            self.cur_win_left = self.points * self.time_per_point
+            self.Win_left.setValue( self.cur_win_left / self.time_per_point )
+        
+        try:
+            self.parent_conn.send( 'WL' + str( self.cur_win_left ) )
+        except AttributeError:
+            self.message('Digitizer is not running')
+
+    def win_right(self):
+        self.cur_win_right = int( self.Win_right.value() ) * self.time_per_point
+        if self.cur_win_right / self.time_per_point > self.points:
+            self.cur_win_right = self.points * self.time_per_point
+            self.Win_right.setValue( self.cur_win_right / self.time_per_point )
+
+        try:
+            self.parent_conn.send( 'WR' + str( self.cur_win_right ) )
         except AttributeError:
             self.message('Digitizer is not running')
 
@@ -222,6 +266,14 @@ class MainWindow(QtWidgets.QMainWindow):
         file_to_read.write('Range: ' + str( self.ampl ) +'\n')
         file_to_read.write('CH0 Offset: ' + str( self.offset_0 ) +'\n')
         file_to_read.write('CH1 Offset: ' + str( self.offset_1 ) +'\n')
+        
+        if self.cur_win_right < self.cur_win_left:
+            self.cur_win_left, self.cur_win_right = self.cur_win_right, self.cur_win_left
+        if self.cur_win_right == self.cur_win_left:
+            self.cur_win_right += self.time_per_point
+
+        file_to_read.write('Window Left: ' + str( int(self.cur_win_left / self.time_per_point) ) +'\n')
+        file_to_read.write('Window Right: ' + str( int(self.cur_win_right / self.time_per_point) ) +'\n')
 
         file_to_read.close()
         
@@ -243,7 +295,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # a process for running function script 
         # sending parameters for initial initialization
         self.digitizer_process = Process( target = self.worker.dig_on, args = ( self.child_conn, self.points, self.s_rate, \
-                                            self.posttrigger, self.ampl, self.offset_0, self.offset_1, self.number_averages, ) )
+                                            self.posttrigger, self.ampl, self.offset_0, self.offset_1, self.number_averages, \
+                                            self.cur_win_left, self.cur_win_right, ) )
                
         self.digitizer_process.start()
         # send a command in a different thread about the current state
@@ -294,7 +347,7 @@ class Worker(QWidget):
 
         self.command = 'start'
                    
-    def dig_on(self, conn, p1, p2, p3, p4, p5, p6, p7):
+    def dig_on(self, conn, p1, p2, p3, p4, p5, p6, p7, p8, p9):
         """
         function that contains updating of the digitizer
         """
@@ -321,6 +374,8 @@ class Worker(QWidget):
         #num_ave =           p7
         dig.digitizer_number_of_averages( p7 )
 
+        #p8 window left
+        #p9 window right
         dig.digitizer_setup()
 
         # the idea of automatic and dynamic changing is
@@ -353,7 +408,10 @@ class Worker(QWidget):
                 dig.digitizer_offset( 'CH1', offset_1_value )
                 #dig.digitizer_setup()
             elif self.command[0:2] == 'SR':
-                sample_rate = int( self.command[2:] )
+                temp = self.command[2:].split(',')
+                sample_rate = int( temp[0] )
+                p8 = int( temp[1] )
+                p9 = int( temp[2] )
                 dig.digitizer_stop()
                 dig.digitizer_sample_rate( sample_rate )
                 #dig.digitizer_setup()
@@ -366,11 +424,15 @@ class Worker(QWidget):
                 dig.digitizer_stop()
                 dig.digitizer_number_of_averages( num_ave )
                 #dig.digitizer_setup()
+            elif self.command[0:2] == 'WL':
+                p8 = int( self.command[2:] )
+            elif self.command[0:2] == 'WR':
+                p9 = int( self.command[2:] )
 
             xs, data1, data2 = dig.digitizer_get_curve()
                        
             #plot_1d('Buffer_test', np.array([1,2,3,4,5]), np.array([1,2,3,4,5]), label = 'ch0', xscale = 's', yscale = 'V')
-            general.plot_1d('Digitizer Live', xs, data1, label = 'ch0', xscale = 's', yscale = 'V')
+            general.plot_1d('Digitizer Live', xs, data1, label = 'ch0', xscale = 's', yscale = 'V', vline = (p8 * 10**-9, p9 * 10**-9) )
             general.plot_1d('Digitizer Live', xs, data2, label = 'ch1', xscale = 's', yscale = 'V')
             
             self.command = 'start'

@@ -10,12 +10,12 @@ file_handler = openfile.Saver_Opener()
 pb = pb_pro.PB_ESR_500_Pro()
 
 #pb.pulser_pulse(name = 'P0', channel = 'MW', start = '100 ns', length = '12 ns', delta_start = '100 ns', phase_list =  ['-y', '+x', '-x', '+x'])
-pb.pulser_pulse(name = 'P0', channel = 'MW', start = '100 ns', length = '12 ns')
-pb.pulser_pulse(name = 'P1', channel = 'MW', start = '220 ns', length = '24 ns', delta_start = '100 ns')
-pb.pulser_pulse(name = 'P2', channel = 'TRIGGER', start = '340 ns', length = '100 ns', delta_start = '200 ns')
+pb.pulser_pulse(name = 'P0', channel = 'TRIGGER_AWG', start = '0 ns', length = '30 ns')
+pb.pulser_pulse(name = 'P1', channel = 'AWG', start = '398 ns', length = '16 ns')
+pb.pulser_pulse(name = 'P2', channel = 'AWG', start = '1430 ns', length = '32 ns', delta_start = '2 ns')
+pb.pulser_pulse(name = 'P3', channel = 'TRIGGER', start = '2462 ns', length = '100 ns', delta_start = '4 ns')
 #pb.pulser_pulse(name = 'P3', channel = 'MW', start = '550 ns', length = '30 ns', delta_start = '10 ns')
 
-start_time = time.time()
 #i = 0
 #j = 0
 #while j < 2:
@@ -31,15 +31,15 @@ start_time = time.time()
 
 
 
-#j = 0
-#while j < 10:
+j = 0
+while j < 20:
     #rep_rate = str(j + 1) + ' Hz'
     #pb.pulser_repetition_rate( rep_rate )
-    #pb.pulser_update()
-    #pb.pulser_shift()
-    #pb.pulser_visualize()
-    #general.wait('1 s')
-    #j += 1
+    pb.pulser_update()
+    pb.pulser_visualize()
+    general.wait('1 s')
+    pb.pulser_shift()
+    j += 1
 
 
 
@@ -47,9 +47,9 @@ start_time = time.time()
 
 #general.message(str(time.time() - start_time))
 
-general.message( pb.pulser_pulse_list() )
-header = 'Pulse List: ' + '\n' + pb.pulser_pulse_list()  + ' Field, X, Y '
-file_handler.save_1D_dialog( ([1, 2, 3, 4], [2, 2, 2, 2], [4, 4, 4, 4]), header = header )
+#general.message( pb.pulser_pulse_list() )
+#header = 'Pulse List: ' + '\n' + pb.pulser_pulse_list()  + ' Field, X, Y '
+#file_handler.save_1D_dialog( ([1, 2, 3, 4], [2, 2, 2, 2], [4, 4, 4, 4]), header = header )
 
 #j = 0 
 #while j < 3:

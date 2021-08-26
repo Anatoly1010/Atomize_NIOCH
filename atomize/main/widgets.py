@@ -135,6 +135,9 @@ class CrosshairDock(CloseableDock):
         # directories
         self.open_dir = str(config['DEFAULT']['open_dir'])
 
+        # for not removing vertical line if the position is the same
+        self.ver_line_1 = 0
+        self.ver_line_2 = 0
         self.plot_widget = CrosshairPlotWidget()
 
         # Disabling AutoRange:
@@ -184,6 +187,8 @@ class CrosshairDock(CloseableDock):
 
     def plot(self, *args, **kwargs):
         self.plot_widget.parametric = kwargs.pop('parametric', False)
+        vline_arg = kwargs.get('vline', '')
+
         if kwargs.get('timeaxis', '') == 'True':
             # strange scaling when zoom
             axis = pg.DateAxisItem()
@@ -205,6 +210,17 @@ class CrosshairDock(CloseableDock):
             elif kwargs.get('scatter', '') == 'False':
                 kwargs['pen'] = self.used_colors[name]
                 self.curves[name].setData(*args, **kwargs)
+                # vertical lines
+                if vline_arg != 'False':
+                    if self.ver_line_1 != float(vline_arg[0]):
+                        self.plot_widget.removeItem(self.vl1)
+                        self.ver_line_1 = float(vline_arg[0])
+                        self.vl1 = self.plot_widget.addLine( x = self.ver_line_1 )
+                    if self.ver_line_2 != float(vline_arg[1]):
+                        self.plot_widget.removeItem(self.vl2)
+                        self.ver_line_2 = float(vline_arg[1])
+                        self.vl2 = self.plot_widget.addLine( x = self.ver_line_2 )
+        
         else:
             if kwargs.get('scatter', '') == 'True':
                 kwargs['pen'] = None;
@@ -216,6 +232,11 @@ class CrosshairDock(CloseableDock):
             elif kwargs.get('scatter', '') == 'False':
                 kwargs['pen'] = self.used_colors[name] = self.avail_colors.pop()
                 self.curves[name] = self.plot_widget.plot(*args, **kwargs)
+                # vertical lines
+                if vline_arg != 'False':
+                    # , pen = pg.mkPen(color=(230, 0, 126), width = 1)
+                    self.vl1 = self.plot_widget.addLine( x = float(vline_arg[0]) )
+                    self.vl2 = self.plot_widget.addLine( x = float(vline_arg[1]) )
 
             del_action = QtWidgets.QAction(str(name), self)
             self.del_dict[del_action] = self.plot_widget.listDataItems()[-1]
