@@ -295,9 +295,9 @@ class Worker(QWidget):
         import numpy as np
         import atomize.general_modules.general_functions as general
         import atomize.device_modules.PB_ESR_500_pro as pb_pro
-        import atomize.device_modules.Keysight_3000_Xseries as key
+        ###import atomize.device_modules.Keysight_3000_Xseries as key
         import atomize.device_modules.Mikran_X_band_MW_bridge as mwBridge
-        ###import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
+        import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
         import atomize.device_modules.SR_PTC_10 as sr
         import atomize.device_modules.BH_15 as bh
         import atomize.general_modules.csv_opener_saver_tk_kinter as openfile
@@ -307,8 +307,8 @@ class Worker(QWidget):
         mw = mwBridge.Mikran_X_band_MW_bridge()
         pb = pb_pro.PB_ESR_500_Pro()
         bh15 = bh.BH_15()
-        t3034 = key.Keysight_3000_Xseries()
-        ###dig4450 = spectrum.Spectrum_M4I_4450_X8()
+        ###t3034 = key.Keysight_3000_Xseries()
+        dig4450 = spectrum.Spectrum_M4I_4450_X8()
 
         # parameters for initial initialization
         POINTS = p9
@@ -337,14 +337,14 @@ class Worker(QWidget):
         bh15.magnet_field(FIELD)
 
         # Setting oscilloscope
-        t3034.oscilloscope_trigger_channel('CH1')
-        t3034.oscilloscope_record_length(250)
-        t3034.oscilloscope_acquisition_type('Average')
-        t3034.oscilloscope_number_of_averages(AVERAGES)
-        t3034.oscilloscope_stop()
+        ###t3034.oscilloscope_trigger_channel('CH1')
+        ###t3034.oscilloscope_record_length(250)
+        ###t3034.oscilloscope_acquisition_type('Average')
+        ###t3034.oscilloscope_number_of_averages(AVERAGES)
+        ###t3034.oscilloscope_stop()
 
-        ###dig4450.digitizer_read_settings()
-        ###dig4450.digitizer_number_of_averages(AVERAGES)
+        dig4450.digitizer_read_settings()
+        dig4450.digitizer_number_of_averages(AVERAGES)
 
         # Setting pulses
         #pb.pulser_pulse(name = 'P0', channel = 'MW', start = PULSE_1_START, length = PULSE_1_LENGTH)
@@ -374,10 +374,10 @@ class Worker(QWidget):
 
                         pb.pulser_next_phase()
                         
-                        ###cycle_data_x[k], cycle_data_y[k] = dig4450.digitizer_get_curve( integral = True )
-                        t3034.oscilloscope_start_acquisition()
-                        cycle_data_x[k] = t3034.oscilloscope_area('CH4')
-                        cycle_data_y[k] = t3034.oscilloscope_area('CH3')
+                        cycle_data_x[k], cycle_data_y[k] = dig4450.digitizer_get_curve( integral = True )
+                        ###t3034.oscilloscope_start_acquisition()
+                        ###cycle_data_x[k] = t3034.oscilloscope_area('CH4')
+                        ###cycle_data_y[k] = t3034.oscilloscope_area('CH3')
 
                         k += 1
 
@@ -435,11 +435,11 @@ class Worker(QWidget):
 
         if self.command == 'exit':
             general.message('Script finished')
-            tb = t3034.oscilloscope_timebase()*1000
+            ###tb = t3034.oscilloscope_timebase()*1000
             
-            ###tb = dig4450.digitizer_number_of_points() * int(  1000 / float( dig4450.digitizer_sample_rate().split(' ')[0] ) )
-            ###dig4450.digitizer_stop()
-            ###dig4450.digitizer_close()
+            tb = dig4450.digitizer_number_of_points() * int(  1000 / float( dig4450.digitizer_sample_rate().split(' ')[0] ) )
+            dig4450.digitizer_stop()
+            dig4450.digitizer_close()
             pb.pulser_stop()
 
             # Data saving

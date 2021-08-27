@@ -21,7 +21,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         super(MainWindow, self).__init__(*args, **kwargs)
         
-        self.destroyed.connect(lambda: self._on_destroyed())         # connect some actions to exit
+        #self.destroyed.connect(lambda: self._on_destroyed())         # connect some actions to exit
         # Load the UI Page
         path_to_main = os.path.dirname(os.path.abspath(__file__))
         gui_path = os.path.join(path_to_main,'gui/temp_main_window.ui')
@@ -68,9 +68,12 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         A function to do some actions when the main window is closing.
         """
-        self.rt.stop()
-        self.rt2.stop()
-        self.rt3.stop()
+        try:
+            self.rt.stop()
+            self.rt2.stop()
+            self.rt3.stop()
+        except AttributeError:
+            sys.exit()
 
     def quit(self):
         """

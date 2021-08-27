@@ -814,10 +814,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 # clean up
                 spcm_vClose (hCard1)
 
-                #hCard2 = spcm_hOpen (create_string_buffer (b'/dev/spcm1'))
-                #spcm_dwSetParam_i32 (hCard2, SPC_M2CMD, M2CMD_CARD_STOP)
+                hCard2 = spcm_hOpen (create_string_buffer (b'/dev/spcm1'))
+                spcm_dwSetParam_i32 (hCard2, SPC_M2CMD, M2CMD_CARD_STOP)
                 # clean up
-                #spcm_vClose (hCard2)
+                spcm_vClose (hCard2)
 
                 ###
 

@@ -317,6 +317,7 @@ class Worker(QWidget):
         t3034.oscilloscope_number_of_averages(AVERAGES)
         t3034.oscilloscope_stop()
         
+        freq_before = int(str( mw.mw_bridge_synthesizer() ).split(' ')[1])
         # initialize the power
         mw.mw_bridge_synthesizer( START_FREQ )
 
@@ -376,7 +377,8 @@ class Worker(QWidget):
             self.command = 'exit'
 
         if self.command == 'exit':
-            general.message('Script finished')           
+            general.message('Script finished')
+            mw.mw_bridge_synthesizer( freq_before )
             ###dig4450.digitizer_stop()
             ###dig4450.digitizer_close()
             pb.pulser_stop()
