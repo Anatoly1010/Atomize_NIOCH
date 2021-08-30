@@ -496,7 +496,8 @@ class Worker(QWidget):
             general.message('Script finished')
             ###tb = t3034.oscilloscope_timebase()*1000
 
-            tb = dig4450.digitizer_number_of_points() * int(  1000 / float( dig4450.digitizer_sample_rate().split(' ')[0] ) )
+            #tb = dig4450.digitizer_number_of_points() * int(  1000 / float( dig4450.digitizer_sample_rate().split(' ')[0] ) )
+            tb = dig4450.digitizer_window()
             dig4450.digitizer_stop()
             dig4450.digitizer_close()
             pb.pulser_stop()

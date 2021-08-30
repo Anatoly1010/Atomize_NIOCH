@@ -320,7 +320,8 @@ class Worker(QWidget):
         freq_before = int(str( mw.mw_bridge_synthesizer() ).split(' ')[1])
         # initialize the power
         mw.mw_bridge_synthesizer( START_FREQ )
-
+        general.wait('150 ms')
+        
         # the idea of automatic and dynamic changing is
         # sending a new value of repetition rate via self.command
         # in each cycle we will check the current value of self.command
@@ -334,6 +335,9 @@ class Worker(QWidget):
                 i = 0
                 freq = START_FREQ
                 mw.mw_bridge_synthesizer( freq )
+                
+                t3034.oscilloscope_start_acquisition()
+                t3034.oscilloscope_get_curve('CH2')
 
                 while freq <= END_FREQ:
                     
