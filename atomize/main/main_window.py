@@ -28,8 +28,8 @@ from PyQt5.Qt import Qt as QtConst
 from pyqtgraph.dockarea import DockArea
 import atomize.main.messenger_socket_server as socket_server
 ###AWG
-sys.path.append('/home/pulseepr/Sources/AWG/Examples/python')
-#sys.path.append('/home/anatoly/AWG/spcm_examples/python')
+##sys.path.append('/home/pulseepr/Sources/AWG/Examples/python')
+sys.path.append('/home/anatoly/AWG/spcm_examples/python')
 
 from pyspcm import *
 from spcm_tools import *
@@ -140,7 +140,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.button_pulse.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
          border-style: outset; color: rgb(193, 202, 227);}\
           QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
-        
+        self.button_awg.clicked.connect(self.start_awg_control)
+        self.button_awg.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
+         border-style: outset; color: rgb(193, 202, 227);}\
+          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
+
         self.button_t2.clicked.connect(self.start_t2_preset)
         self.button_t2.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
          border-style: outset; color: rgb(193, 202, 227);}\
@@ -221,6 +225,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.process_echo = QtCore.QProcess(self)
         self.process_eseem = QtCore.QProcess(self)
         self.process_tune = QtCore.QProcess(self)
+        self.process_awg = QtCore.QProcess(self)
         # check where we are
         self.system = platform.system()
         if self.system == 'Windows':
@@ -237,6 +242,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.process_echo.setProgram('python.exe')
             self.process_eseem.setProgram('python.exe')
             self.process_tune.setProgram('python.exe')
+            self.process_awg.setProgram('python.exe')
         elif self.system == 'Linux':
             self.editor = str(config['DEFAULT']['editor'])
             if self.editor == 'nano' or self.editor == 'vi':
@@ -255,6 +261,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.process_echo.setProgram('python3')
             self.process_eseem.setProgram('python3')
             self.process_tune.setProgram('python3')
+            self.process_awg.setProgram('python3')
 
         self.process.finished.connect(self.on_finished_checking)
         self.process_python.finished.connect(self.on_finished_script)
@@ -489,6 +496,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.process_echo.close()
         self.process_eseem.close()
         self.process_tune.close()
+        self.process_awg.close()
 
     def quit(self):
         """
@@ -505,6 +513,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.process_echo.terminate()
         self.process_eseem.terminate()
         self.process_tune.terminate()
+        self.process_awg.terminate()
         sys.exit()
         ####
         #### QProcess: Destroyed while process ("python3") is still running.
@@ -532,6 +541,13 @@ class MainWindow(QtWidgets.QMainWindow):
         elif self.test_flag == 0 and exec_code == True:
             self.process_python.setArguments([self.script])
             self.process_python.start()
+    
+    def start_awg_control(self):
+        """
+        A function to run an pulse_creator.
+        """
+        self.process_awg.setArguments(['atomize/control_center/awg_creator.py'])
+        self.process_awg.start()
 
     def start_pulse_control(self):
         """

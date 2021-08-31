@@ -41,7 +41,7 @@
    </font>
   </property>
   <property name="windowTitle">
-   <string>Pulse Creator v 0.1</string>
+   <string>AWG Creator v 0.1</string>
   </property>
   <property name="styleSheet">
    <string notr="true">background-color: rgb(42,42,64);</string>
@@ -135,6 +135,9 @@
       </item>
       <item row="7" column="5">
        <widget class="QDoubleSpinBox" name="Phase">
+        <property name="wrapping">
+         <bool>true</bool>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -423,28 +426,8 @@
          </size>
         </property>
         <property name="currentIndex">
-         <number>4</number>
+         <number>0</number>
         </property>
-        <item>
-         <property name="text">
-          <string>SINE</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>GAUSS</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>SINC</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>BLANK</string>
-         </property>
-        </item>
         <item>
          <property name="text">
           <string>TRIGGER</string>
@@ -801,7 +784,7 @@
          <double>5000.000000000000000</double>
         </property>
         <property name="singleStep">
-         <double>0.800000000000000</double>
+         <double>2.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -820,7 +803,7 @@
          <double>5000.000000000000000</double>
         </property>
         <property name="singleStep">
-         <double>0.800000000000000</double>
+         <double>2.000000000000000</double>
         </property>
         <property name="value">
          <double>300.000000000000000</double>
@@ -842,7 +825,7 @@
          <double>5000.000000000000000</double>
         </property>
         <property name="singleStep">
-         <double>0.800000000000000</double>
+         <double>2.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -861,7 +844,7 @@
          <double>5000.000000000000000</double>
         </property>
         <property name="singleStep">
-         <double>0.800000000000000</double>
+         <double>2.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -880,7 +863,7 @@
          <double>5000.000000000000000</double>
         </property>
         <property name="singleStep">
-         <double>0.800000000000000</double>
+         <double>2.000000000000000</double>
         </property>
        </widget>
       </item>
