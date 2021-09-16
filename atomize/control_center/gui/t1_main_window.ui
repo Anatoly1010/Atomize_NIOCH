@@ -486,7 +486,7 @@ p, li { white-space: pre-wrap; }
          <bool>false</bool>
         </property>
         <property name="minimum">
-         <number>10</number>
+         <number>12</number>
         </property>
         <property name="maximum">
          <number>1900</number>

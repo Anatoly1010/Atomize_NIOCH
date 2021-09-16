@@ -174,6 +174,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # preopen script
         self.open_file( self.script )
 
+        self.checkTests.setStyleSheet("QCheckBox { color : rgb(193, 202, 227); }")
+
         # Liveplot tab setting
         self.dockarea = DockArea()
         self.namelist = NameList(self)
@@ -210,6 +212,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.open_dir = str(config['DEFAULT']['open_dir'])
         self.script_dir = str(config['DEFAULT']['script_dir'])
         self.path = self.script_dir
+        self.test_timeout = int(config['DEFAULT']['test_timeout']) * 1000 # in ms
 
         # for running different processes using QProcess
         self.process = QtCore.QProcess(self)
@@ -532,11 +535,17 @@ class MainWindow(QtWidgets.QMainWindow):
             self.text_errors.appendPlainText('No experimental script is opened')
             return
 
-        self.test()
-        exec_code = self.process.waitForFinished()
+        if self.checkTests.checkState() == 2:
+            self.test()
+            exec_code = self.process.waitForFinished( msecs = self.test_timeout ) # timeout in msec
+        elif self.checkTests.checkState() == 0:
+            self.test_flag = 0
+            exec_code = True
+            self.text_errors.appendPlainText("Testing of experimental scripts are disabled")
 
         if self.test_flag == 1:
-            self.text_errors.appendPlainText("Experiment cannot be started, since test is not passed")
+            self.text_errors.appendPlainText("Experiment cannot be started, since test is not passed. Test execution timeout is " +\
+                                str( self.test_timeout / 60000 ) + " minutes")
             return        # stop current function
         elif self.test_flag == 0 and exec_code == True:
             self.process_python.setArguments([self.script])

@@ -37,7 +37,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.bh15 = bh.BH_15()
         self.awg = spectrum.Spectrum_M4I_6631_X8()
 
-        self.awg_output_shift = 396 # in ns; depends on the cable length
+        self.awg_output_shift = 402 # in ns; depends on the cable length
 
         # First initialization problem
         # corrected directly in the module BH-15
@@ -46,6 +46,9 @@ class MainWindow(QtWidgets.QMainWindow):
         #except BrokenPipeError:
         #    pass
 
+        self.design()
+
+    def design(self):
         # Connection of different action to different Menus and Buttons
         self.button_off.clicked.connect(self.turn_off)
         self.button_off.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
@@ -67,12 +70,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.label_3.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_4.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_5.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
-        self.label_6.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        #self.label_6.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_7.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_8.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_9.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_10.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_11.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.label_12.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.label_13.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
 
         # Spinboxes
         self.P1_st.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
@@ -120,11 +125,25 @@ class MainWindow(QtWidgets.QMainWindow):
         self.P5_type.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
         self.P6_type.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
 
-        self.Freq.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        #self.Freq.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
         self.Phase.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
         self.Delay.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
         self.Ampl_1.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
         self.Ampl_2.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+
+        self.freq_1.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        self.freq_2.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        self.freq_3.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        self.freq_4.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        self.freq_5.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        self.freq_6.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+
+        self.coef_1.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        self.coef_2.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        self.coef_3.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        self.coef_4.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        self.coef_5.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        self.coef_6.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
 
         # Functions
 
@@ -137,8 +156,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.Delay.valueChanged.connect(self.tr_delay)
         self.cur_delay = self.add_ns( self.Delay.value() )
 
-        self.Freq.valueChanged.connect(self.awg_freq)
-        self.cur_freq = str( self.Freq.value() ) + ' MHz'
+        #self.Freq.valueChanged.connect(self.awg_freq)
+        #self.cur_freq = str( self.Freq.value() ) + ' MHz'
 
         self.Phase.valueChanged.connect(self.awg_phase)
         self.cur_phase = self.Phase.value() * np.pi * 2 / 360
@@ -148,23 +167,23 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.P2_st.valueChanged.connect(self.p2_st)
         self.p2_start = self.add_ns( self.P2_st.value() )
-        self.p2_start_rect = self.add_ns( self.P2_st.value() + self.awg_output_shift )
+        self.p2_start_rect = self.add_ns( int( self.P2_st.value() + self.awg_output_shift ) )
 
         self.P3_st.valueChanged.connect(self.p3_st)
         self.p3_start = self.add_ns( self.P3_st.value() )
-        self.p3_start_rect = self.add_ns( self.P3_st.value() + self.awg_output_shift )
+        self.p3_start_rect = self.add_ns( int( self.P3_st.value() + self.awg_output_shift ) )
 
         self.P4_st.valueChanged.connect(self.p4_st)
         self.p4_start = self.add_ns( self.P4_st.value() )
-        self.p4_start_rect = self.add_ns( self.P4_st.value() + self.awg_output_shift )
+        self.p4_start_rect = self.add_ns( int( self.P4_st.value() + self.awg_output_shift ) )
 
         self.P5_st.valueChanged.connect(self.p5_st)
         self.p5_start = self.add_ns( self.P5_st.value() )
-        self.p5_start_rect = self.add_ns( self.P5_st.value() + self.awg_output_shift )
+        self.p5_start_rect = self.add_ns( int( self.P5_st.value() + self.awg_output_shift ) )
 
         self.P6_st.valueChanged.connect(self.p6_st)
         self.p6_start = self.add_ns( self.P6_st.value() )
-        self.p6_start_rect = self.add_ns( self.P6_st.value() + self.awg_output_shift )
+        self.p6_start_rect = self.add_ns( int( self.P6_st.value() + self.awg_output_shift ) )
 
 
         self.P1_len.valueChanged.connect(self.p1_len)
@@ -225,28 +244,69 @@ class MainWindow(QtWidgets.QMainWindow):
         self.P6_type.currentIndexChanged.connect(self.p6_type)
         self.p6_typ = str( self.P6_type.currentText() )
 
+        # freq
+        #self.freq_1.valueChanged.connect(self.p1_freq_f)
+        #self.p1_freq = self.add_mhz( self.freq_1.value() )
+
+        self.freq_2.valueChanged.connect(self.p2_freq_f)
+        self.p2_freq = self.add_mhz( int( self.freq_2.value() ) )
+
+        self.freq_3.valueChanged.connect(self.p3_freq_f)
+        self.p3_freq = self.add_mhz( int( self.freq_3.value() ) )
+
+        self.freq_4.valueChanged.connect(self.p4_freq_f)
+        self.p4_freq = self.add_mhz( int( self.freq_4.value() ) )
+
+        self.freq_5.valueChanged.connect(self.p5_freq_f)
+        self.p5_freq = self.add_mhz( int( self.freq_5.value() ) )
+
+        self.freq_6.valueChanged.connect(self.p6_freq_f)
+        self.p6_freq = self.add_mhz( int( self.freq_6.value() ) )
+
+        # coef in amplitude
+        self.coef_2.valueChanged.connect(self.p2_coef_f)
+        self.p2_coef = round( 100 / self.coef_2.value() , 2 )
+
+        self.coef_3.valueChanged.connect(self.p3_coef_f)
+        self.p3_coef = round( 100 / self.coef_2.value() , 2 )
+
+        self.coef_4.valueChanged.connect(self.p4_coef_f)
+        self.p4_coef = round( 100 / self.coef_2.value() , 2 )
+
+        self.coef_5.valueChanged.connect(self.p5_coef_f)
+        self.p5_coef = round( 100 / self.coef_2.value() , 2 )
+
+        self.coef_6.valueChanged.connect(self.p6_coef_f)
+        self.p6_coef = round( 100 / self.coef_2.value() , 2 )
+
     def add_ns(self, string1):
         """
         Function to add ' ns'
         """
         return str( string1 ) + ' ns'
 
+    def add_mhz(self, string1):
+        """
+        Function to add ' MHz'
+        """
+        return str( string1 ) + ' MHz'
+
     def check_length(self, length):
         self.errors.clear()
 
-        if int( length ) != 0 and int( length ) < 10:
-            self.errors.appendPlainText( 'Pulse length should be longer than 10 ns' )
+        if int( length ) != 0 and int( length ) < 12:
+            self.errors.appendPlainText( 'Pulse length should be longer than 12 ns' )
 
         return length
 
     def round_length(self, length):
-        if int( length ) != 0 and int( length ) < 10:
-            self.errors.appendPlainText( 'Pulse length of RECT_AWG is rounded to 10 ns' )
+        if int( length ) != 0 and int( length ) < 12:
+            self.errors.appendPlainText( 'Pulse length of RECT_AWG is rounded to 12 ns' )
 
-            return '10 ns'
+            return '12 ns'
 
         else:
-            return self.add_ns( self.round_to_closest( length, 2 ) )
+            return self.add_ns( int( self.round_to_closest( length, 2 ) ) )
 
     def _on_destroyed(self):
         """
@@ -303,11 +363,73 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self.cur_phase = self.Phase.value() * np.pi * 2 / 360
     
-    def awg_freq(self):
+    def p2_coef_f(self):
         """
-        A function to set AWG pulses frequency
+        A function to change pulse 2 coefficient
         """
-        self.cur_freq = str( self.Freq.value() ) + ' MHz'
+        self.p2_coef = round( 100 / self.coef_2.value() , 2 )
+
+        #if ( self.ch0_ampl / self.p2_coef < 80 ) or ( self.ch1_ampl / self.p2_coef  < 80 ):
+        #    if self.ch0_ampl <= self.ch1_ampl:
+        #        self.p2_coef = round( ( self.ch0_ampl / 80 ), 2 )
+        #    else:
+        #        self.p2_coef = round( ( self.ch1_ampl / 80 ), 2 )
+
+        #    self.coef_2.setValue( int( 1 / self.p2_coef * 100 ) )
+
+    def p3_coef_f(self):
+        """
+        A function to change pulse 3 coefficient
+        """
+        self.p3_coef = round( 100 / self.coef_3.value() , 2 )
+        
+    def p4_coef_f(self):
+        """
+        A function to change pulse 4 coefficient
+        """
+        self.p4_coef = round( 100 / self.coef_4.value() , 2 )
+
+    def p5_coef_f(self):
+        """
+        A function to change pulse 5 coefficient
+        """
+        self.p5_coef = round( 100 / self.coef_5.value() , 2 )
+
+    def p6_coef_f(self):
+        """
+        A function to change pulse 6 coefficient
+        """
+        self.p6_coef = round( 100 / self.coef_6.value() , 2 )
+
+    def p2_freq_f(self):
+        """
+        A function to change pulse 2 frequency
+        """
+        self.p2_freq = self.add_mhz( int( self.freq_2.value() ) )
+
+    def p3_freq_f(self):
+        """
+        A function to change pulse 3 frequency
+        """
+        self.p3_freq = self.add_mhz( int( self.freq_3.value() ) )
+
+    def p4_freq_f(self):
+        """
+        A function to change pulse 4 frequency
+        """
+        self.p4_freq = self.add_mhz( int( self.freq_4.value() ) )
+
+    def p5_freq_f(self):
+        """
+        A function to change pulse 5 frequency
+        """
+        self.p5_freq = self.add_mhz( int( self.freq_5.value() ) )
+
+    def p6_freq_f(self):
+        """
+        A function to change pulse 6 frequency
+        """
+        self.p6_freq = self.add_mhz( int( self.freq_6.value() ) )
 
     def p1_st(self):
         """
@@ -329,7 +451,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.p2_start = self.round_to_closest( self.p2_start, 2 )
             self.P2_st.setValue( self.p2_start )
 
-        self.p2_start_rect = self.add_ns( self.P2_st.value() + self.awg_output_shift )
+        self.p2_start_rect = self.add_ns( int( self.P2_st.value() + self.awg_output_shift ) )
         self.p2_start = self.add_ns( self.P2_st.value() )
 
     def p3_st(self):
@@ -341,7 +463,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.p3_start = self.round_to_closest( self.p3_start, 2 )
             self.P3_st.setValue( self.p3_start )
 
-        self.p3_start_rect = self.add_ns( self.P3_st.value() + self.awg_output_shift )
+        self.p3_start_rect = self.add_ns( int( self.P3_st.value() + self.awg_output_shift ) )
         self.p3_start = self.add_ns( self.P3_st.value() )
 
     def p4_st(self):
@@ -353,7 +475,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.p4_start = self.round_to_closest( self.p4_start, 2 )
             self.P4_st.setValue( self.p4_start )
 
-        self.p4_start_rect = self.add_ns( self.P4_st.value() + self.awg_output_shift )
+        self.p4_start_rect = self.add_ns( int( self.P4_st.value() + self.awg_output_shift ) )
         self.p4_start = self.add_ns( self.P4_st.value() )
 
     def p5_st(self):
@@ -365,7 +487,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.p5_start = self.round_to_closest( self.p5_start, 2 )
             self.P5_st.setValue( self.p5_start )
 
-        self.p5_start_rect = self.add_ns( self.P5_st.value() + self.awg_output_shift )
+        self.p5_start_rect = self.add_ns( int( self.P5_st.value() + self.awg_output_shift ) )
         self.p5_start = self.add_ns( self.P5_st.value() )
 
     def p6_st(self):
@@ -377,7 +499,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.p6_start = self.round_to_closest( self.p6_start, 2 )
             self.P6_st.setValue( self.p6_start )
 
-        self.p6_start_rect = self.add_ns( self.P6_st.value() + self.awg_output_shift )
+        self.p6_start_rect = self.add_ns( int( self.P6_st.value() + self.awg_output_shift ) )
         self.p6_start = self.add_ns( self.P6_st.value() )
 
     def p1_len(self):
@@ -606,39 +728,41 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if float( self.p2_length.split(' ')[0] ) != 0.:
             # self.p2_length ROUND TO CLOSEST 2
-            self.awg.awg_pulse(name = 'P2', channel = 'CH0', func = self.p2_typ, frequency = self.cur_freq, phase = 0, \
-                    length = self.p2_length, sigma = self.p2_sigma, start = self.p2_start )
+            self.awg.awg_pulse(name = 'P2', channel = 'CH0', func = self.p2_typ, frequency = self.p2_freq, phase = 0, \
+                    length = self.p2_length, sigma = self.p2_sigma, start = self.p2_start, d_coef = self.p2_coef )
 
             if self.p2_typ != 'BLANK':
-                self.pb.pulser_pulse(name = 'P3', channel = 'AWG', start = self.p2_start_rect, length = self.round_length( self.P2_len.value() ) )
+                self.pb.pulser_pulse(name = 'P3', channel = 'AWG', start = self.p2_start_rect, length = self.round_length( self.P2_len.value() ) ) 
 
         if float( self.p3_length.split(' ')[0] ) != 0.:
-            self.awg.awg_pulse(name = 'P4', channel = 'CH0', func = self.p3_typ, frequency = self.cur_freq, phase = 0, \
-                    length = self.p3_length, sigma = self.p3_sigma, start = self.p3_start )
+            self.awg.awg_pulse(name = 'P4', channel = 'CH0', func = self.p3_typ, frequency = self.p3_freq, phase = 0, \
+                    length = self.p3_length, sigma = self.p3_sigma, start = self.p3_start, d_coef = self.p3_coef )
 
             if self.p3_typ != 'BLANK':
                 self.pb.pulser_pulse(name = 'P5', channel = 'AWG', start = self.p3_start_rect, length = self.round_length( self.P3_len.value() ) )
 
         if float( self.p4_length.split(' ')[0] ) != 0.:
-            self.awg.awg_pulse(name = 'P6', channel = 'CH0', func = self.p4_typ, frequency = self.cur_freq, phase = 0, \
-                    length = self.p4_length, sigma = self.p4_sigma, start = self.p4_start )
+            self.awg.awg_pulse(name = 'P6', channel = 'CH0', func = self.p4_typ, frequency = self.p4_freq, phase = 0, \
+                    length = self.p4_length, sigma = self.p4_sigma, start = self.p4_start, d_coef = self.p4_coef )
 
             if self.p4_typ != 'BLANK':
                 self.pb.pulser_pulse(name = 'P7', channel = 'AWG', start = self.p4_start_rect, length = self.round_length( self.P4_len.value() ) )
 
         if float( self.p5_length.split(' ')[0] ) != 0.:
-            self.awg.awg_pulse(name = 'P8', channel = 'CH0', func = self.p5_typ, frequency = self.cur_freq, phase = 0, \
-                    length = self.p5_length, sigma = self.p5_sigma, start = self.p5_start )
+            self.awg.awg_pulse(name = 'P8', channel = 'CH0', func = self.p5_typ, frequency = self.p5_freq, phase = 0, \
+                    length = self.p5_length, sigma = self.p5_sigma, start = self.p5_start, d_coef = self.p5_coef )
 
             if self.p5_typ != 'BLANK':
                 self.pb.pulser_pulse(name = 'P9', channel = 'AWG', start = self.p5_start_rect, length = self.round_length( self.P5_len.value() ) )
 
         if float( self.p6_length.split(' ')[0] ) != 0.:
-            self.awg.awg_pulse(name = 'P10', channel = 'CH0', func = self.p6_typ, frequency = self.cur_freq, phase = 0, \
-                    length = self.p6_length, sigma = self.p6_sigma, start = self.p6_start )            
+            self.awg.awg_pulse(name = 'P10', channel = 'CH0', func = self.p6_typ, frequency = self.p6_freq, phase = 0, \
+                    length = self.p6_length, sigma = self.p6_sigma, start = self.p6_start, d_coef = self.p6_coef )            
 
             if self.p6_typ != 'BLANK':
                 self.pb.pulser_pulse(name = 'P11', channel = 'AWG', start = self.p6_start_rect, length = self.round_length( self.P6_len.value() ) )
+
+
 
         self.awg.phase_shift_ch1_seq_mode = self.cur_phase
         self.awg.awg_channel('CH0', 'CH1')
@@ -647,8 +771,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.awg.awg_trigger_delay( self.cur_delay )
         self.awg.awg_setup()
 
+        #general.message( str( self.pb.pulser_pulse_list() ) )
         self.pb.pulser_update()
+
         self.awg.awg_update()
+
         # the next line gives rise to a bag with FC
         #self.bh15.magnet_field( self.mag_field )
 
@@ -705,6 +832,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Test run
         """
+
         self.pb.pulser_clear()
         self.awg.awg_clear()
         # AWG should be reinitialized after clear; it helps in test regime; self.max_pulse_length
@@ -712,6 +840,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.pb.pulser_test_flag( flag )
         self.awg.awg_test_flag( flag )
+
         self.pulse_sequence()
 
     def turn_off(self):

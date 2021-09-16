@@ -164,8 +164,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def check_length(self, length):
         self.errors.clear()
 
-        if int( length ) != 0 and int( length ) < 10:
-            self.errors.appendPlainText( 'Pulse length should be longer than 10 ns' )
+        if int( length ) != 0 and int( length ) < 12:
+            self.errors.appendPlainText( 'Pulse should be longer than 12 ns' )
 
         return length
 
@@ -442,7 +442,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.errors.appendPlainText( 'Incorrect pulse setting. Check that your pulses:\n' + \
                                         '1. Not overlapped\n' + \
                                         '2. Distance between MW pulses is more than 40 ns\n' + \
-                                        '3. Pulses are longer than 8 ns\n' + \
+                                        '3. Pulses are longer or equal to 12 ns\n' + \
                                         '4. Field Controller is stucked\n' + \
                                         '\nPulser is stopped\n')
 

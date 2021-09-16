@@ -256,7 +256,7 @@ p, li { white-space: pre-wrap; }
          <bool>false</bool>
         </property>
         <property name="minimum">
-         <number>10</number>
+         <number>12</number>
         </property>
         <property name="maximum">
          <number>1900</number>
@@ -311,6 +311,11 @@ p, li { white-space: pre-wrap; }
         <property name="verticalScrollBarPolicy">
          <enum>Qt::ScrollBarAlwaysOff</enum>
         </property>
+        <property name="markdown">
+         <string>Exp ESEEM
+
+</string>
+        </property>
         <property name="html">
          <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
@@ -326,11 +331,6 @@ p, li { white-space: pre-wrap; }
         </property>
         <property name="textInteractionFlags">
          <set>Qt::TextEditorInteraction</set>
-        </property>
-        <property name="markdown" stdset="0">
-         <string>Exp ESEEM
-
-</string>
         </property>
        </widget>
       </item>

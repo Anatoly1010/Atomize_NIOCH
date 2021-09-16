@@ -10,11 +10,27 @@ file_handler = openfile.Saver_Opener()
 pb = pb_pro.PB_ESR_500_Pro()
 
 #pb.pulser_pulse(name = 'P0', channel = 'MW', start = '100 ns', length = '12 ns', delta_start = '100 ns', phase_list =  ['-y', '+x', '-x', '+x'])
-pb.pulser_pulse(name = 'P0', channel = 'TRIGGER_AWG', start = '0 ns', length = '30 ns')
-pb.pulser_pulse(name = 'P1', channel = 'AWG', start = '398 ns', length = '16 ns')
-pb.pulser_pulse(name = 'P2', channel = 'AWG', start = '1430 ns', length = '32 ns', delta_start = '2 ns')
-pb.pulser_pulse(name = 'P3', channel = 'TRIGGER', start = '2462 ns', length = '100 ns', delta_start = '4 ns')
+pb.pulser_pulse(name = 'P1', channel = 'MW', start = '0 ns', length = '16 ns', phase_list =  ['-y', '+x', '-x', '+x'])
+pb.pulser_pulse(name = 'P2', channel = 'MW', start = '40 ns', length = '32 ns', delta_start = '2 ns', phase_list =  ['-y', '+x', '-x', '+x'])
+pb.pulser_pulse(name = 'P3', channel = 'TRIGGER', start = '600 ns', length = '100 ns', delta_start = '4 ns')
 #pb.pulser_pulse(name = 'P3', channel = 'MW', start = '550 ns', length = '30 ns', delta_start = '10 ns')
+
+start_time = time.time()
+
+j = 0
+while j < 100:
+    #rep_rate = str(j + 1) + ' Hz'
+    #pb.pulser_repetition_rate( rep_rate )
+    
+    pb.pulser_update()
+    #pb.pulser_next_phase()
+    
+    #pb.pulser_visualize()
+    #general.wait('1 s')
+    pb.pulser_shift()
+    j += 1
+
+general.message( str( time.time() - start_time ) )
 
 #i = 0
 #j = 0
@@ -28,20 +44,6 @@ pb.pulser_pulse(name = 'P3', channel = 'TRIGGER', start = '2462 ns', length = '1
 #    pb.pulser_shift()
 #    i = 0
 #    j += 1
-
-
-
-j = 0
-while j < 20:
-    #rep_rate = str(j + 1) + ' Hz'
-    #pb.pulser_repetition_rate( rep_rate )
-    pb.pulser_update()
-    pb.pulser_visualize()
-    general.wait('1 s')
-    pb.pulser_shift()
-    j += 1
-
-
 
 ###pb.pulser_repetition_rate()
 
