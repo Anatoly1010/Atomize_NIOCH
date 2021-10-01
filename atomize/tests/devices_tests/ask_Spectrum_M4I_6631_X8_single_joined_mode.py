@@ -33,8 +33,8 @@ awg = spectrum.Spectrum_M4I_6631_X8()
 
 awg.awg_pulse(name = 'P4', channel = 'CH0', func = 'SINE', frequency = '125 MHz', phase = 0, \
             length = PULSE_1_LENGTH, sigma = PULSE_1_LENGTH, start = PULSE_AWG_1_START)
-awg.awg_pulse(name = 'P5', channel = 'CH0', func = 'SINE', frequency = '125 MHz', phase = 0, \
-            length = PULSE_2_LENGTH, sigma = PULSE_2_LENGTH, start = PULSE_AWG_2_START, delta_start = str(int(STEP/2)) + ' ns')
+##awg.awg_pulse(name = 'P5', channel = 'CH0', func = 'SINE', frequency = '125 MHz', phase = 0, \
+# #           length = PULSE_2_LENGTH, sigma = PULSE_2_LENGTH, start = PULSE_AWG_2_START, delta_start = str(int(STEP/2)) + ' ns')
 
 awg.awg_channel('CH0', 'CH1')
 #awg.awg_trigger_mode('Negative')
@@ -48,6 +48,8 @@ awg.awg_card_mode('Single Joined')
 #awg.awg_card_mode('Multi')
 #awg.awg_number_of_segments(2)
 
+awg.awg_visualize()
+"""
 awg.awg_setup()
 
 ######### Genereal tests
@@ -90,3 +92,4 @@ for i in range(20):
 
 awg.awg_stop()
 awg.awg_close()
+"""

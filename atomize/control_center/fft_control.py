@@ -438,7 +438,7 @@ class Worker(QWidget):
             general.plot_1d('Digitizer Live', xs, data1, label = 'ch0', xscale = 's', yscale = 'V', vline = (p8 * 10**-9, p9 * 10**-9) )
             general.plot_1d('Digitizer Live', xs, data2, label = 'ch1', xscale = 's', yscale = 'V')
 
-            freq_axis, abs_values = fft.fft(xs, data1, data2)
+            freq_axis, abs_values = fft.fft(xs, data1, data2, 2)
 
             general.plot_1d('FFT Analyzer', freq_axis, abs_values, label = 'FFT', xscale = 'MHz', yscale = 'Arb. U.')
             #general.plot_1d('FFT Analyzer', xs, data2, label = 'ch1', xscale = 's', yscale = 'V')
