@@ -17,8 +17,10 @@ pb.pulser_pulse(name = 'P3', channel = 'TRIGGER', start = '600 ns', length = '10
 
 start_time = time.time()
 
+##i = 0
+##while i < 5:
 j = 0
-while j < 100:
+while j < 200:
     #rep_rate = str(j + 1) + ' Hz'
     #pb.pulser_repetition_rate( rep_rate )
     
@@ -29,6 +31,9 @@ while j < 100:
     #general.wait('1 s')
     pb.pulser_shift()
     j += 1
+
+    ##pb.pulser_reset()
+    ##i += 1
 
 general.message( str( time.time() - start_time ) )
 

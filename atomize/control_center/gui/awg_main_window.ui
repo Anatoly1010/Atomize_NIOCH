@@ -216,6 +216,11 @@
         </item>
         <item>
          <property name="text">
+          <string>WURST</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
           <string>BLANK</string>
          </property>
         </item>
@@ -326,6 +331,11 @@
         <item>
          <property name="text">
           <string>SINC</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>WURST</string>
          </property>
         </item>
         <item>
@@ -577,6 +587,11 @@
         </item>
         <item>
          <property name="text">
+          <string>WURST</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
           <string>BLANK</string>
          </property>
         </item>
@@ -740,6 +755,11 @@
         </item>
         <item>
          <property name="text">
+          <string>WURST</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
           <string>BLANK</string>
          </property>
         </item>
@@ -834,6 +854,11 @@
         <item>
          <property name="text">
           <string>SINC</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>WURST</string>
          </property>
         </item>
         <item>
@@ -1299,7 +1324,7 @@
         </property>
        </widget>
       </item>
-      <item row="14" column="4">
+      <item row="16" column="2">
        <widget class="QLabel" name="label_9">
         <property name="font">
          <font>
@@ -1312,7 +1337,7 @@
         </property>
        </widget>
       </item>
-      <item row="14" column="5">
+      <item row="16" column="3">
        <widget class="QDoubleSpinBox" name="Phase">
         <property name="wrapping">
          <bool>true</bool>
@@ -1331,6 +1356,73 @@
         </property>
         <property name="value">
          <double>90.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="14" column="4">
+       <widget class="QLabel" name="label_6">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>WURST Sweep (MHz)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="15" column="4">
+       <widget class="QLabel" name="label_14">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>N WURST</string>
+        </property>
+       </widget>
+      </item>
+      <item row="14" column="5">
+       <widget class="QSpinBox" name="Wurst_sweep">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>10</number>
+        </property>
+        <property name="maximum">
+         <number>300</number>
+        </property>
+        <property name="singleStep">
+         <number>5</number>
+        </property>
+        <property name="value">
+         <number>125</number>
+        </property>
+       </widget>
+      </item>
+      <item row="15" column="5">
+       <widget class="QSpinBox" name="N_wurst">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+        <property name="value">
+         <number>10</number>
         </property>
        </widget>
       </item>
