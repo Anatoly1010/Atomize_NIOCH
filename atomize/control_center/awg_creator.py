@@ -234,7 +234,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.n_wurst_cur = int( self.N_wurst.value() )
 
         self.Wurst_sweep.valueChanged.connect(self.wurst_sweep)
-        self.wurst_sweep_cur = int( self.Wurst_sweep.value() ) 
+        self.wurst_sweep_cur = self.add_mhz( int( self.Wurst_sweep.value() ) )
 
         self.Field.valueChanged.connect(self.field)
         self.mag_field = float( self.Field.value() )
@@ -353,8 +353,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         A function to set wurst pulse sweep
         """
-        self.wurst_sweep_cur = int( self.Wurst_sweep.value() )
-        print( self.add_mhz( self.p2_freq.split(" ")[0] + self.wurst_sweep_cur ) )
+        self.wurst_sweep_cur = self.add_mhz( int( self.Wurst_sweep.value() ) )
 
     def ch0_amp(self):
         """
@@ -754,8 +753,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.awg.awg_pulse(name = 'P2', channel = 'CH0', func = self.p2_typ, frequency = self.p2_freq, phase = 0, \
                         length = self.p2_length, sigma = self.p2_sigma, start = self.p2_start, d_coef = self.p2_coef )
             else:
-                self.awg.awg_pulse(name = 'P2', channel = 'CH0', func = self.p2_typ, frequency = ( self.p2_freq,  \
-                    self.add_mhz( int(self.p2_freq.split(" ")[0]) + self.wurst_sweep_cur ) ), phase = 0, \
+                self.awg.awg_pulse(name = 'P2', channel = 'CH0', func = self.p2_typ, frequency = ( self.p2_freq, self.wurst_sweep_cur ), phase = 0, \
                     length = self.p2_length, sigma = self.p2_sigma, start = self.p2_start, d_coef = self.p2_coef, n = self.n_wurst_cur )
 
             if self.p2_typ != 'BLANK':
@@ -766,8 +764,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.awg.awg_pulse(name = 'P4', channel = 'CH0', func = self.p3_typ, frequency = self.p3_freq, phase = 0, \
                         length = self.p3_length, sigma = self.p3_sigma, start = self.p3_start, d_coef = self.p3_coef )
             else:
-                self.awg.awg_pulse(name = 'P4', channel = 'CH0', func = self.p3_typ, frequency = ( self.p3_freq,  \
-                    self.add_mhz( int(self.p3_freq.split(" ")[0]) + self.wurst_sweep_cur ) ), phase = 0, \
+                self.awg.awg_pulse(name = 'P4', channel = 'CH0', func = self.p3_typ, frequency = ( self.p3_freq, self.wurst_sweep_cur ), phase = 0, \
                     length = self.p3_length, sigma = self.p3_sigma, start = self.p3_start, d_coef = self.p3_coef, n = self.n_wurst_cur )
 
             if self.p3_typ != 'BLANK':
@@ -778,8 +775,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.awg.awg_pulse(name = 'P6', channel = 'CH0', func = self.p4_typ, frequency = self.p4_freq, phase = 0, \
                         length = self.p4_length, sigma = self.p4_sigma, start = self.p4_start, d_coef = self.p4_coef )
             else:
-                self.awg.awg_pulse(name = 'P6', channel = 'CH0', func = self.p4_typ, frequency = ( self.p4_freq,  \
-                    self.add_mhz( int(self.p4_freq.split(" ")[0]) + self.wurst_sweep_cur ) ), phase = 0, \
+                self.awg.awg_pulse(name = 'P6', channel = 'CH0', func = self.p4_typ, frequency = ( self.p4_freq, self.wurst_sweep_cur ), phase = 0, \
                     length = self.p4_length, sigma = self.p4_sigma, start = self.p4_start, d_coef = self.p4_coef, n = self.n_wurst_cur )
 
             if self.p4_typ != 'BLANK':
@@ -790,8 +786,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.awg.awg_pulse(name = 'P8', channel = 'CH0', func = self.p5_typ, frequency = self.p5_freq, phase = 0, \
                         length = self.p5_length, sigma = self.p5_sigma, start = self.p5_start, d_coef = self.p5_coef )
             else:
-                self.awg.awg_pulse(name = 'P8', channel = 'CH0', func = self.p5_typ, frequency = ( self.p5_freq,  \
-                    self.add_mhz( int(self.p5_freq.split(" ")[0]) + self.wurst_sweep_cur ) ), phase = 0, \
+                self.awg.awg_pulse(name = 'P8', channel = 'CH0', func = self.p5_typ, frequency = ( self.p5_freq, self.wurst_sweep_cur ), phase = 0, \
                     length = self.p5_length, sigma = self.p5_sigma, start = self.p5_start, d_coef = self.p5_coef, n = self.n_wurst_cur )
 
             if self.p5_typ != 'BLANK':
@@ -802,8 +797,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.awg.awg_pulse(name = 'P10', channel = 'CH0', func = self.p6_typ, frequency = self.p6_freq, phase = 0, \
                         length = self.p6_length, sigma = self.p6_sigma, start = self.p6_start, d_coef = self.p6_coef )
             else:
-                self.awg.awg_pulse(name = 'P10', channel = 'CH0', func = self.p6_typ, frequency = ( self.p6_freq,  \
-                    self.add_mhz( int(self.p6_freq.split(" ")[0]) + self.wurst_sweep_cur ) ), phase = 0, \
+                self.awg.awg_pulse(name = 'P10', channel = 'CH0', func = self.p6_typ, frequency = ( self.p6_freq, self.wurst_sweep_cur ), phase = 0, \
                     length = self.p6_length, sigma = self.p6_sigma, start = self.p6_start, d_coef = self.p6_coef, n = self.n_wurst_cur )
 
             if self.p6_typ != 'BLANK':
