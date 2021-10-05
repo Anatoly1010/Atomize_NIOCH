@@ -14,7 +14,7 @@ import atomize.device_modules.Spectrum_M4I_6631_X8 as spectrum
 # PULSES
 STEP = 4
 REP_RATE = '500 Hz'
-PULSE_1_LENGTH = '16 ns'
+PULSE_1_LENGTH = '200 ns'
 PULSE_2_LENGTH = '32 ns'
 
 PULSE_AWG_1_START = '0 ns'
@@ -31,8 +31,8 @@ awg = spectrum.Spectrum_M4I_6631_X8()
 #awg.awg_pulse(name = 'P1', channel = 'CH0', func = 'SINE', frequency = '200 MHz', phase = 0, phase_list = ['+x', '+y', '-x', '-y'], length = '32 ns', sigma = '32 ns', start = '300 ns', delta_start = '8 ns')
 
 
-awg.awg_pulse(name = 'P4', channel = 'CH0', func = 'SINE', frequency = '125 MHz', phase = 0, \
-            length = PULSE_1_LENGTH, sigma = PULSE_1_LENGTH, start = PULSE_AWG_1_START)
+awg.awg_pulse(name = 'P4', channel = 'CH0', func = 'WURST', frequency = ('0 MHz', '191 MHz'), phase = 0, \
+            length = PULSE_1_LENGTH, sigma = PULSE_1_LENGTH, start = PULSE_AWG_1_START, n = 10)
 ##awg.awg_pulse(name = 'P5', channel = 'CH0', func = 'SINE', frequency = '125 MHz', phase = 0, \
 # #           length = PULSE_2_LENGTH, sigma = PULSE_2_LENGTH, start = PULSE_AWG_2_START, delta_start = str(int(STEP/2)) + ' ns')
 
