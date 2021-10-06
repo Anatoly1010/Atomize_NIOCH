@@ -167,14 +167,26 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def delta(self):
         self.cur_delta = int( self.box_delta.value() )
+        if self.cur_delta - self.cur_length < 40:
+            self.cur_delta = self.cur_length + 40
+            self.box_delta.setValue( self.cur_delta )
         #print(self.cur_end_field)
     
     def delta_echo(self):
         self.cur_delta_echo = int( self.box_delta_echo.value() )
+        if self.cur_delta_echo - self.cur_length < 40:
+            self.cur_delta_echo = self.cur_length + 40
+            self.box_delta_echo.setValue( self.cur_delta_echo )
         #print(self.cur_end_field)
 
     def pulse_length(self):
         self.cur_length = int( self.box_length.value() )
+        if self.cur_delta - self.cur_length < 40:
+            self.cur_delta = self.cur_length + 40
+            self.box_delta.setValue( self.cur_delta )
+        if self.cur_delta_echo - self.cur_length < 40:
+            self.cur_delta_echo = self.cur_length + 40
+            self.box_delta_echo.setValue( self.cur_delta_echo )
         #print(self.cur_start_field)
 
     def time_step(self):
