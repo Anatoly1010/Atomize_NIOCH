@@ -37,7 +37,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.bh15 = bh.BH_15()
         self.awg = spectrum.Spectrum_M4I_6631_X8()
 
-        self.awg_output_shift = 402 # in ns; depends on the cable length
+        self.awg_output_shift = 494 # in ns; depends on the cable length
 
         # First initialization problem
         # corrected directly in the module BH-15
@@ -591,8 +591,8 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self.p2_length = self.P2_len.value()
         # strange behavior without round
-        if round( self.p2_length % 0.8, 1) != 0:
-            self.p2_length = self.round_to_closest( self.p2_length, 0.8 )
+        if round( self.p2_length % 1, 1) != 0: # it was 0.8
+            self.p2_length = self.round_to_closest( self.p2_length, 1 )
             self.P2_len.setValue( self.p2_length )
 
         #pl = self.check_length( self.P2_len.value() )
@@ -603,8 +603,8 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to change a pulse 3 length
         """
         self.p3_length = self.P3_len.value()
-        if round( self.p3_length % 0.8, 1) != 0:
-            self.p3_length = self.round_to_closest( self.p3_length, 0.8 )
+        if round( self.p3_length % 1, 1) != 0:
+            self.p3_length = self.round_to_closest( self.p3_length, 1 )
             self.P3_len.setValue( self.p3_length )
 
         #pl = self.check_length( self.P3_len.value() )
@@ -615,8 +615,8 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to change a pulse 4 length
         """
         self.p4_length = self.P4_len.value()
-        if round( self.p4_length % 0.8, 1) != 0:
-            self.p4_length = self.round_to_closest( self.p4_length, 0.8 )
+        if round( self.p4_length % 1, 1) != 0:
+            self.p4_length = self.round_to_closest( self.p4_length, 1 )
             self.P4_len.setValue( self.p4_length )
 
         #pl = self.check_length( self.P4_len.value() )
@@ -627,8 +627,8 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to change a pulse 5 length
         """
         self.p5_length = self.P5_len.value()
-        if round( self.p5_length % 0.8, 1) != 0:
-            self.p5_length = self.round_to_closest( self.p5_length, 0.8 )
+        if round( self.p5_length % 1, 1) != 0:
+            self.p5_length = self.round_to_closest( self.p5_length, 1 )
             self.P5_len.setValue( self.p5_length )
 
         #pl = self.check_length( self.P5_len.value() )
@@ -639,8 +639,8 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to change a pulse 6 length
         """
         self.p6_length = self.P6_len.value()
-        if round( self.p6_length % 0.8, 1) != 0:
-            self.p6_length = self.round_to_closest( self.p6_length, 0.8 )
+        if round( self.p6_length % 1, 1) != 0:
+            self.p6_length = self.round_to_closest( self.p6_length, 1 )
             self.P6_len.setValue( self.p6_length )
 
         #pl = self.check_length( self.P6_len.value() )
@@ -663,8 +663,8 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to change a pulse 2 sigma
         """
         self.p2_sigma = self.P2_sig.value()
-        if round( self.p2_sigma % 0.8, 1) != 0:
-            self.p2_sigma = self.round_to_closest( self.p2_sigma, 0.8 )
+        if round( self.p2_sigma % 1, 1) != 0:
+            self.p2_sigma = self.round_to_closest( self.p2_sigma, 1 )
             self.P2_sig.setValue( self.p2_sigma )
 
         #pl = self.check_length( self.P2_sig.value() )
@@ -675,8 +675,8 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to change a pulse 3 sigma
         """
         self.p3_sigma = self.P3_sig.value()
-        if round( self.p3_sigma % 0.8, 1) != 0:
-            self.p3_sigma = self.round_to_closest( self.p3_sigma, 0.8 )
+        if round( self.p3_sigma % 1, 1) != 0:
+            self.p3_sigma = self.round_to_closest( self.p3_sigma, 1 )
             self.P3_sig.setValue( self.p3_sigma )
 
         #pl = self.check_length( self.P3_sig.value() )
@@ -687,8 +687,8 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to change a pulse 4 sigma
         """
         self.p4_sigma = self.P4_sig.value()
-        if round( self.p4_sigma % 0.8, 1) != 0:
-            self.p4_sigma = self.round_to_closest( self.p4_sigma, 0.8 )
+        if round( self.p4_sigma % 1, 1) != 0:
+            self.p4_sigma = self.round_to_closest( self.p4_sigma, 1 )
             self.P4_sig.setValue( self.p4_sigma )
 
         #pl = self.check_length( self.P4_sig.value() )
@@ -699,8 +699,8 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to change a pulse 5 sigma
         """
         self.p5_sigma = self.P5_sig.value()
-        if round( self.p5_sigma % 0.8, 1) != 0:
-            self.p5_sigma = self.round_to_closest( self.p5_sigma, 0.8 )
+        if round( self.p5_sigma % 1, 1) != 0:
+            self.p5_sigma = self.round_to_closest( self.p5_sigma, 1 )
             self.P5_sig.setValue( self.p5_sigma )
 
         #pl = self.check_length( self.P5_sig.value() )
@@ -711,8 +711,8 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to change a pulse 6 sigma
         """
         self.p6_sigma = self.P6_sig.value()
-        if round( self.p6_sigma % 0.8, 1) != 0:
-            self.p6_sigma = self.round_to_closest( self.p6_sigma, 0.8 )
+        if round( self.p6_sigma % 1, 1) != 0:
+            self.p6_sigma = self.round_to_closest( self.p6_sigma, 1 )
             self.P6_sig.setValue( self.p6_sigma )
 
         #pl = self.check_length( self.P6_sig.value() )
@@ -858,6 +858,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.awg.phase_shift_ch1_seq_mode = self.cur_phase
         self.awg.awg_channel('CH0', 'CH1')
         self.awg.awg_card_mode('Single Joined')
+        self.awg.awg_clock_mode('External')
+        self.awg.awg_reference_clock(100)
+        self.awg.awg_sample_rate(1000)
         self.awg.awg_amplitude('CH0', str(self.ch0_ampl), 'CH1', str(self.ch1_ampl) )
         self.awg.awg_trigger_delay( self.cur_delay )
         self.awg.awg_setup()
