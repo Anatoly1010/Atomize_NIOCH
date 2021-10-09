@@ -359,8 +359,8 @@ class Worker(QWidget):
         dig = spectrum.Spectrum_M4I_4450_X8()
         dig.digitizer_card_mode('Average')
 
-        dig.digitizer_clock_mode('External')
-        dig.digitizer_reference_clock(100)
+        ##dig.digitizer_clock_mode('External')
+        ##dig.digitizer_reference_clock(100)
         
         # parameters for initial initialization
         #points_value =      p1

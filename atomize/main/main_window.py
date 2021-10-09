@@ -654,6 +654,8 @@ class MainWindow(QtWidgets.QMainWindow):
             return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/07_eseem_phase.py')
         elif text_to_parse == ' Nutations':
             return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/05_nutations.py')
+        elif text_to_parse == ' HYSCORE':
+            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/08_hyscore.py')
 
     def message_box_clicked(self, btn):
         """

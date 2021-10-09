@@ -888,12 +888,22 @@ QTabBar::tab:selected {
             </item>
             <item>
              <property name="text">
+              <string> T1 Baseline</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
               <string> ESEEM</string>
              </property>
             </item>
             <item>
              <property name="text">
               <string> Nutations</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string> HYSCORE</string>
              </property>
             </item>
            </widget>
