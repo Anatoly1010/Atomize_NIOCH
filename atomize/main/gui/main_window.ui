@@ -906,6 +906,21 @@ QTabBar::tab:selected {
               <string> HYSCORE</string>
              </property>
             </item>
+            <item>
+             <property name="text">
+              <string> SIFTER</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string> DQC</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string> DEER</string>
+             </property>
+            </item>
            </widget>
           </item>
           <item row="7" column="0">

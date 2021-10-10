@@ -805,6 +805,7 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 self.awg.awg_pulse(name = 'P2', channel = 'CH0', func = self.p2_typ, frequency = ( self.p2_freq, self.wurst_sweep_cur_2 ), phase = 0, \
                     length = self.p2_length, sigma = self.p2_sigma, start = self.p2_start, d_coef = self.p2_coef, n = self.n_wurst_cur )
+                    # , phase_list = ['+x', '-x']
 
             if self.p2_typ != 'BLANK':
                 self.pb.pulser_pulse(name = 'P3', channel = 'AWG', start = self.p2_start_rect, length = self.round_length( self.P2_len.value() ) ) 
@@ -816,6 +817,7 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 self.awg.awg_pulse(name = 'P4', channel = 'CH0', func = self.p3_typ, frequency = ( self.p3_freq, self.wurst_sweep_cur_3 ), phase = 0, \
                     length = self.p3_length, sigma = self.p3_sigma, start = self.p3_start, d_coef = self.p3_coef, n = self.n_wurst_cur )
+                    # , phase_list = ['+x', '+x']
 
             if self.p3_typ != 'BLANK':
                 self.pb.pulser_pulse(name = 'P5', channel = 'AWG', start = self.p3_start_rect, length = self.round_length( self.P3_len.value() ) )

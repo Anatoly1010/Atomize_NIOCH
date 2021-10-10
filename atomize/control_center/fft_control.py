@@ -380,6 +380,7 @@ class Worker(QWidget):
         #p8 window left
         #p9 window right
         dig.digitizer_setup()
+        baseline_point = 16
 
         # the idea of automatic and dynamic changing is
         # sending a new value of repetition rate via self.command
@@ -433,12 +434,15 @@ class Worker(QWidget):
                 p9 = int( self.command[2:] )
 
             xs, data1, data2 = dig.digitizer_get_curve()
-                       
-            #plot_1d('Buffer_test', np.array([1,2,3,4,5]), np.array([1,2,3,4,5]), label = 'ch0', xscale = 's', yscale = 'V')
-            general.plot_1d('Digitizer Live', xs, data1, label = 'ch0', xscale = 's', yscale = 'V', vline = (p8 * 10**-9, p9 * 10**-9) )
-            general.plot_1d('Digitizer Live', xs, data2, label = 'ch1', xscale = 's', yscale = 'V')
+            
+            baseline_1 = ( np.sum(data1[0:baseline_point]) + np.sum(data1[len(data1) - baseline_point:len(data1)] ) ) / (2 * baseline_point )
+            baseline_2 = ( np.sum(data2[0:baseline_point]) + np.sum(data2[len(data2) - baseline_point:len(data2)] ) ) / (2 * baseline_point )
 
-            freq_axis, abs_values = fft.fft(xs, data1, data2, 2)
+            #plot_1d('Buffer_test', np.array([1,2,3,4,5]), np.array([1,2,3,4,5]), label = 'ch0', xscale = 's', yscale = 'V')
+            general.plot_1d('Digitizer Live', xs, data1 - baseline_1, label = 'ch0', xscale = 's', yscale = 'V', vline = (p8 * 10**-9, p9 * 10**-9) )
+            general.plot_1d('Digitizer Live', xs, data2 - baseline_2, label = 'ch1', xscale = 's', yscale = 'V')
+
+            freq_axis, abs_values = fft.fft(xs, data1 - baseline_1, data2 - baseline_2, 2)
 
             general.plot_1d('FFT Analyzer', freq_axis, abs_values, label = 'FFT', xscale = 'MHz', yscale = 'Arb. U.')
             #general.plot_1d('FFT Analyzer', xs, data2, label = 'ch1', xscale = 's', yscale = 'V')
