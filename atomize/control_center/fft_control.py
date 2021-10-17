@@ -353,6 +353,7 @@ class Worker(QWidget):
         """
         # should be inside dig_on() function;
         # freezing after digitizer restart otherwise
+        import numpy as np
         import atomize.general_modules.general_functions as general
         import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
         import atomize.math_modules.fft as fft_module
@@ -361,6 +362,10 @@ class Worker(QWidget):
         fft = fft_module.Fast_Fourier()
 
         dig.digitizer_card_mode('Average')
+
+        dig.digitizer_clock_mode('External')
+        dig.digitizer_reference_clock(100)
+
         # parameters for initial initialization
         #points_value =      p1
         dig.digitizer_number_of_points( p1 )
