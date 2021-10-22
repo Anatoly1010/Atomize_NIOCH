@@ -662,6 +662,8 @@ class MainWindow(QtWidgets.QMainWindow):
             return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/11_dqc.py')
         elif text_to_parse == ' DEER':
             return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/awg/digitizer/02_deer_64_steps_phase_8ns_cylces.py')
+        elif text_to_parse == ' DEER Static':
+            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/awg//01_deer_static.py')
 
     def message_box_clicked(self, btn):
         """
