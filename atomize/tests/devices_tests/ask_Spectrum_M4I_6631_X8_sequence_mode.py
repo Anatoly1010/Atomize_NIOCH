@@ -14,7 +14,8 @@ awg.awg_channel('CH0', 'CH1')
 start_time = time.time()
 # 3 ms per point for three pulses
 awg.awg_pulse_sequence(pulse_type = ['SINE', 'GAUSS', 'SINE', 'SINE'], pulse_start = [0, 160, 320, 780], pulse_delta_start = [0, 0, 40, 0], pulse_length = [40, 120, 40, 40], \
-		pulse_phase = ['+x', '+x', '+x', '+x'], pulse_sigma = [40, 20, 40, 40], pulse_frequency = [50, 200, 40, 80], number_of_points = 10, loop = 200, rep_rate = 2000)
+		pulse_phase = ['+x', '+x', '+x', '+x'], pulse_sigma = [40, 20, 40, 40], pulse_frequency = [50, 200, 40, 80], number_of_points = 10, loop = 200, rep_rate = 2000, \
+        n_wurst = [10, 10, 10, 10] )
 
 #awg.awg_pulse_sequence(pulse_type = ['SINE'], pulse_start = [0], pulse_delta_start = [0], pulse_length = [100], \
 #		pulse_phase = ['+x'], pulse_sigma = [40], pulse_frequency = [100], number_of_points = 5, loop = 100, rep_rate = 200)

@@ -14,7 +14,7 @@ import atomize.device_modules.Spectrum_M4I_6631_X8 as spectrum
 # PULSES
 STEP = 4
 REP_RATE = '500 Hz'
-PULSE_1_LENGTH = '200 ns'
+PULSE_1_LENGTH = '650 ns'
 PULSE_2_LENGTH = '32 ns'
 
 PULSE_AWG_1_START = '0 ns'
@@ -32,7 +32,7 @@ awg = spectrum.Spectrum_M4I_6631_X8()
 
 
 awg.awg_pulse(name = 'P4', channel = 'CH0', func = 'WURST', frequency = ('0 MHz', '191 MHz'), phase = 0, \
-            length = PULSE_1_LENGTH, sigma = PULSE_1_LENGTH, start = PULSE_AWG_1_START, n = 10)
+            length = PULSE_1_LENGTH, sigma = PULSE_1_LENGTH, start = PULSE_AWG_1_START, n = 10, delta_start = str(int(STEP/2)) + ' ns')
 ##awg.awg_pulse(name = 'P5', channel = 'CH0', func = 'SINE', frequency = '125 MHz', phase = 0, \
 # #           length = PULSE_2_LENGTH, sigma = PULSE_2_LENGTH, start = PULSE_AWG_2_START, delta_start = str(int(STEP/2)) + ' ns')
 
@@ -48,7 +48,15 @@ awg.awg_card_mode('Single Joined')
 #awg.awg_card_mode('Multi')
 #awg.awg_number_of_segments(2)
 
-awg.awg_visualize()
+
+for i in range(200):
+    start_time = time.time()
+    awg.awg_visualize()
+    general.message( str( time.time() - start_time ) )
+    awg.awg_shift()
+
+    #general.wait('100 ms')
+
 """
 awg.awg_setup()
 

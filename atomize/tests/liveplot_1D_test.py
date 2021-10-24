@@ -20,7 +20,6 @@ ys4 = np.array([])
 
 # Plot_xy Test
 for i in range(50):
-    start_time = time.time()
     #ys = np.append(ys, np.random.rand(1,1))
     #ys2 = np.append(ys2, 1)
     #ys3 = np.append(ys3, np.random.rand(1,1))
@@ -34,9 +33,10 @@ for i in range(50):
     #ys[i] = np.random.randint(0, 10 + 1);
     start_time = time.time()
 
-    p1 = Process(target=general.plot_1d, args=('Plot XY Test', xs, ys, ), kwargs={'label': 'test data2', 'timeaxis': 'False',} )
-    p1.start()
-    p1.join()
+    #p1 = Process(target=general.plot_1d, args=('Plot XY Test', xs, ys, ), kwargs={'label': 'test data2', 'timeaxis': 'False',} )
+    general.plot_1d('EXP_NAME', xs, ys, xname = 'Delay', xscale = 'ns', yname = 'Area', yscale = 'V*s')
+    #p1.start()
+    #p1.join()
 
     #general.plot_1d('Plot XY Test', xs, ys, label='test data2', timeaxis = 'False')
     #general.plot_1d('Plot XY Test', xs, ys2, label='test data2')
@@ -45,7 +45,7 @@ for i in range(50):
     #general.wait('200 ms')
     general.message(str(time.time() - start_time))
     
-file_handler.save_1D_dialog( (xs, ys), header = 'TEST' )
+#file_handler.save_1D_dialog( (xs, ys), header = 'TEST' )
 
 #general.plot_remove('Plot XY Test')
 
