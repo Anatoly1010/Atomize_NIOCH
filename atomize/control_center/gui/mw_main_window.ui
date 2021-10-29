@@ -476,7 +476,7 @@
          <enum>QAbstractSpinBox::DefaultStepType</enum>
         </property>
         <property name="value">
-         <number>9500</number>
+         <number>9563</number>
         </property>
        </widget>
       </item>
