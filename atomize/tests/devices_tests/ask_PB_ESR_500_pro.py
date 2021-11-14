@@ -10,14 +10,14 @@ file_handler = openfile.Saver_Opener()
 pb = pb_pro.PB_ESR_500_Pro()
 
 #pb.pulser_pulse(name = 'P0', channel = 'MW', start = '100 ns', length = '12 ns', delta_start = '100 ns', phase_list =  ['-y', '+x', '-x', '+x'])
-pb.pulser_pulse(name = 'P0', channel = 'LASER', start = '0 ns', length = '40 ns')
-pb.pulser_pulse(name = 'P1', channel = 'MW', start = '240 ns', length = '16 ns', phase_list =  ['+x', '+x'])
-pb.pulser_pulse(name = 'P2', channel = 'MW', start = '440 ns', length = '32 ns', delta_start = '2 ns', phase_list =  ['-x', '-x'])
-pb.pulser_pulse(name = 'P3', channel = 'TRIGGER', start = '660 ns', length = '100 ns', delta_start = '4 ns')
+pb.pulser_pulse(name = 'P0', channel = 'LASER', start = '0 ns', length = '50 ns')
+pb.pulser_pulse(name = 'P1', channel = 'MW', start = '232 ns', length = '16 ns', phase_list =  ['+x', '+x'])
+pb.pulser_pulse(name = 'P2', channel = 'MW', start = '532 ns', length = '32 ns', delta_start = '2 ns', phase_list =  ['-x', '-x'])
+pb.pulser_pulse(name = 'P3', channel = 'TRIGGER', start = '832 ns', length = '100 ns', delta_start = '4 ns')
 #pb.pulser_pulse(name = 'P3', channel = 'MW', start = '550 ns', length = '30 ns', delta_start = '10 ns')
 
 
-pb.pulser_next_phase()
+pb.pulser_update()
 pb.pulser_visualize()
 
 """

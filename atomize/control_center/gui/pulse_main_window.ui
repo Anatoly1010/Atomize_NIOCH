@@ -279,6 +279,11 @@
         </item>
         <item>
          <property name="text">
+          <string>LASER</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
           <string>TRIGGER</string>
          </property>
         </item>

@@ -170,6 +170,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.button_tune.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
          border-style: outset; color: rgb(193, 202, 227);}\
           QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
+        self.button_laser.clicked.connect(self.start_laser_preset)
+        self.button_laser.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
+         border-style: outset; color: rgb(193, 202, 227);}\
+          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
 
         self.label_creator.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
@@ -231,6 +235,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.process_t2 = QtCore.QProcess(self)
         self.process_t1 = QtCore.QProcess(self)
         self.process_echo = QtCore.QProcess(self)
+        self.process_laser = QtCore.QProcess(self)
         self.process_eseem = QtCore.QProcess(self)
         self.process_tune = QtCore.QProcess(self)
         self.process_awg = QtCore.QProcess(self)
@@ -249,6 +254,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.process_t2.setProgram('python.exe')
             self.process_t1.setProgram('python.exe')
             self.process_echo.setProgram('python.exe')
+            self.process_laser.setProgram('python.exe')
             self.process_eseem.setProgram('python.exe')
             self.process_tune.setProgram('python.exe')
             self.process_awg.setProgram('python.exe')
@@ -269,6 +275,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.process_t2.setProgram('python3')
             self.process_t1.setProgram('python3')
             self.process_echo.setProgram('python3')
+            self.process_laser.setProgram('python3')
             self.process_eseem.setProgram('python3')
             self.process_tune.setProgram('python3')
             self.process_awg.setProgram('python3')
@@ -505,6 +512,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.process_t2.close()
         self.process_t1.close()
         self.process_echo.close()
+        self.process_laser.close()
         self.process_eseem.close()
         self.process_tune.close()
         self.process_awg.close()
@@ -523,6 +531,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.process_t2.terminate()
         self.process_t1.terminate()
         self.process_echo.terminate()
+        self.process_laser.terminate()
         self.process_eseem.terminate()
         self.process_tune.terminate()
         self.process_awg.terminate()
@@ -618,6 +627,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.process_t1.setArguments(['atomize/control_center/t1_preset.py'])
         self.process_t1.start()
     
+    def start_laser_preset(self):
+        self.process_laser.setArguments(['atomize/control_center/laser_preset.py'])
+        self.process_laser.start()
+
     def start_echo_preset(self):
         self.process_echo.setArguments(['atomize/control_center/echo_det_preset.py'])
         self.process_echo.start()
@@ -650,6 +663,8 @@ class MainWindow(QtWidgets.QMainWindow):
             return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/03_echo_detected_spectrum.py')
         elif text_to_parse == ' Echo Detected Baseline':
             return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/03_echo_detected_spectrum_baseline.py')
+        elif text_to_parse == ' Laser Echo Detected':
+            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/14_laser_echo_detected_spectrum_baseline.py')
         elif text_to_parse == ' ESEEM':
             return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/07_eseem_phase.py')
         elif text_to_parse == ' Nutations':

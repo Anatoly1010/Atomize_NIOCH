@@ -603,7 +603,7 @@ QTabBar::tab:selected {
            </font>
           </property>
           <property name="text">
-           <string>Created by Anatoly Melnikov; www.github.com/Anatoly1010; anatoly.melnikov@tomo.nsc.ru; 2021; v 0.16; 23/10/2021</string>
+           <string>Created by Anatoly Melnikov; www.github.com/Anatoly1010; anatoly.melnikov@tomo.nsc.ru; 2021; v 0.17; 14/11/2021</string>
           </property>
          </widget>
         </item>
@@ -873,6 +873,11 @@ QTabBar::tab:selected {
             </item>
             <item>
              <property name="text">
+              <string> Laser Echo Detected</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
               <string> T2</string>
              </property>
             </item>
@@ -1020,6 +1025,28 @@ QTabBar::tab:selected {
             </property>
             <property name="text">
              <string>FFT Analyzer</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="1">
+           <widget class="QPushButton" name="button_laser">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>40</height>
+             </size>
+            </property>
+            <property name="font">
+             <font>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">background-color: rgb(136, 138, 133);</string>
+            </property>
+            <property name="text">
+             <string>Laser ED</string>
             </property>
            </widget>
           </item>

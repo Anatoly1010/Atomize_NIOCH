@@ -155,6 +155,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.P6_type.currentIndexChanged.connect(self.p6_type)
         self.p6_typ = str( self.P6_type.currentText() )
 
+        self.laser_flag = 0
+
     def add_ns(self, string1):
         """
         Function to add ' ns'
@@ -332,6 +334,10 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to change a pulse 2 type
         """
         self.p2_typ = str( self.P2_type.currentText() )
+        if self.p2_typ == 'LASER':
+            self.laser_flag = 1
+        else:
+            self.laser_flag = 0
 
     def p3_type(self):
         """
@@ -362,8 +368,15 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to change a repetition rate
         """
         self.repetition_rate = str( self.Rep_rate.value() ) + ' Hz'
-        self.pb.pulser_repetition_rate( self.repetition_rate )
-        self.update()
+        if self.laser_flag != 1:
+            self.pb.pulser_repetition_rate( self.repetition_rate )
+            self.update()
+        else:
+            self.repetition_rate = '10 Hz'
+            self.pb.pulser_repetition_rate( self.repetition_rate )
+            self.Rep_rate.setValue(10)
+            self.update()
+            self.errors.appendPlainText( '10 Hz is a maximum repetiton rate with LASER pulse\n' )
 
     def field(self):
         """
@@ -385,8 +398,13 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Pulse sequence from defined pulses
         """
+        if self.laser_flag != 1:
+            self.pb.pulser_repetition_rate( self.repetition_rate )
+        else:
+            self.pb.pulser_repetition_rate( '10 Hz' )
+            self.Rep_rate.setValue(10)
+            self.errors.appendPlainText( '10 Hz is a maximum repetiton rate with LASER pulse\n' )
 
-        self.pb.pulser_repetition_rate( self.repetition_rate )
 
         if int( self.p1_length.split(' ')[0] ) != 0:
             self.pb.pulser_pulse( name = 'P0', channel = self.p1_typ, start = self.p1_start, length = self.p1_length )
@@ -444,6 +462,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                         '2. Distance between MW pulses is more than 40 ns\n' + \
                                         '3. Pulses are longer or equal to 12 ns\n' + \
                                         '4. Field Controller is stucked\n' + \
+                                        '5. LASER pulse should not be in 208-232; 152-182; 102-126; <76 ns from first MW\n' + \
                                         '\nPulser is stopped\n')
 
     def pulser_test(self, conn, flag):
