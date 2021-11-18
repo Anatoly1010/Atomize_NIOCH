@@ -156,6 +156,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.p6_typ = str( self.P6_type.currentText() )
 
         self.laser_flag = 0
+        self.laser_q_switch_delay = 165000 # in ns
+
+    def remove_ns(self, string1):
+        return string1.split(' ')[0]
 
     def add_ns(self, string1):
         """
@@ -368,6 +372,7 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to change a repetition rate
         """
         self.repetition_rate = str( self.Rep_rate.value() ) + ' Hz'
+
         if self.laser_flag != 1:
             self.pb.pulser_repetition_rate( self.repetition_rate )
             self.update()
@@ -375,9 +380,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.repetition_rate = '10 Hz'
             self.pb.pulser_repetition_rate( self.repetition_rate )
             self.Rep_rate.setValue(10)
-            self.update()
-            self.errors.appendPlainText( '10 Hz is a maximum repetiton rate with LASER pulse\n' )
-
+            #self.update()
+            self.errors.appendPlainText( '10 Hz is a maximum repetiton rate with LASER pulse' )
+            
     def field(self):
         """
         A function to change a magnetic field
@@ -400,24 +405,47 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         if self.laser_flag != 1:
             self.pb.pulser_repetition_rate( self.repetition_rate )
+            
+            if int( self.p1_length.split(' ')[0] ) != 0:
+                self.pb.pulser_pulse( name = 'P0', channel = self.p1_typ, start = self.p1_start, length = self.p1_length )
+            if int( self.p2_length.split(' ')[0] ) != 0:
+                self.pb.pulser_pulse( name = 'P1', channel = self.p2_typ, start = self.p2_start, length = self.p2_length )
+            if int( self.p3_length.split(' ')[0] ) != 0:
+                self.pb.pulser_pulse( name = 'P2', channel = self.p3_typ, start = self.p3_start, length = self.p3_length )
+            if int( self.p4_length.split(' ')[0] ) != 0:
+                self.pb.pulser_pulse( name = 'P3', channel = self.p4_typ, start = self.p4_start, length = self.p4_length )
+            if int( self.p5_length.split(' ')[0] ) != 0:
+                self.pb.pulser_pulse( name = 'P4', channel = self.p5_typ, start = self.p5_start, length = self.p5_length )
+            if int( self.p6_length.split(' ')[0] ) != 0:
+                self.pb.pulser_pulse( name = 'P5', channel = self.p6_typ, start = self.p6_start, length = self.p6_length )
+
+
         else:
             self.pb.pulser_repetition_rate( '10 Hz' )
             self.Rep_rate.setValue(10)
-            self.errors.appendPlainText( '10 Hz is a maximum repetiton rate with LASER pulse\n' )
 
+            # add q_switch_delay
+            self.p1_start = self.add_ns( int( self.remove_ns( self.p1_start ) ) + self.laser_q_switch_delay )
+            self.p3_start = self.add_ns( int( self.remove_ns( self.p3_start ) ) + self.laser_q_switch_delay )
+            self.p4_start = self.add_ns( int( self.remove_ns( self.p4_start ) ) + self.laser_q_switch_delay )
+            self.p5_start = self.add_ns( int( self.remove_ns( self.p5_start ) ) + self.laser_q_switch_delay )
+            self.p6_start = self.add_ns( int( self.remove_ns( self.p6_start ) ) + self.laser_q_switch_delay )
 
-        if int( self.p1_length.split(' ')[0] ) != 0:
-            self.pb.pulser_pulse( name = 'P0', channel = self.p1_typ, start = self.p1_start, length = self.p1_length )
-        if int( self.p2_length.split(' ')[0] ) != 0:
-            self.pb.pulser_pulse( name = 'P1', channel = self.p2_typ, start = self.p2_start, length = self.p2_length )
-        if int( self.p3_length.split(' ')[0] ) != 0:
-            self.pb.pulser_pulse( name = 'P2', channel = self.p3_typ, start = self.p3_start, length = self.p3_length )
-        if int( self.p4_length.split(' ')[0] ) != 0:
-            self.pb.pulser_pulse( name = 'P3', channel = self.p4_typ, start = self.p4_start, length = self.p4_length )
-        if int( self.p5_length.split(' ')[0] ) != 0:
-            self.pb.pulser_pulse( name = 'P4', channel = self.p5_typ, start = self.p5_start, length = self.p5_length )
-        if int( self.p6_length.split(' ')[0] ) != 0:
-            self.pb.pulser_pulse( name = 'P5', channel = self.p6_typ, start = self.p6_start, length = self.p6_length )
+            if int( self.p1_length.split(' ')[0] ) != 0:
+                self.pb.pulser_pulse( name = 'P0', channel = self.p1_typ, start = self.p1_start, length = self.p1_length )
+            if int( self.p2_length.split(' ')[0] ) != 0:
+                self.pb.pulser_pulse( name = 'P1', channel = self.p2_typ, start = self.p2_start, length = self.p2_length )
+            if int( self.p3_length.split(' ')[0] ) != 0:
+                self.pb.pulser_pulse( name = 'P2', channel = self.p3_typ, start = self.p3_start, length = self.p3_length )
+            if int( self.p4_length.split(' ')[0] ) != 0:
+                self.pb.pulser_pulse( name = 'P3', channel = self.p4_typ, start = self.p4_start, length = self.p4_length )
+            if int( self.p5_length.split(' ')[0] ) != 0:
+                self.pb.pulser_pulse( name = 'P4', channel = self.p5_typ, start = self.p5_start, length = self.p5_length )
+            if int( self.p6_length.split(' ')[0] ) != 0:
+                self.pb.pulser_pulse( name = 'P5', channel = self.p6_typ, start = self.p6_start, length = self.p6_length )
+
+            self.errors.appendPlainText( '165 us is added to all the pulses except the LASER pulse' )
+
 
         self.pb.pulser_update()
         # the next line gives rise to a bag with FC
@@ -452,7 +480,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.pulse_sequence()
 
             #self.errors.appendPlainText( str( ans ) )
-            self.errors.appendPlainText( self.pb.pulser_pulse_list() )
+            self.errors.appendPlainText( self.pb.pulser_pulse_list() )                
 
         else:
             self.test_process.join()

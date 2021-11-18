@@ -14,7 +14,7 @@ import atomize.general_modules.csv_opener_saver as openfile
 ### Experimental parameters
 START_FIELD = 3336
 END_FIELD = 3536
-FIELD_STEP = 2
+FIELD_STEP = 5
 AVERAGES = 10
 SCANS = 1
 
@@ -23,11 +23,11 @@ REP_RATE = '10 Hz'
 PULSE_1_LENGTH = '16 ns'
 PULSE_2_LENGTH = '32 ns'
 PULSE_1_START = '0 ns'
-# 232 ns is minimum between the falling edge 
-# of Laser Trigger and first MW
-PULSE_2_START = '232 ns'
-PULSE_2_START = '532 ns'
-PULSE_SIGNAL_START = '832 ns'
+# 165000 is a constant shift between LASER TRIGGER 
+# and the LASER output
+PULSE_2_START = '165200 ns'
+PULSE_3_START = '165500 ns'
+PULSE_SIGNAL_START = '165800 ns'
 
 # NAMES
 EXP_NAME = 'Laser Echo Detected Spectrum'

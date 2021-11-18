@@ -365,9 +365,9 @@ class Worker(QWidget):
         PULSE_1_LENGTH = str(p4) + ' ns'
         PULSE_2_LENGTH = str( int(2*p4) ) + ' ns'
         PULSE_1_START = '0 ns'
-        PULSE_2_START = str( p12 ) + ' ns'
-        PULSE_3_START = str( int(p3 + p12) ) + ' ns'
-        PULSE_SIGNAL_START = str( int(2*p3 - p12) ) + ' ns'
+        PULSE_2_START = str( int(p12 + 165000) ) + ' ns'
+        PULSE_3_START = str( int(p3 + p12 + 165000) ) + ' ns'
+        PULSE_SIGNAL_START = str( int(2*p3 + p12 + 165000) ) + ' ns'
 
         #
         cycle_data_x = np.zeros( 2 )
@@ -383,10 +383,10 @@ class Worker(QWidget):
         dig4450.digitizer_read_settings()
         dig4450.digitizer_number_of_averages(AVERAGES)
 
-        pb.pulser_pulse(name ='P0', channel = 'LASER', start = PULSE_1_START, length = '50 ns')
+        #pb.pulser_pulse(name ='P0', channel = 'LASER', start = PULSE_1_START, length = '50 ns')
         pb.pulser_pulse(name ='P1', channel = 'MW', start = PULSE_2_START, length = PULSE_1_LENGTH, phase_list = ['+x', '-x'])
         pb.pulser_pulse(name ='P2', channel = 'MW', start = PULSE_3_START, length = PULSE_2_LENGTH, phase_list = ['+x', '+x'])
-        pb.pulser_pulse(name ='P3', channel = 'TRIGGER', start = PULSE_SIGNAL_START, length = '100 ns', phase_list = ['+x', '+x'])
+        pb.pulser_pulse(name ='P3', channel = 'TRIGGER', start = PULSE_SIGNAL_START, length = '100 ns')
 
         pb.pulser_repetition_rate( REP_RATE )
         pb.pulser_update()
