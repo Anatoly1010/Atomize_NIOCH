@@ -603,7 +603,7 @@ QTabBar::tab:selected {
            </font>
           </property>
           <property name="text">
-           <string>Created by Anatoly Melnikov; www.github.com/Anatoly1010; anatoly.melnikov@tomo.nsc.ru; 2021; v 0.17; 14/11/2021</string>
+           <string>Created by Anatoly Melnikov; www.github.com/Anatoly1010; anatoly.melnikov@tomo.nsc.ru; 2021; v 0.18; 21/11/2021</string>
           </property>
          </widget>
         </item>
@@ -873,7 +873,22 @@ QTabBar::tab:selected {
             </item>
             <item>
              <property name="text">
-              <string> Laser Echo Detected</string>
+              <string> Echo Detected 2D</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string> Laser ED</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string> Laser ED 2D</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string> Laser Kinetics</string>
              </property>
             </item>
             <item>

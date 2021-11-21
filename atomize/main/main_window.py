@@ -661,10 +661,16 @@ class MainWindow(QtWidgets.QMainWindow):
             return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/04_t1_inversion_recovery_baseline.py')
         elif text_to_parse == ' Echo Detected':
             return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/03_echo_detected_spectrum.py')
+        elif text_to_parse == ' Echo Detected 2D':
+            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/03_echo_detected_spectrum_baseline_2d.py')
         elif text_to_parse == ' Echo Detected Baseline':
             return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/03_echo_detected_spectrum_baseline.py')
-        elif text_to_parse == ' Laser Echo Detected':
+        elif text_to_parse == ' Laser ED':
             return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/14_laser_echo_detected_spectrum_baseline.py')
+        elif text_to_parse == ' Laser ED 2D':
+            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/14_laser_echo_detected_spectrum_baseline_2D.py')
+        elif text_to_parse == ' Laser Kinetics':
+            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/14_laser_echo_detected_spectrum_baseline_kinetics.py')
         elif text_to_parse == ' ESEEM':
             return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/07_eseem_phase.py')
         elif text_to_parse == ' Nutations':
