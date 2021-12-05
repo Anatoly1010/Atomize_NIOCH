@@ -603,7 +603,7 @@ QTabBar::tab:selected {
            </font>
           </property>
           <property name="text">
-           <string>Created by Anatoly Melnikov; www.github.com/Anatoly1010; anatoly.melnikov@tomo.nsc.ru; 2021; v 0.18; 21/11/2021</string>
+           <string>Created by Anatoly Melnikov; www.github.com/Anatoly1010; anatoly.melnikov@tomo.nsc.ru; 2021; v 0.19; 05/12/2021</string>
           </property>
          </widget>
         </item>

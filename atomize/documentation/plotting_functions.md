@@ -65,8 +65,8 @@ import atomize.general_modules.general_functions as general
 process = 'None'
 for i in range(10):
 	# draw one curve (x_axis, data_x) with a vertical line and a dynamic label "text"
-	process = general.plot_1d('NAME_1', x_axis, data_1, xname = 'Delay', xscale = 'ns', yname = 'Area', yscale = 'V*s',\
-					 label = 'curve', vline = (i, ), pr = process, text = str(i))
+	process = general.plot_1d('NAME_1', x_axis, data_1, xname = 'Delay', xscale = 'ns', yname = 'Area', \
+					yscale = 'V*s', label = 'curve', vline = (i, ), pr = process, text = str(i))
 	# draw two curves (x_axis, data_x) and (x_axis, data_y) simultaneously
 	process = general.plot_1d('NAME_2', x_axis, (data_1, data_2), label = 'curve', xname = 'Delay', xscale = 'ns',\
 					 yname = 'Area', yscale = 'V*s', vline = (i, ), text = str(i))
@@ -107,8 +107,8 @@ for i in range(10):
 ```python
 text_label('label', DynamicValue)
 ```
-	label is a string;
-	DynamicValue is a number that will change dynamically
+label is a string;<br/>
+DynamicValue is a number that will change dynamically;<br/>
 
 ## Clearing
 ```python

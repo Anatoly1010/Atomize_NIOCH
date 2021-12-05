@@ -5,7 +5,6 @@ import warnings
 import numpy as np
 import logging
 import time
-import socket
 from PyQt5.QtNetwork import QLocalSocket
 from PyQt5.QtCore import QCoreApplication, QSharedMemory
 import time
