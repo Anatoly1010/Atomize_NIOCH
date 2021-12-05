@@ -225,7 +225,7 @@ class Saver_Opener:
                         file_for_save_i = filename.split('.csv')[0] + '_' + str(i)  + '.csv'
                         file_for_save = open(file_for_save_i, mode)
                         np.savetxt(file_for_save, np.transpose( data[i] ), fmt='%.5e', delimiter=',', \
-                                                    newline='\n', header=header, footer='', comments='# ', encoding=None)
+                                                 newline='\n', header=header, footer='', comments='# ', encoding=None)
                         file_for_save.close()
 
         elif self.test_flag == 'test':

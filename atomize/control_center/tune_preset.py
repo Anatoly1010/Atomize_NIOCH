@@ -345,6 +345,7 @@ class Worker(QWidget):
 
                     t3034.oscilloscope_start_acquisition()
                     y = t3034.oscilloscope_get_curve('CH2')
+                    general.wait('50 ms')
                     ###x, y, z = dig4450.digitizer_get_curve( )
                     ##y = np.random.normal(3, 2.5, size = (real_length)) 
                     
