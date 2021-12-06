@@ -359,6 +359,7 @@ class Worker(QWidget):
         FIELD_STEP = p9
         AVERAGES = p10
         SCANS = p7
+        process = 'None'
 
         # PULSES
         REP_RATE = str(p6) + ' Hz'
@@ -439,11 +440,9 @@ class Worker(QWidget):
 
                     if i % p11 == 0:
 
-                        general.plot_1d(p2, x_axis, data_x, xname = 'Field',\
-                            xscale = 'G', yname = 'Area', yscale = 'V*s', label = p1 + '_X')
-                        general.plot_1d(p2, x_axis, data_y, xname = 'Field',\
-                            xscale = 'G', yname = 'Area', yscale = 'V*s', label = p1 + '_Y')
-                        general.text_label( p2, "Scan / Field: ", str(j) + ' / '+ str(field) )
+                        process = general.plot_1d(p2, x_axis, ( data_x, data_y ), xname = 'Field',\
+                            xscale = 'G', yname = 'Area', yscale = 'V*s', label = p1, pr = process, \
+                            text = 'Scan / Field: ' +  str(j) + ' / '+ str(field))
 
                     else:
                         pass

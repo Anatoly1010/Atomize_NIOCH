@@ -350,6 +350,7 @@ class Worker(QWidget):
         FIELD = p8
         AVERAGES = p10
         SCANS = p7
+        process = 'None'
 
         # PULSES
         REP_RATE = str(p6) + ' Hz'
@@ -427,11 +428,10 @@ class Worker(QWidget):
                         data_y[i] = ( data_y[i] * (j - 1) + y ) / j
 
                         if i % p11 == 0:
-                            general.plot_1d(p2, x_axis, data_x, xname = 'Delay',\
-                                xscale = 'ns', yname = 'Area', yscale = 'V*s', timeaxis = 'False', label = p1 + '_X')
-                            general.plot_1d(p2, x_axis, data_y, xname = 'Delay',\
-                                xscale = 'ns', yname = 'Area', yscale = 'V*s', timeaxis = 'False', label = p1 + '_Y')
-                            general.text_label( p2, "Scan / Time: ", str(j) + ' / '+ str(i*STEP) )
+                            process = general.plot_1d(p2, x_axis, ( data_x, data_y ), xname = 'Delay',\
+                                xscale = 'ns', yname = 'Area', yscale = 'V*s', timeaxis = 'False', label = p1, pr = process, \
+                                text = 'Scan / Time: ' + str(j) + ' / '+ str(i*STEP))
+
                         else:
                             pass
 
@@ -474,11 +474,10 @@ class Worker(QWidget):
                         ##data_y[i] = ( data_y[i] * (j - 1) + random.random() ) / j
 
                         if i % p11 == 0:
-                            general.plot_1d(p2, x_axis, data_x, xname = 'Delay',\
-                                xscale = 'ns', yname = 'Area', yscale = 'V*s', timeaxis = 'False', label = p1 + '_X')
-                            general.plot_1d(p2, x_axis, data_y, xname = 'Delay',\
-                                xscale = 'ns', yname = 'Area', yscale = 'V*s', timeaxis = 'False', label = p1 + '_Y')
-                            general.text_label( p2, "Scan / Time: ", str(j) + ' / '+ str(i*STEP) )
+                            process = general.plot_1d(p2, x_axis, ( data_x, data_y ), xname = 'Delay',\
+                                xscale = 'ns', yname = 'Area', yscale = 'V*s', timeaxis = 'False', label = p1, pr = process, \
+                                text = 'Scan / Time: ' + str(j) + ' / '+ str(i*STEP))
+
                         else:
                             pass
 

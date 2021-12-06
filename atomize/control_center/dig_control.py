@@ -356,6 +356,7 @@ class Worker(QWidget):
         import atomize.general_modules.general_functions as general
         import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
 
+        process = 'None'
         dig = spectrum.Spectrum_M4I_4450_X8()
         dig.digitizer_card_mode('Average')
 
@@ -436,8 +437,8 @@ class Worker(QWidget):
             xs, data1, data2 = dig.digitizer_get_curve()
                        
             #plot_1d('Buffer_test', np.array([1,2,3,4,5]), np.array([1,2,3,4,5]), label = 'ch0', xscale = 's', yscale = 'V')
-            general.plot_1d('Digitizer Live', xs, data1, label = 'ch0', xscale = 's', yscale = 'V', vline = (p8 * 10**-9, p9 * 10**-9) )
-            general.plot_1d('Digitizer Live', xs, data2, label = 'ch1', xscale = 's', yscale = 'V')
+            process = general.plot_1d('Digitizer Live', xs, ( data1, data2 ), label = 'ch', xscale = 's', yscale = 'V', \
+                                        vline = (p8 * 10**-9, p9 * 10**-9), pr = process )
             
             self.command = 'start'
             # poll() checks whether there is data in the Pipe to read

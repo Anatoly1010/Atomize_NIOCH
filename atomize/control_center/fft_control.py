@@ -358,6 +358,7 @@ class Worker(QWidget):
         import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
         import atomize.math_modules.fft as fft_module
 
+        process = 'None'
         dig = spectrum.Spectrum_M4I_4450_X8()
         fft = fft_module.Fast_Fourier()
 
@@ -444,12 +445,12 @@ class Worker(QWidget):
             baseline_2 = ( np.sum(data2[0:baseline_point]) + np.sum(data2[len(data2) - baseline_point:len(data2)] ) ) / (2 * baseline_point )
 
             #plot_1d('Buffer_test', np.array([1,2,3,4,5]), np.array([1,2,3,4,5]), label = 'ch0', xscale = 's', yscale = 'V')
-            general.plot_1d('Digitizer Live', xs, data1 - baseline_1, label = 'ch0', xscale = 's', yscale = 'V', vline = (p8 * 10**-9, p9 * 10**-9) )
-            general.plot_1d('Digitizer Live', xs, data2 - baseline_2, label = 'ch1', xscale = 's', yscale = 'V')
+            process = general.plot_1d('Digitizer Live', xs, ( data1 - baseline_1, data2 - baseline_2 ), label = 'ch', xscale = 's', yscale = 'V', \
+                                vline = (p8 * 10**-9, p9 * 10**-9), pr = process )
 
             freq_axis, abs_values = fft.fft(xs, data1 - baseline_1, data2 - baseline_2, 2)
 
-            general.plot_1d('FFT Analyzer', freq_axis, abs_values, label = 'FFT', xscale = 'MHz', yscale = 'Arb. U.')
+            process = general.plot_1d('FFT Analyzer', freq_axis, abs_values, label = 'FFT', xscale = 'MHz', yscale = 'Arb. U.', pr = process)
             #general.plot_1d('FFT Analyzer', xs, data2, label = 'ch1', xscale = 's', yscale = 'V')
 
             self.command = 'start'

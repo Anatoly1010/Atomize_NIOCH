@@ -286,6 +286,7 @@ class Worker(QWidget):
         STEP = p9
         SCANS = p7
         AVERAGES = p10
+        process = 'None'
 
         # PULSES
         REP_RATE = str(p6) + ' Hz'
@@ -352,9 +353,10 @@ class Worker(QWidget):
                     data[i] = ( data[i] * (j - 1) + y ) / j
 
                     if i % p11 == 0:
-                        general.plot_2d(p2, np.transpose( data ), start_step = ( (0, 1), (START_FREQ*1000000, STEP*1000000) ), xname = 'Time',\
-                            xscale = 's', yname = 'Frequency', yscale = 'Hz', zname = 'Intensity', zscale = 'V')
-                        general.text_label( p2, "Scan / Frequency: ", str(j) + ' / '+ str(freq) )
+                        process = general.plot_2d(p2, np.transpose( data ), start_step = ( (0, 1), (START_FREQ*1000000, STEP*1000000) ),\
+                                         xname = 'Time', xscale = 's', yname = 'Frequency', yscale = 'Hz', zname = 'Intensity', zscale = 'V', \
+                                         pr = process, text = 'Scan / Frequency: ' + str(j) + ' / ' + str(freq))
+
                     else:
                         pass
                     

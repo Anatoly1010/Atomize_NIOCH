@@ -17,6 +17,7 @@ STEP = 100                  # in NS; delta_start = str(STEP) + ' ns' -> delta_st
 FIELD = 3473
 AVERAGES = 10
 SCANS = 1
+process = 'None'
 
 # PULSES
 REP_RATE = '400 Hz'
@@ -124,9 +125,9 @@ for j in general.scans(SCANS):
             data_shape[0 + 2*l, :, i] = ( data_shape[0 + 2*l, :, i] * (j - 1) + x_shape ) / j
             data_shape[1 + 2*l, :, i] = ( data_shape[1 + 2*l, :, i] * (j - 1) + y_shape ) / j
             
-            general.plot_2d(EXP_NAME, data, start_step = ( (0, STEP), (0, STEP) ), xname = 'Delay_1',\
-                xscale = 'ns', yname = 'Delay_2', yscale = 'ns', zname = 'Intensity', zscale = 'V')
-            general.text_label( EXP_NAME, "Scan / Time: ", str(j) + ' / '+ str(l*STEP) + ' / '+ str(i*STEP) )
+            process = general.plot_2d(EXP_NAME, data, start_step = ( (0, STEP), (0, STEP) ), xname = 'Delay_1',\
+                xscale = 'ns', yname = 'Delay_2', yscale = 'ns', zname = 'Intensity', zscale = 'V', pr = process, \
+                text = 'Scan / Time: ' + str(j) + ' / '+ str(l*STEP) + ' / '+ str(i*STEP))
 
             # Delay_1 scan
             pb.pulser_shift('P2', 'P3', 'P4')

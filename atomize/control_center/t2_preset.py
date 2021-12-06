@@ -330,6 +330,7 @@ class Worker(QWidget):
         FIELD = p8
         AVERAGES = p10
         SCANS = p7
+        process = 'None'
 
         # PULSES
         REP_RATE = str(p6) + ' Hz'
@@ -417,11 +418,9 @@ class Worker(QWidget):
 
                     if i % p11 == 0:
 
-                        general.plot_1d(p2, x_axis, data_x, xname = 'Delay',\
-                            xscale = 'ns', yname = 'Area', yscale = 'V*s', label = p1 + '_X')
-                        general.plot_1d(p2, x_axis, data_y, xname = 'Delay',\
-                            xscale = 'ns', yname = 'Area', yscale = 'V*s', label = p1 + '_Y')
-                        general.text_label( p2, "Scan / Time: ", str(j) + ' / '+ str(i*STEP) )
+                        process = general.plot_1d(p2, x_axis, ( data_x, data_y ), xname = 'Delay',\
+                            xscale = 'ns', yname = 'Area', yscale = 'V*s', label = p1, pr = process, \
+                            text = 'Scan / Time: ' + str(j) + ' / ' + str(i*STEP))
                     
                     else:
                         pass
