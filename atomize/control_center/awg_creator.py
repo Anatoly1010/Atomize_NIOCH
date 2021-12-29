@@ -79,6 +79,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.label_12.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_13.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_14.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.label_15.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
 
         # Spinboxes
         self.P1_st.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
@@ -93,6 +94,8 @@ class MainWindow(QtWidgets.QMainWindow):
         #self.P5_st.lineEdit().setReadOnly( True )
         self.P6_st.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
         #self.P6_st.lineEdit().setReadOnly( True )
+        self.P7_st.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
+        #self.P7_st.lineEdit().setReadOnly( True )
         self.Rep_rate.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
         self.Field.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
         self.P1_len.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
@@ -106,25 +109,31 @@ class MainWindow(QtWidgets.QMainWindow):
         self.P5_len.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
         #self.P5_len.lineEdit().setReadOnly( True ) 
         self.P6_len.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
-        #self.P6_len.lineEdit().setReadOnly( True ) 
+        #self.P6_len.lineEdit().setReadOnly( True )
+        self.P7_len.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")        
+        #self.P7_len.lineEdit().setReadOnly( True ) 
         self.P1_sig.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
-        #self.P1_len.lineEdit().setReadOnly( True )
         self.P2_sig.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
-        #self.P2_len.lineEdit().setReadOnly( True ) 
         self.P3_sig.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
-        #self.P3_len.lineEdit().setReadOnly( True ) 
         self.P4_sig.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
-        #self.P4_len.lineEdit().setReadOnly( True ) 
         self.P5_sig.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
-        #self.P5_len.lineEdit().setReadOnly( True ) 
         self.P6_sig.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
-        #self.P6_len.lineEdit().setReadOnly( True ) 
+        self.P7_sig.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
         self.P1_type.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
         self.P2_type.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
         self.P3_type.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
         self.P4_type.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
         self.P5_type.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
         self.P6_type.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
+        self.P7_type.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
+
+        self.Phase_1.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
+        self.Phase_2.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
+        self.Phase_3.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
+        self.Phase_4.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
+        self.Phase_5.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
+        self.Phase_6.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
+        self.Phase_7.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
 
         #self.Freq.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
         self.Phase.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
@@ -138,6 +147,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.freq_4.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
         self.freq_5.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
         self.freq_6.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        self.freq_7.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
 
         self.coef_1.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
         self.coef_2.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
@@ -145,6 +155,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.coef_4.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
         self.coef_5.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
         self.coef_6.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        self.coef_7.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
 
         self.N_wurst.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
         self.Wurst_sweep_1.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
@@ -153,6 +164,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.Wurst_sweep_4.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
         self.Wurst_sweep_5.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
         self.Wurst_sweep_6.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        self.Wurst_sweep_7.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
 
         # Functions
 
@@ -194,6 +206,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.p6_start = self.add_ns( self.P6_st.value() )
         self.p6_start_rect = self.add_ns( int( self.P6_st.value() + self.awg_output_shift ) )
 
+        self.P7_st.valueChanged.connect(self.p7_st)
+        self.p7_start = self.add_ns( self.P7_st.value() )
+        self.p7_start_rect = self.add_ns( int( self.P7_st.value() + self.awg_output_shift ) )
+
 
         self.P1_len.valueChanged.connect(self.p1_len)
         self.p1_length = self.add_ns( self.P1_len.value() )
@@ -213,6 +229,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.P6_len.valueChanged.connect(self.p6_len)
         self.p6_length = self.add_ns( self.P6_len.value() )
 
+        self.P7_len.valueChanged.connect(self.p7_len)
+        self.p7_length = self.add_ns( self.P7_len.value() )
+
 
         self.P1_sig.valueChanged.connect(self.p1_sig)
         self.p1_sigma = self.add_ns( self.P1_sig.value() )
@@ -231,6 +250,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.P6_sig.valueChanged.connect(self.p6_sig)
         self.p6_sigma = self.add_ns( self.P6_sig.value() )
+
+        self.P7_sig.valueChanged.connect(self.p7_sig)
+        self.p7_sigma = self.add_ns( self.P7_sig.value() )
 
         self.Rep_rate.valueChanged.connect(self.rep_rate)
         self.repetition_rate = str( self.Rep_rate.value() ) + ' Hz'
@@ -255,6 +277,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.Wurst_sweep_6.valueChanged.connect(self.wurst_sweep_6)
         self.wurst_sweep_cur_6 = self.add_mhz( int( self.Wurst_sweep_6.value() ) )
+        
+        self.Wurst_sweep_7.valueChanged.connect(self.wurst_sweep_7)
+        self.wurst_sweep_cur_7 = self.add_mhz( int( self.Wurst_sweep_7.value() ) )
 
         self.Field.valueChanged.connect(self.field)
         self.mag_field = float( self.Field.value() )
@@ -272,6 +297,23 @@ class MainWindow(QtWidgets.QMainWindow):
         self.p5_typ = str( self.P5_type.currentText() )
         self.P6_type.currentIndexChanged.connect(self.p6_type)
         self.p6_typ = str( self.P6_type.currentText() )
+        self.P7_type.currentIndexChanged.connect(self.p7_type)
+        self.p7_typ = str( self.P7_type.currentText() )
+        
+        self.Phase_1.currentIndexChanged.connect(self.phase_1)
+        self.ph_1 = float( self.phase_converted( self.Phase_1.currentText() ) )
+        self.Phase_2.currentIndexChanged.connect(self.phase_2)
+        self.ph_2 = float( self.phase_converted( self.Phase_2.currentText() ) )
+        self.Phase_3.currentIndexChanged.connect(self.phase_3)
+        self.ph_3 = float( self.phase_converted( self.Phase_3.currentText() ) )
+        self.Phase_4.currentIndexChanged.connect(self.phase_4)
+        self.ph_4 = float( self.phase_converted( self.Phase_4.currentText() ) )
+        self.Phase_5.currentIndexChanged.connect(self.phase_5)
+        self.ph_5 = float( self.phase_converted( self.Phase_5.currentText() ) )
+        self.Phase_6.currentIndexChanged.connect(self.phase_6)
+        self.ph_6 = float( self.phase_converted( self.Phase_6.currentText() ) )
+        self.Phase_7.currentIndexChanged.connect(self.phase_7)
+        self.ph_7 = float( self.phase_converted( self.Phase_7.currentText() ) )
 
         # freq
         #self.freq_1.valueChanged.connect(self.p1_freq_f)
@@ -292,21 +334,27 @@ class MainWindow(QtWidgets.QMainWindow):
         self.freq_6.valueChanged.connect(self.p6_freq_f)
         self.p6_freq = self.add_mhz( int( self.freq_6.value() ) )
 
+        self.freq_7.valueChanged.connect(self.p7_freq_f)
+        self.p7_freq = self.add_mhz( int( self.freq_7.value() ) )
+
         # coef in amplitude
         self.coef_2.valueChanged.connect(self.p2_coef_f)
         self.p2_coef = round( 100 / self.coef_2.value() , 2 )
 
         self.coef_3.valueChanged.connect(self.p3_coef_f)
-        self.p3_coef = round( 100 / self.coef_2.value() , 2 )
+        self.p3_coef = round( 100 / self.coef_3.value() , 2 )
 
         self.coef_4.valueChanged.connect(self.p4_coef_f)
-        self.p4_coef = round( 100 / self.coef_2.value() , 2 )
+        self.p4_coef = round( 100 / self.coef_4.value() , 2 )
 
         self.coef_5.valueChanged.connect(self.p5_coef_f)
-        self.p5_coef = round( 100 / self.coef_2.value() , 2 )
+        self.p5_coef = round( 100 / self.coef_5.value() , 2 )
 
         self.coef_6.valueChanged.connect(self.p6_coef_f)
-        self.p6_coef = round( 100 / self.coef_2.value() , 2 )
+        self.p6_coef = round( 100 / self.coef_6.value() , 2 )
+
+        self.coef_7.valueChanged.connect(self.p7_coef_f)
+        self.p7_coef = round( 100 / self.coef_7.value() , 2 )
 
     def add_ns(self, string1):
         """
@@ -405,6 +453,12 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self.wurst_sweep_cur_6 = self.add_mhz( int( self.Wurst_sweep_6.value() ) )
 
+    def wurst_sweep_7(self):
+        """
+        A function to set wurst sweep for pulse 7
+        """
+        self.wurst_sweep_cur_7 = self.add_mhz( int( self.Wurst_sweep_7.value() ) )
+
     def ch0_amp(self):
         """
         A function to set AWG CH0 amplitude
@@ -472,6 +526,12 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self.p6_coef = round( 100 / self.coef_6.value() , 2 )
 
+    def p7_coef_f(self):
+        """
+        A function to change pulse 7 coefficient
+        """
+        self.p7_coef = round( 100 / self.coef_7.value() , 2 )
+
     def p2_freq_f(self):
         """
         A function to change pulse 2 frequency
@@ -501,6 +561,12 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to change pulse 6 frequency
         """
         self.p6_freq = self.add_mhz( int( self.freq_6.value() ) )
+
+    def p7_freq_f(self):
+        """
+        A function to change pulse 7 frequency
+        """
+        self.p7_freq = self.add_mhz( int( self.freq_7.value() ) )
 
     def p1_st(self):
         """
@@ -572,6 +638,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.p6_start_rect = self.add_ns( int( self.P6_st.value() + self.awg_output_shift ) )
         self.p6_start = self.add_ns( self.P6_st.value() )
+
+    def p7_st(self):
+        """
+        A function to set pulse 7 start
+        """
+        self.p7_start = self.P7_st.value()
+        if round( self.p7_start % 2, 1) != 0:
+            self.p7_start = self.round_to_closest( self.p7_start, 2 )
+            self.P7_st.setValue( self.p7_start )
+
+        self.p7_start_rect = self.add_ns( int( self.P7_st.value() + self.awg_output_shift ) )
+        self.p7_start = self.add_ns( self.P7_st.value() )
 
     def p1_len(self):
         """
@@ -645,7 +723,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
         #pl = self.check_length( self.P6_len.value() )
         self.p6_length = self.add_ns( self.P6_len.value() )
-    
+
+    def p7_len(self):
+        """
+        A function to change a pulse 7 length
+        """
+        self.p7_length = self.P7_len.value()
+        if round( self.p7_length % 1, 1) != 0:
+            self.p7_length = self.round_to_closest( self.p7_length, 1 )
+            self.P7_len.setValue( self.p7_length )
+
+        #pl = self.check_length( self.P7_len.value() )
+        self.p7_length = self.add_ns( self.P7_len.value() )
+
     def p1_sig(self):
         """
         A function to change a pulse 1 sigma
@@ -718,6 +808,18 @@ class MainWindow(QtWidgets.QMainWindow):
         #pl = self.check_length( self.P6_sig.value() )
         self.p6_sigma = self.add_ns( self.P6_sig.value() )
 
+    def p7_sig(self):
+        """
+        A function to change a pulse 7 sigma
+        """
+        self.p7_sigma = self.P7_sig.value()
+        if round( self.p7_sigma % 1, 1) != 0:
+            self.p7_sigma = self.round_to_closest( self.p7_sigma, 1 )
+            self.P7_sig.setValue( self.p7_sigma )
+
+        #pl = self.check_length( self.P7_sig.value() )
+        self.p7_sigma = self.add_ns( self.P7_sig.value() )
+
     def p1_type(self):
         """
         A function to change a pulse 1 type
@@ -753,6 +855,64 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to change a pulse 6 type
         """
         self.p6_typ = str( self.P6_type.currentText() )
+
+    def p7_type(self):
+        """
+        A function to change a pulse 7 type
+        """
+        self.p7_typ = str( self.P7_type.currentText() )
+    
+    def phase_converted(self, ph_str):
+        if ph_str == '+x':
+            return 0
+        elif ph_str == '-x':
+            return 3.141593
+        elif ph_str == '+y':
+            return -1.57080
+        elif ph_str == '-y':
+            return -4.712390
+
+    def phase_1(self):
+        """
+        A function to change a pulse 1 phase
+        """
+        self.ph_1 = float( self.phase_converted( self.Phase_1.currentText() ) )
+
+    def phase_2(self):
+        """
+        A function to change a pulse 2 phase
+        """
+        self.ph_2 = float( self.phase_converted( self.Phase_2.currentText() ) )
+
+    def phase_3(self):
+        """
+        A function to change a pulse 3 phase
+        """
+        self.ph_3 = float( self.phase_converted( self.Phase_3.currentText() ) )
+
+    def phase_4(self):
+        """
+        A function to change a pulse 4 phase
+        """
+        self.ph_4 = float( self.phase_converted( self.Phase_4.currentText() ) )
+
+    def phase_5(self):
+        """
+        A function to change a pulse 5 phase
+        """
+        self.ph_5 = float( self.phase_converted( self.Phase_5.currentText() ) )
+
+    def phase_6(self):
+        """
+        A function to change a pulse 6 phase
+        """
+        self.ph_6 = float( self.phase_converted( self.Phase_6.currentText() ) )
+
+    def phase_7(self):
+        """
+        A function to change a pulse 7 phase
+        """
+        self.ph_7 = float( self.phase_converted( self.Phase_7.currentText() ) )
 
     def rep_rate(self):
         """
@@ -800,10 +960,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if float( self.p2_length.split(' ')[0] ) != 0.:
             # self.p2_length ROUND TO CLOSEST 2
             if self.p2_typ != 'WURST':
-                self.awg.awg_pulse(name = 'P2', channel = 'CH0', func = self.p2_typ, frequency = self.p2_freq, phase = 0, \
+                self.awg.awg_pulse(name = 'P2', channel = 'CH0', func = self.p2_typ, frequency = self.p2_freq, phase = self.ph_2, \
                         length = self.p2_length, sigma = self.p2_sigma, start = self.p2_start, d_coef = self.p2_coef )
             else:
-                self.awg.awg_pulse(name = 'P2', channel = 'CH0', func = self.p2_typ, frequency = ( self.p2_freq, self.wurst_sweep_cur_2 ), phase = 0, \
+                self.awg.awg_pulse(name = 'P2', channel = 'CH0', func = self.p2_typ, frequency = ( self.p2_freq, self.wurst_sweep_cur_2 ), phase = self.ph_2, \
                     length = self.p2_length, sigma = self.p2_sigma, start = self.p2_start, d_coef = self.p2_coef, n = self.n_wurst_cur )
                     # , phase_list = ['+x', '-x']
 
@@ -812,10 +972,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if float( self.p3_length.split(' ')[0] ) != 0.:
             if self.p3_typ != 'WURST':
-                self.awg.awg_pulse(name = 'P4', channel = 'CH0', func = self.p3_typ, frequency = self.p3_freq, phase = 0, \
+                self.awg.awg_pulse(name = 'P4', channel = 'CH0', func = self.p3_typ, frequency = self.p3_freq, phase = self.ph_3, \
                         length = self.p3_length, sigma = self.p3_sigma, start = self.p3_start, d_coef = self.p3_coef )
             else:
-                self.awg.awg_pulse(name = 'P4', channel = 'CH0', func = self.p3_typ, frequency = ( self.p3_freq, self.wurst_sweep_cur_3 ), phase = 0, \
+                self.awg.awg_pulse(name = 'P4', channel = 'CH0', func = self.p3_typ, frequency = ( self.p3_freq, self.wurst_sweep_cur_3 ), phase = self.ph_3, \
                     length = self.p3_length, sigma = self.p3_sigma, start = self.p3_start, d_coef = self.p3_coef, n = self.n_wurst_cur )
                     # , phase_list = ['+x', '+x']
 
@@ -824,10 +984,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if float( self.p4_length.split(' ')[0] ) != 0.:
             if self.p4_typ != 'WURST':
-                self.awg.awg_pulse(name = 'P6', channel = 'CH0', func = self.p4_typ, frequency = self.p4_freq, phase = 0, \
+                self.awg.awg_pulse(name = 'P6', channel = 'CH0', func = self.p4_typ, frequency = self.p4_freq, phase = self.ph_4, \
                         length = self.p4_length, sigma = self.p4_sigma, start = self.p4_start, d_coef = self.p4_coef )
             else:
-                self.awg.awg_pulse(name = 'P6', channel = 'CH0', func = self.p4_typ, frequency = ( self.p4_freq, self.wurst_sweep_cur_4 ), phase = 0, \
+                self.awg.awg_pulse(name = 'P6', channel = 'CH0', func = self.p4_typ, frequency = ( self.p4_freq, self.wurst_sweep_cur_4 ), phase = self.ph_4, \
                     length = self.p4_length, sigma = self.p4_sigma, start = self.p4_start, d_coef = self.p4_coef, n = self.n_wurst_cur )
 
             if self.p4_typ != 'BLANK':
@@ -835,10 +995,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if float( self.p5_length.split(' ')[0] ) != 0.:
             if self.p5_typ != 'WURST':
-                self.awg.awg_pulse(name = 'P8', channel = 'CH0', func = self.p5_typ, frequency = self.p5_freq, phase = 0, \
+                self.awg.awg_pulse(name = 'P8', channel = 'CH0', func = self.p5_typ, frequency = self.p5_freq, phase = self.ph_5, \
                         length = self.p5_length, sigma = self.p5_sigma, start = self.p5_start, d_coef = self.p5_coef )
             else:
-                self.awg.awg_pulse(name = 'P8', channel = 'CH0', func = self.p5_typ, frequency = ( self.p5_freq, self.wurst_sweep_cur_5 ), phase = 0, \
+                self.awg.awg_pulse(name = 'P8', channel = 'CH0', func = self.p5_typ, frequency = ( self.p5_freq, self.wurst_sweep_cur_5 ), phase = self.ph_5, \
                     length = self.p5_length, sigma = self.p5_sigma, start = self.p5_start, d_coef = self.p5_coef, n = self.n_wurst_cur )
 
             if self.p5_typ != 'BLANK':
@@ -846,16 +1006,25 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if float( self.p6_length.split(' ')[0] ) != 0.:
             if self.p6_typ != 'WURST':
-                self.awg.awg_pulse(name = 'P10', channel = 'CH0', func = self.p6_typ, frequency = self.p6_freq, phase = 0, \
+                self.awg.awg_pulse(name = 'P10', channel = 'CH0', func = self.p6_typ, frequency = self.p6_freq, phase = self.ph_6, \
                         length = self.p6_length, sigma = self.p6_sigma, start = self.p6_start, d_coef = self.p6_coef )
             else:
-                self.awg.awg_pulse(name = 'P10', channel = 'CH0', func = self.p6_typ, frequency = ( self.p6_freq, self.wurst_sweep_cur_6 ), phase = 0, \
+                self.awg.awg_pulse(name = 'P10', channel = 'CH0', func = self.p6_typ, frequency = ( self.p6_freq, self.wurst_sweep_cur_6 ), phase = self.ph_6, \
                     length = self.p6_length, sigma = self.p6_sigma, start = self.p6_start, d_coef = self.p6_coef, n = self.n_wurst_cur )
 
             if self.p6_typ != 'BLANK':
                 self.pb.pulser_pulse(name = 'P11', channel = 'AWG', start = self.p6_start_rect, length = self.round_length( self.P6_len.value() ) )
 
+        if float( self.p7_length.split(' ')[0] ) != 0.:
+            if self.p7_typ != 'WURST':
+                self.awg.awg_pulse(name = 'P12', channel = 'CH0', func = self.p7_typ, frequency = self.p7_freq, phase = self.ph_7, \
+                        length = self.p7_length, sigma = self.p7_sigma, start = self.p7_start, d_coef = self.p7_coef )
+            else:
+                self.awg.awg_pulse(name = 'P12', channel = 'CH0', func = self.p7_typ, frequency = ( self.p7_freq, self.wurst_sweep_cur_7 ), phase = self.ph_7, \
+                    length = self.p7_length, sigma = self.p7_sigma, start = self.p7_start, d_coef = self.p7_coef, n = self.n_wurst_cur )
 
+            if self.p7_typ != 'BLANK':
+                self.pb.pulser_pulse(name = 'P13', channel = 'AWG', start = self.p7_start_rect, length = self.round_length( self.P7_len.value() ) )
 
         self.awg.phase_shift_ch1_seq_mode = self.cur_phase
         self.awg.awg_channel('CH0', 'CH1')

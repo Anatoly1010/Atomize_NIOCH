@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1020</width>
-    <height>452</height>
+    <width>1060</width>
+    <height>468</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -18,13 +18,13 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>1020</width>
-    <height>452</height>
+    <width>1060</width>
+    <height>468</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>1020</width>
+    <width>1060</width>
     <height>452</height>
    </size>
   </property>
@@ -55,13 +55,13 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>1020</width>
-     <height>452</height>
+     <width>1060</width>
+     <height>468</height>
     </size>
    </property>
    <property name="maximumSize">
     <size>
-     <width>1020</width>
+     <width>1060</width>
      <height>452</height>
     </size>
    </property>
@@ -92,13 +92,10 @@
       <property name="verticalSpacing">
        <number>4</number>
       </property>
-      <item row="1" column="2">
-       <widget class="QDoubleSpinBox" name="P2_sig">
+      <item row="2" column="7">
+       <widget class="QDoubleSpinBox" name="P7_len">
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
         </property>
         <property name="decimals">
          <number>1</number>
@@ -106,16 +103,23 @@
         <property name="maximum">
          <double>1900.000000000000000</double>
         </property>
-        <property name="singleStep">
-         <double>1.000000000000000</double>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
         </property>
-        <property name="value">
-         <double>16.000000000000000</double>
+        <property name="text">
+         <string>Pulse Sigma (ns)</string>
         </property>
        </widget>
       </item>
-      <item row="15" column="3">
-       <widget class="QSpinBox" name="Ampl_2">
+      <item row="6" column="4">
+       <widget class="QSpinBox" name="freq_4">
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -123,234 +127,33 @@
          <bool>false</bool>
         </property>
         <property name="minimum">
-         <number>80</number>
+         <number>0</number>
         </property>
         <property name="maximum">
-         <number>800</number>
+         <number>250</number>
         </property>
         <property name="singleStep">
          <number>5</number>
         </property>
         <property name="value">
-         <number>610</number>
+         <number>50</number>
         </property>
        </widget>
       </item>
-      <item row="0" column="2">
-       <widget class="QDoubleSpinBox" name="P2_st">
-        <property name="readOnly">
-         <bool>false</bool>
+      <item row="7" column="0">
+       <widget class="QLabel" name="label_6">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
         </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="specialValueText">
-         <string notr="true"/>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="decimals">
-         <number>1</number>
-        </property>
-        <property name="maximum">
-         <double>5000.000000000000000</double>
-        </property>
-        <property name="singleStep">
-         <double>2.000000000000000</double>
+        <property name="text">
+         <string>WURST Sweep (MHz)</string>
         </property>
        </widget>
       </item>
-      <item row="12" column="1">
-       <widget class="QComboBox" name="P1_type">
-        <property name="minimumSize">
-         <size>
-          <width>120</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>120</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="currentIndex">
-         <number>0</number>
-        </property>
-        <item>
-         <property name="text">
-          <string>TRIGGER</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-      <item row="12" column="5">
-       <widget class="QComboBox" name="P5_type">
-        <property name="minimumSize">
-         <size>
-          <width>120</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>120</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <item>
-         <property name="text">
-          <string>SINE</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>GAUSS</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>SINC</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>WURST</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>BLANK</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>TRIGGER</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-      <item row="17" column="0" colspan="7">
-       <widget class="Line" name="line_3">
-        <property name="lineWidth">
-         <number>2</number>
-        </property>
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QSpinBox" name="P1_sig">
-        <property name="inputMethodHints">
-         <set>Qt::ImhDigitsOnly</set>
-        </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="maximum">
-         <number>1900</number>
-        </property>
-        <property name="singleStep">
-         <number>2</number>
-        </property>
-        <property name="value">
-         <number>100</number>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="2">
-       <widget class="QDoubleSpinBox" name="P2_len">
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="decimals">
-         <number>1</number>
-        </property>
-        <property name="maximum">
-         <double>1900.000000000000000</double>
-        </property>
-        <property name="singleStep">
-         <double>1.000000000000000</double>
-        </property>
-        <property name="value">
-         <double>16.000000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="6">
-       <widget class="QDoubleSpinBox" name="P6_sig">
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="decimals">
-         <number>1</number>
-        </property>
-        <property name="maximum">
-         <double>1900.000000000000000</double>
-        </property>
-        <property name="singleStep">
-         <double>1.000000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="12" column="6">
-       <widget class="QComboBox" name="P6_type">
-        <property name="minimumSize">
-         <size>
-          <width>120</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>120</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <item>
-         <property name="text">
-          <string>SINE</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>GAUSS</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>SINC</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>WURST</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>BLANK</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>TRIGGER</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-      <item row="14" column="1">
+      <item row="15" column="1">
        <widget class="QSpinBox" name="Rep_rate">
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
@@ -372,8 +175,149 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="3">
-       <widget class="QDoubleSpinBox" name="P3_sig">
+      <item row="13" column="5">
+       <widget class="QComboBox" name="P5_type">
+        <property name="minimumSize">
+         <size>
+          <width>105</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>120</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <item>
+         <property name="text">
+          <string>SINE</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>GAUSS</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>SINC</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>WURST</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>BLANK</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>TRIGGER</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="16" column="2">
+       <widget class="QLabel" name="label_8">
+        <property name="minimumSize">
+         <size>
+          <width>120</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Amplitude 2 (mV)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="13" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Pulse Type</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="6">
+       <widget class="QDoubleSpinBox" name="P6_len">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="suffix">
+         <string/>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <double>1900.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>1.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="2">
+       <widget class="QSpinBox" name="Wurst_sweep_2">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>10</number>
+        </property>
+        <property name="maximum">
+         <number>400</number>
+        </property>
+        <property name="singleStep">
+         <number>5</number>
+        </property>
+        <property name="value">
+         <number>368</number>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="1">
+       <widget class="QSpinBox" name="coef_1">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>100</number>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+        <property name="value">
+         <number>100</number>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="4">
+       <widget class="QDoubleSpinBox" name="P4_sig">
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -389,13 +333,29 @@
         <property name="singleStep">
          <double>1.000000000000000</double>
         </property>
-        <property name="value">
-         <double>32.000000000000000</double>
+       </widget>
+      </item>
+      <item row="1" column="5">
+       <widget class="QDoubleSpinBox" name="P5_sig">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <double>1900.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>1.000000000000000</double>
         </property>
        </widget>
       </item>
-      <item row="8" column="3">
-       <widget class="QSpinBox" name="coef_3">
+      <item row="7" column="3">
+       <widget class="QSpinBox" name="Wurst_sweep_3">
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -403,18 +363,75 @@
          <bool>false</bool>
         </property>
         <property name="minimum">
-         <number>1</number>
+         <number>10</number>
         </property>
         <property name="maximum">
-         <number>100</number>
+         <number>400</number>
+        </property>
+        <property name="singleStep">
+         <number>5</number>
         </property>
         <property name="value">
-         <number>100</number>
+         <number>368</number>
         </property>
        </widget>
       </item>
-      <item row="11" column="0" colspan="7">
-       <widget class="Line" name="line">
+      <item row="24" column="0">
+       <widget class="QPushButton" name="button_off">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>40</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Exit</string>
+        </property>
+       </widget>
+      </item>
+      <item row="9" column="0">
+       <widget class="QLabel" name="label_15">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Pulse Phase</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="6">
+       <widget class="QSpinBox" name="Wurst_sweep_6">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>10</number>
+        </property>
+        <property name="maximum">
+         <number>400</number>
+        </property>
+        <property name="singleStep">
+         <number>5</number>
+        </property>
+        <property name="value">
+         <number>368</number>
+        </property>
+       </widget>
+      </item>
+      <item row="18" column="0" colspan="8">
+       <widget class="Line" name="line_3">
         <property name="lineWidth">
          <number>2</number>
         </property>
@@ -423,26 +440,80 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="1">
-       <widget class="QSpinBox" name="P1_len">
+      <item row="15" column="2">
+       <widget class="QLabel" name="label_7">
+        <property name="minimumSize">
+         <size>
+          <width>120</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Amplitude 1 (mV)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="22" column="0">
+       <widget class="QPushButton" name="button_update">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>40</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Update</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="4">
+       <widget class="QSpinBox" name="Wurst_sweep_4">
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
         <property name="keyboardTracking">
          <bool>false</bool>
         </property>
+        <property name="minimum">
+         <number>10</number>
+        </property>
         <property name="maximum">
-         <number>1900</number>
+         <number>400</number>
         </property>
         <property name="singleStep">
-         <number>2</number>
+         <number>5</number>
         </property>
         <property name="value">
-         <number>100</number>
+         <number>368</number>
         </property>
        </widget>
       </item>
-      <item row="21" column="1" rowspan="3" colspan="6">
+      <item row="17" column="0">
+       <widget class="QLabel" name="label_10">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Delay (ns)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="22" column="1" rowspan="3" colspan="7">
        <widget class="QPlainTextEdit" name="errors">
         <property name="font">
          <font>
@@ -473,15 +544,94 @@
          <number>1</number>
         </property>
         <property name="maximum">
-         <double>5000.000000000000000</double>
+         <double>500000.000000000000000</double>
         </property>
         <property name="singleStep">
          <double>2.000000000000000</double>
         </property>
        </widget>
       </item>
-      <item row="14" column="0">
-       <widget class="QLabel" name="label_4">
+      <item row="7" column="1">
+       <widget class="QSpinBox" name="Wurst_sweep_1">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>0</number>
+        </property>
+        <property name="maximum">
+         <number>0</number>
+        </property>
+        <property name="singleStep">
+         <number>5</number>
+        </property>
+        <property name="value">
+         <number>0</number>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="3">
+       <widget class="QSpinBox" name="coef_3">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+        <property name="value">
+         <number>100</number>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="4">
+       <widget class="QDoubleSpinBox" name="P4_st">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <double>500000.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>2.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="15" column="5">
+       <widget class="QSpinBox" name="N_wurst">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+        <property name="value">
+         <number>10</number>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0">
+       <widget class="QLabel" name="label_12">
         <property name="font">
          <font>
           <weight>75</weight>
@@ -489,7 +639,382 @@
          </font>
         </property>
         <property name="text">
-         <string>Repetition Rate (Hz)</string>
+         <string>Frequency (MHz)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="6">
+       <widget class="QSpinBox" name="freq_6">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>0</number>
+        </property>
+        <property name="maximum">
+         <number>250</number>
+        </property>
+        <property name="singleStep">
+         <number>5</number>
+        </property>
+        <property name="value">
+         <number>50</number>
+        </property>
+       </widget>
+      </item>
+      <item row="13" column="2">
+       <widget class="QComboBox" name="P2_type">
+        <property name="minimumSize">
+         <size>
+          <width>110</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>120</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <item>
+         <property name="text">
+          <string>SINE</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>GAUSS</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>SINC</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>WURST</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>BLANK</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>TRIGGER</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="14" column="0" colspan="7">
+       <widget class="Line" name="line_4">
+        <property name="lineWidth">
+         <number>2</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="16" column="3">
+       <widget class="QSpinBox" name="Ampl_2">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>80</number>
+        </property>
+        <property name="maximum">
+         <number>2000</number>
+        </property>
+        <property name="singleStep">
+         <number>5</number>
+        </property>
+        <property name="value">
+         <number>610</number>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="QDoubleSpinBox" name="P2_st">
+        <property name="readOnly">
+         <bool>false</bool>
+        </property>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="specialValueText">
+         <string notr="true"/>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <double>500000.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>2.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="9" column="1">
+       <widget class="QComboBox" name="Phase_1">
+        <item>
+         <property name="text">
+          <string>+x</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="8" column="2">
+       <widget class="QSpinBox" name="coef_2">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+        <property name="value">
+         <number>100</number>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="7">
+       <widget class="QDoubleSpinBox" name="P7_sig">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <double>1900.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>1.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="12" column="0" colspan="7">
+       <widget class="Line" name="line">
+        <property name="lineWidth">
+         <number>2</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="QDoubleSpinBox" name="P2_sig">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <double>1900.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>1.000000000000000</double>
+        </property>
+        <property name="value">
+         <double>16.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="3">
+       <widget class="QSpinBox" name="freq_3">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>0</number>
+        </property>
+        <property name="maximum">
+         <number>250</number>
+        </property>
+        <property name="singleStep">
+         <number>5</number>
+        </property>
+        <property name="value">
+         <number>50</number>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="2">
+       <widget class="QDoubleSpinBox" name="P2_len">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <double>1900.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>1.000000000000000</double>
+        </property>
+        <property name="value">
+         <double>16.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="3">
+       <widget class="QDoubleSpinBox" name="P3_len">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <double>1900.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>1.000000000000000</double>
+        </property>
+        <property name="value">
+         <double>32.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="0">
+       <widget class="QLabel" name="label_13">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Amplitude (%)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="5">
+       <widget class="QDoubleSpinBox" name="P5_len">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <double>1900.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>1.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="15" column="3">
+       <widget class="QSpinBox" name="Ampl_1">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>80</number>
+        </property>
+        <property name="maximum">
+         <number>2000</number>
+        </property>
+        <property name="singleStep">
+         <number>5</number>
+        </property>
+        <property name="value">
+         <number>600</number>
+        </property>
+       </widget>
+      </item>
+      <item row="16" column="0">
+       <widget class="QLabel" name="label_5">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Field (G)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="23" column="0">
+       <widget class="QPushButton" name="button_stop">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>40</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Stop</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="3">
+       <widget class="QDoubleSpinBox" name="P3_st">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <double>500000.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>2.000000000000000</double>
+        </property>
+        <property name="value">
+         <double>300.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -512,52 +1037,58 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="6">
-       <widget class="QDoubleSpinBox" name="P6_len">
+      <item row="6" column="5">
+       <widget class="QSpinBox" name="freq_5">
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
         <property name="keyboardTracking">
          <bool>false</bool>
         </property>
-        <property name="suffix">
-         <string/>
+        <property name="minimum">
+         <number>0</number>
+        </property>
+        <property name="maximum">
+         <number>250</number>
+        </property>
+        <property name="singleStep">
+         <number>5</number>
+        </property>
+        <property name="value">
+         <number>50</number>
+        </property>
+       </widget>
+      </item>
+      <item row="16" column="1">
+       <widget class="QDoubleSpinBox" name="Field">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
         </property>
         <property name="decimals">
          <number>1</number>
         </property>
+        <property name="minimum">
+         <double>100.000000000000000</double>
+        </property>
         <property name="maximum">
-         <double>1900.000000000000000</double>
+         <double>9000.000000000000000</double>
         </property>
         <property name="singleStep">
-         <double>1.000000000000000</double>
+         <double>0.500000000000000</double>
+        </property>
+        <property name="value">
+         <double>3400.000000000000000</double>
         </property>
        </widget>
       </item>
-      <item row="21" column="0">
-       <widget class="QPushButton" name="button_update">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>40</height>
-         </size>
-        </property>
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="text">
-         <string>Update</string>
-        </property>
-       </widget>
-      </item>
-      <item row="12" column="3">
+      <item row="13" column="3">
        <widget class="QComboBox" name="P3_type">
         <property name="minimumSize">
          <size>
-          <width>120</width>
+          <width>105</width>
           <height>0</height>
          </size>
         </property>
@@ -602,8 +1133,8 @@
         </item>
        </widget>
       </item>
-      <item row="1" column="5">
-       <widget class="QDoubleSpinBox" name="P5_sig">
+      <item row="2" column="4">
+       <widget class="QDoubleSpinBox" name="P4_len">
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -621,6 +1152,32 @@
         </property>
        </widget>
       </item>
+      <item row="15" column="0">
+       <widget class="QLabel" name="label_4">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Repetition Rate (Hz)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_11">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Pulse Length (ns)</string>
+        </property>
+       </widget>
+      </item>
       <item row="0" column="1">
        <widget class="QSpinBox" name="P1_st">
         <property name="buttonSymbols">
@@ -630,7 +1187,7 @@
          <bool>false</bool>
         </property>
         <property name="maximum">
-         <number>10000</number>
+         <number>500000</number>
         </property>
         <property name="singleStep">
          <number>2</number>
@@ -640,95 +1197,57 @@
         </property>
        </widget>
       </item>
-      <item row="8" column="1">
-       <widget class="QSpinBox" name="coef_1">
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
+      <item row="13" column="6">
+       <widget class="QComboBox" name="P6_type">
+        <property name="minimumSize">
+         <size>
+          <width>105</width>
+          <height>0</height>
+         </size>
         </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
+        <property name="maximumSize">
+         <size>
+          <width>120</width>
+          <height>16777215</height>
+         </size>
         </property>
-        <property name="minimum">
-         <number>100</number>
-        </property>
-        <property name="maximum">
-         <number>100</number>
-        </property>
-        <property name="value">
-         <number>100</number>
-        </property>
+        <item>
+         <property name="text">
+          <string>SINE</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>GAUSS</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>SINC</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>WURST</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>BLANK</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>TRIGGER</string>
+         </property>
+        </item>
        </widget>
       </item>
-      <item row="8" column="0">
-       <widget class="QLabel" name="label_13">
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="text">
-         <string>Amplitude (%)</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="label">
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-          <kerning>true</kerning>
-         </font>
-        </property>
-        <property name="text">
-         <string>Pulse Start (ns)</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="4">
-       <widget class="QDoubleSpinBox" name="P4_st">
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="decimals">
-         <number>1</number>
-        </property>
-        <property name="maximum">
-         <double>5000.000000000000000</double>
-        </property>
-        <property name="singleStep">
-         <double>2.000000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="6">
-       <widget class="QDoubleSpinBox" name="P6_st">
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="decimals">
-         <number>1</number>
-        </property>
-        <property name="maximum">
-         <double>5000.000000000000000</double>
-        </property>
-        <property name="singleStep">
-         <double>2.000000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="12" column="4">
+      <item row="13" column="4">
        <widget class="QComboBox" name="P4_type">
         <property name="minimumSize">
          <size>
-          <width>120</width>
+          <width>105</width>
           <height>1</height>
          </size>
         </property>
@@ -770,8 +1289,108 @@
         </item>
        </widget>
       </item>
-      <item row="0" column="3">
-       <widget class="QDoubleSpinBox" name="P3_st">
+      <item row="2" column="1">
+       <widget class="QSpinBox" name="P1_len">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="maximum">
+         <number>1900</number>
+        </property>
+        <property name="singleStep">
+         <number>2</number>
+        </property>
+        <property name="value">
+         <number>100</number>
+        </property>
+       </widget>
+      </item>
+      <item row="9" column="2">
+       <widget class="QComboBox" name="Phase_2">
+        <item>
+         <property name="text">
+          <string>+x</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>-x</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>+y</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>-y</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="17" column="3">
+       <widget class="QDoubleSpinBox" name="Phase">
+        <property name="wrapping">
+         <bool>true</bool>
+        </property>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="maximum">
+         <double>360.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>0.100000000000000</double>
+        </property>
+        <property name="value">
+         <double>90.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="15" column="4">
+       <widget class="QLabel" name="label_14">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>N WURST</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="2">
+       <widget class="QSpinBox" name="freq_2">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>0</number>
+        </property>
+        <property name="maximum">
+         <number>250</number>
+        </property>
+        <property name="singleStep">
+         <number>5</number>
+        </property>
+        <property name="value">
+         <number>50</number>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="6">
+       <widget class="QDoubleSpinBox" name="P6_st">
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -782,31 +1401,91 @@
          <number>1</number>
         </property>
         <property name="maximum">
-         <double>5000.000000000000000</double>
+         <double>500000.000000000000000</double>
         </property>
         <property name="singleStep">
          <double>2.000000000000000</double>
         </property>
-        <property name="value">
-         <double>300.000000000000000</double>
+       </widget>
+      </item>
+      <item row="13" column="1">
+       <widget class="QComboBox" name="P1_type">
+        <property name="minimumSize">
+         <size>
+          <width>105</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>120</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="currentIndex">
+         <number>0</number>
+        </property>
+        <item>
+         <property name="text">
+          <string>TRIGGER</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="1" column="6">
+       <widget class="QDoubleSpinBox" name="P6_sig">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <double>1900.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>1.000000000000000</double>
         </property>
        </widget>
       </item>
-      <item row="12" column="0">
-       <widget class="QLabel" name="label_3">
+      <item row="8" column="6">
+       <widget class="QSpinBox" name="coef_6">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+        <property name="value">
+         <number>100</number>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label">
         <property name="font">
          <font>
           <weight>75</weight>
           <bold>true</bold>
+          <kerning>true</kerning>
          </font>
         </property>
         <property name="text">
-         <string>Pulse Type</string>
+         <string>Pulse Start (ns)</string>
         </property>
        </widget>
       </item>
-      <item row="2" column="3">
-       <widget class="QDoubleSpinBox" name="P3_len">
+      <item row="1" column="3">
+       <widget class="QDoubleSpinBox" name="P3_sig">
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -827,11 +1506,11 @@
         </property>
        </widget>
       </item>
-      <item row="12" column="2">
-       <widget class="QComboBox" name="P2_type">
+      <item row="13" column="7">
+       <widget class="QComboBox" name="P7_type">
         <property name="minimumSize">
          <size>
-          <width>120</width>
+          <width>105</width>
           <height>0</height>
          </size>
         </property>
@@ -873,128 +1552,10 @@
         </item>
        </widget>
       </item>
-      <item row="23" column="0">
-       <widget class="QPushButton" name="button_off">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>40</height>
-         </size>
-        </property>
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="text">
-         <string>Exit</string>
-        </property>
-       </widget>
-      </item>
-      <item row="15" column="2">
-       <widget class="QLabel" name="label_8">
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="text">
-         <string>Amplitude 2 (mV)</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_11">
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="text">
-         <string>Pulse Length (ns)</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="5">
-       <widget class="QDoubleSpinBox" name="P5_len">
+      <item row="8" column="7">
+       <widget class="QSpinBox" name="coef_7">
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="decimals">
-         <number>1</number>
-        </property>
-        <property name="maximum">
-         <double>1900.000000000000000</double>
-        </property>
-        <property name="singleStep">
-         <double>1.000000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="0">
-       <widget class="QLabel" name="label_12">
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="text">
-         <string>Frequency (MHz)</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="4">
-       <widget class="QDoubleSpinBox" name="P4_sig">
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="decimals">
-         <number>1</number>
-        </property>
-        <property name="maximum">
-         <double>1900.000000000000000</double>
-        </property>
-        <property name="singleStep">
-         <double>1.000000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="16" column="1">
-       <widget class="QDoubleSpinBox" name="Delay">
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="decimals">
-         <number>1</number>
-        </property>
-        <property name="maximum">
-         <double>10000.000000000000000</double>
-        </property>
-        <property name="singleStep">
-         <double>25.600000000000001</double>
-        </property>
-       </widget>
-      </item>
-      <item row="8" column="4">
-       <widget class="QSpinBox" name="coef_4">
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
         </property>
         <property name="minimum">
          <number>1</number>
@@ -1007,174 +1568,65 @@
         </property>
        </widget>
       </item>
-      <item row="14" column="3">
-       <widget class="QSpinBox" name="Ampl_1">
+      <item row="7" column="7">
+       <widget class="QSpinBox" name="Wurst_sweep_7">
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
         <property name="minimum">
-         <number>80</number>
+         <number>10</number>
         </property>
         <property name="maximum">
-         <number>800</number>
+         <number>400</number>
         </property>
         <property name="singleStep">
          <number>5</number>
         </property>
         <property name="value">
-         <number>600</number>
+         <number>368</number>
         </property>
        </widget>
       </item>
-      <item row="16" column="0">
-       <widget class="QLabel" name="label_10">
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="text">
-         <string>Delay (ns)</string>
-        </property>
-       </widget>
-      </item>
-      <item row="15" column="0">
-       <widget class="QLabel" name="label_5">
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="text">
-         <string>Field (G)</string>
-        </property>
-       </widget>
-      </item>
-      <item row="22" column="0">
-       <widget class="QPushButton" name="button_stop">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>40</height>
-         </size>
-        </property>
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="text">
-         <string>Stop</string>
-        </property>
-       </widget>
-      </item>
-      <item row="8" column="2">
-       <widget class="QSpinBox" name="coef_2">
+      <item row="0" column="7">
+       <widget class="QDoubleSpinBox" name="P7_st">
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="minimum">
-         <number>1</number>
-        </property>
-        <property name="maximum">
-         <number>100</number>
-        </property>
-        <property name="value">
-         <number>100</number>
-        </property>
-       </widget>
-      </item>
-      <item row="15" column="1">
-       <widget class="QDoubleSpinBox" name="Field">
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
         </property>
         <property name="decimals">
          <number>1</number>
         </property>
-        <property name="minimum">
-         <double>100.000000000000000</double>
-        </property>
         <property name="maximum">
-         <double>9000.000000000000000</double>
+         <double>500000.000000000000000</double>
         </property>
         <property name="singleStep">
-         <double>0.500000000000000</double>
-        </property>
-        <property name="value">
-         <double>3400.000000000000000</double>
+         <double>2.000000000000000</double>
         </property>
        </widget>
       </item>
-      <item row="14" column="2">
-       <widget class="QLabel" name="label_7">
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
+      <item row="1" column="1">
+       <widget class="QSpinBox" name="P1_sig">
+        <property name="inputMethodHints">
+         <set>Qt::ImhDigitsOnly</set>
         </property>
-        <property name="text">
-         <string>Amplitude 1 (mV)</string>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
-       </widget>
-      </item>
-      <item row="13" column="0" colspan="7">
-       <widget class="Line" name="line_4">
-        <property name="lineWidth">
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="maximum">
+         <number>1900</number>
+        </property>
+        <property name="singleStep">
          <number>2</number>
         </property>
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+        <property name="value">
+         <number>100</number>
         </property>
        </widget>
       </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_2">
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="text">
-         <string>Pulse Sigma (ns)</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="4">
-       <widget class="QDoubleSpinBox" name="P4_len">
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="decimals">
-         <number>1</number>
-        </property>
-        <property name="maximum">
-         <double>1900.000000000000000</double>
-        </property>
-        <property name="singleStep">
-         <double>1.000000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="8" column="6">
-       <widget class="QSpinBox" name="coef_6">
+      <item row="8" column="4">
+       <widget class="QSpinBox" name="coef_4">
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -1214,117 +1666,7 @@
         </property>
        </widget>
       </item>
-      <item row="6" column="2">
-       <widget class="QSpinBox" name="freq_2">
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="minimum">
-         <number>0</number>
-        </property>
-        <property name="maximum">
-         <number>250</number>
-        </property>
-        <property name="singleStep">
-         <number>5</number>
-        </property>
-        <property name="value">
-         <number>125</number>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="3">
-       <widget class="QSpinBox" name="freq_3">
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="minimum">
-         <number>0</number>
-        </property>
-        <property name="maximum">
-         <number>250</number>
-        </property>
-        <property name="singleStep">
-         <number>5</number>
-        </property>
-        <property name="value">
-         <number>125</number>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="4">
-       <widget class="QSpinBox" name="freq_4">
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="minimum">
-         <number>0</number>
-        </property>
-        <property name="maximum">
-         <number>250</number>
-        </property>
-        <property name="singleStep">
-         <number>5</number>
-        </property>
-        <property name="value">
-         <number>125</number>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="5">
-       <widget class="QSpinBox" name="freq_5">
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="minimum">
-         <number>0</number>
-        </property>
-        <property name="maximum">
-         <number>250</number>
-        </property>
-        <property name="singleStep">
-         <number>5</number>
-        </property>
-        <property name="value">
-         <number>125</number>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="6">
-       <widget class="QSpinBox" name="freq_6">
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="minimum">
-         <number>0</number>
-        </property>
-        <property name="maximum">
-         <number>250</number>
-        </property>
-        <property name="singleStep">
-         <number>5</number>
-        </property>
-        <property name="value">
-         <number>125</number>
-        </property>
-       </widget>
-      </item>
-      <item row="16" column="2">
+      <item row="17" column="2">
        <widget class="QLabel" name="label_9">
         <property name="font">
          <font>
@@ -1334,161 +1676,6 @@
         </property>
         <property name="text">
          <string>Phase (deg)</string>
-        </property>
-       </widget>
-      </item>
-      <item row="16" column="3">
-       <widget class="QDoubleSpinBox" name="Phase">
-        <property name="wrapping">
-         <bool>true</bool>
-        </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="maximum">
-         <double>360.000000000000000</double>
-        </property>
-        <property name="singleStep">
-         <double>0.100000000000000</double>
-        </property>
-        <property name="value">
-         <double>90.000000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="7" column="0">
-       <widget class="QLabel" name="label_6">
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="text">
-         <string>WURST Sweep (MHz)</string>
-        </property>
-       </widget>
-      </item>
-      <item row="7" column="1">
-       <widget class="QSpinBox" name="Wurst_sweep_1">
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="minimum">
-         <number>0</number>
-        </property>
-        <property name="maximum">
-         <number>0</number>
-        </property>
-        <property name="singleStep">
-         <number>5</number>
-        </property>
-        <property name="value">
-         <number>0</number>
-        </property>
-       </widget>
-      </item>
-      <item row="14" column="4">
-       <widget class="QLabel" name="label_14">
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="text">
-         <string>N WURST</string>
-        </property>
-       </widget>
-      </item>
-      <item row="14" column="5">
-       <widget class="QSpinBox" name="N_wurst">
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="minimum">
-         <number>1</number>
-        </property>
-        <property name="maximum">
-         <number>100</number>
-        </property>
-        <property name="value">
-         <number>10</number>
-        </property>
-       </widget>
-      </item>
-      <item row="7" column="2">
-       <widget class="QSpinBox" name="Wurst_sweep_2">
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="minimum">
-         <number>10</number>
-        </property>
-        <property name="maximum">
-         <number>300</number>
-        </property>
-        <property name="singleStep">
-         <number>5</number>
-        </property>
-        <property name="value">
-         <number>100</number>
-        </property>
-       </widget>
-      </item>
-      <item row="7" column="3">
-       <widget class="QSpinBox" name="Wurst_sweep_3">
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="minimum">
-         <number>10</number>
-        </property>
-        <property name="maximum">
-         <number>300</number>
-        </property>
-        <property name="singleStep">
-         <number>5</number>
-        </property>
-        <property name="value">
-         <number>100</number>
-        </property>
-       </widget>
-      </item>
-      <item row="7" column="4">
-       <widget class="QSpinBox" name="Wurst_sweep_4">
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="minimum">
-         <number>10</number>
-        </property>
-        <property name="maximum">
-         <number>300</number>
-        </property>
-        <property name="singleStep">
-         <number>5</number>
-        </property>
-        <property name="value">
-         <number>100</number>
         </property>
        </widget>
       </item>
@@ -1504,36 +1691,169 @@
          <number>10</number>
         </property>
         <property name="maximum">
-         <number>300</number>
+         <number>400</number>
         </property>
         <property name="singleStep">
          <number>5</number>
         </property>
         <property name="value">
-         <number>100</number>
+         <number>368</number>
         </property>
        </widget>
       </item>
-      <item row="7" column="6">
-       <widget class="QSpinBox" name="Wurst_sweep_6">
+      <item row="6" column="7">
+       <widget class="QSpinBox" name="freq_7">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="maximum">
+         <number>250</number>
+        </property>
+        <property name="singleStep">
+         <number>5</number>
+        </property>
+        <property name="value">
+         <number>50</number>
+        </property>
+       </widget>
+      </item>
+      <item row="17" column="1">
+       <widget class="QDoubleSpinBox" name="Delay">
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
         <property name="keyboardTracking">
          <bool>false</bool>
         </property>
-        <property name="minimum">
-         <number>10</number>
+        <property name="decimals">
+         <number>1</number>
         </property>
         <property name="maximum">
-         <number>300</number>
+         <double>10000.000000000000000</double>
         </property>
         <property name="singleStep">
-         <number>5</number>
+         <double>25.600000000000001</double>
         </property>
-        <property name="value">
-         <number>100</number>
-        </property>
+       </widget>
+      </item>
+      <item row="9" column="3">
+       <widget class="QComboBox" name="Phase_3">
+        <item>
+         <property name="text">
+          <string>+x</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>-x</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>+y</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>-y</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="9" column="4">
+       <widget class="QComboBox" name="Phase_4">
+        <item>
+         <property name="text">
+          <string>+x</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>-x</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>+y</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>-y</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="9" column="5">
+       <widget class="QComboBox" name="Phase_5">
+        <item>
+         <property name="text">
+          <string>+x</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>-x</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>+y</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>-y</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="9" column="6">
+       <widget class="QComboBox" name="Phase_6">
+        <item>
+         <property name="text">
+          <string>+x</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>-x</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>+y</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>-y</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="9" column="7">
+       <widget class="QComboBox" name="Phase_7">
+        <item>
+         <property name="text">
+          <string>+x</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>-x</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>+y</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>-y</string>
+         </property>
+        </item>
        </widget>
       </item>
      </layout>

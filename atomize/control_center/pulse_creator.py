@@ -29,7 +29,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.destroyed.connect(lambda: self._on_destroyed())                # connect some actions to exit
         # Load the UI Page
-        uic.loadUi(gui_path, self)                        # Design file
+        uic.loadUi(gui_path, self)                                          # Design file
 
         self.pb = pb_pro.PB_ESR_500_Pro()
         self.bh15 = bh.BH_15()
@@ -62,6 +62,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.label_3.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_4.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_5.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.label_6.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
 
         # Spinboxes
         self.P1_st.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
@@ -76,6 +77,8 @@ class MainWindow(QtWidgets.QMainWindow):
         #self.P5_st.lineEdit().setReadOnly( True )
         self.P6_st.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
         #self.P6_st.lineEdit().setReadOnly( True )
+        self.P7_st.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        #self.P7_st.lineEdit().setReadOnly( True )
         self.Rep_rate.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
         self.Field.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
         self.P1_len.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
@@ -90,12 +93,23 @@ class MainWindow(QtWidgets.QMainWindow):
         #self.P5_len.lineEdit().setReadOnly( True ) 
         self.P6_len.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
         #self.P6_len.lineEdit().setReadOnly( True ) 
+        self.P7_len.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        #self.P7_len.lineEdit().setReadOnly( True ) 
         self.P1_type.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
         self.P2_type.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
         self.P3_type.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
         self.P4_type.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
         self.P5_type.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
         self.P6_type.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
+        self.P7_type.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
+
+        self.Phase_1.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
+        self.Phase_2.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
+        self.Phase_3.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
+        self.Phase_4.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
+        self.Phase_5.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
+        self.Phase_6.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
+        self.Phase_7.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
 
         # Functions
         self.P1_st.valueChanged.connect(self.p1_st)
@@ -116,6 +130,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.P6_st.valueChanged.connect(self.p6_st)
         self.p6_start = self.add_ns( self.P6_st.value() )
 
+        self.P7_st.valueChanged.connect(self.p7_st)
+        self.p7_start = self.add_ns( self.P7_st.value() )
+
 
         self.P1_len.valueChanged.connect(self.p1_len)
         self.p1_length = self.add_ns( self.P1_len.value() )
@@ -134,6 +151,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.P6_len.valueChanged.connect(self.p6_len)
         self.p6_length = self.add_ns( self.P6_len.value() )
+
+        self.P7_len.valueChanged.connect(self.p7_len)
+        self.p7_length = self.add_ns( self.P7_len.value() )
 
         self.Rep_rate.valueChanged.connect(self.rep_rate)
         self.repetition_rate = str( self.Rep_rate.value() ) + ' Hz'
@@ -154,9 +174,78 @@ class MainWindow(QtWidgets.QMainWindow):
         self.p5_typ = str( self.P5_type.currentText() )
         self.P6_type.currentIndexChanged.connect(self.p6_type)
         self.p6_typ = str( self.P6_type.currentText() )
+        self.P7_type.currentIndexChanged.connect(self.p7_type)
+        self.p7_typ = str( self.P7_type.currentText() )
 
         self.laser_flag = 0
         self.laser_q_switch_delay = 165000 # in ns
+
+        self.Phase_1.currentIndexChanged.connect(self.phase_1)
+        self.ph_1 = self.phase_converted( self.Phase_1.currentText() )
+        self.Phase_2.currentIndexChanged.connect(self.phase_2)
+        self.ph_2 = self.phase_converted( self.Phase_2.currentText() )
+        self.Phase_3.currentIndexChanged.connect(self.phase_3)
+        self.ph_3 = self.phase_converted( self.Phase_3.currentText() )
+        self.Phase_4.currentIndexChanged.connect(self.phase_4)
+        self.ph_4 = self.phase_converted( self.Phase_4.currentText() )
+        self.Phase_5.currentIndexChanged.connect(self.phase_5)
+        self.ph_5 = self.phase_converted( self.Phase_5.currentText() )
+        self.Phase_6.currentIndexChanged.connect(self.phase_6)
+        self.ph_6 = self.phase_converted( self.Phase_6.currentText() )
+        self.Phase_7.currentIndexChanged.connect(self.phase_7)
+        self.ph_7 = self.phase_converted( self.Phase_7.currentText() )
+
+    def phase_converted(self, ph_str):
+        if ph_str == '+x':
+            return '+x'
+        elif ph_str == '-x':
+            return '-x'
+        elif ph_str == '+y':
+            return '+y'
+        elif ph_str == '-y':
+            return '-y'
+
+    def phase_1(self):
+        """
+        A function to change a pulse 1 phase
+        """
+        self.ph_1 = self.phase_converted( self.Phase_1.currentText() )
+
+    def phase_2(self):
+        """
+        A function to change a pulse 2 phase
+        """
+        self.ph_2 = self.phase_converted( self.Phase_2.currentText() )
+
+    def phase_3(self):
+        """
+        A function to change a pulse 3 phase
+        """
+        self.ph_3 = self.phase_converted( self.Phase_3.currentText() )
+
+    def phase_4(self):
+        """
+        A function to change a pulse 4 phase
+        """
+        self.ph_4 = self.phase_converted( self.Phase_4.currentText() )
+
+    def phase_5(self):
+        """
+        A function to change a pulse 5 phase
+        """
+        self.ph_5 = self.phase_converted( self.Phase_5.currentText() )
+
+    def phase_6(self):
+        """
+        A function to change a pulse 6 phase
+        """
+        self.ph_6 = self.phase_converted( self.Phase_6.currentText() )
+
+    def phase_7(self):
+        """
+        A function to change a pulse 7 phase
+        """
+        self.ph_7 = self.phase_converted( self.Phase_7.currentText() )
 
     def remove_ns(self, string1):
         return string1.split(' ')[0]
@@ -255,6 +344,17 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.p6_start = self.add_ns( self.P6_st.value() )
 
+    def p7_st(self):
+        """
+        A function to set pulse 7 start
+        """
+        self.p7_start = self.P7_st.value()
+        if self.p7_start % 2 != 0:
+            self.p7_start = self.p7_start + 1
+            self.P7_st.setValue( self.p7_start )
+
+        self.p7_start = self.add_ns( self.P7_st.value() )
+
     def p1_len(self):
         """
         A function to change a pulse 1 length
@@ -327,6 +427,18 @@ class MainWindow(QtWidgets.QMainWindow):
         pl = self.check_length( self.P6_len.value() )
         self.p6_length = self.add_ns( pl )
 
+    def p7_len(self):
+        """
+        A function to change a pulse 7 length
+        """
+        self.p7_length = self.P7_len.value()
+        if self.p7_length % 2 != 0:
+            self.p7_length = self.p7_length + 1
+            self.P7_len.setValue( self.p7_length )
+
+        pl = self.check_length( self.P7_len.value() )
+        self.p7_length = self.add_ns( pl )
+
     def p1_type(self):
         """
         A function to change a pulse 1 type
@@ -366,6 +478,12 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to change a pulse 6 type
         """
         self.p6_typ = str( self.P6_type.currentText() )
+
+    def p7_type(self):
+        """
+        A function to change a pulse 7 type
+        """
+        self.p7_typ = str( self.P7_type.currentText() )
 
     def rep_rate(self):
         """
@@ -407,18 +525,26 @@ class MainWindow(QtWidgets.QMainWindow):
             self.pb.pulser_repetition_rate( self.repetition_rate )
             
             if int( self.p1_length.split(' ')[0] ) != 0:
-                self.pb.pulser_pulse( name = 'P0', channel = self.p1_typ, start = self.p1_start, length = self.p1_length )
+                self.pb.pulser_pulse( name = 'P0', channel = self.p1_typ, start = self.p1_start, length = self.p1_length, \
+                                        phase_list = [ self.ph_1 ] )
             if int( self.p2_length.split(' ')[0] ) != 0:
-                self.pb.pulser_pulse( name = 'P1', channel = self.p2_typ, start = self.p2_start, length = self.p2_length )
+                self.pb.pulser_pulse( name = 'P1', channel = self.p2_typ, start = self.p2_start, length = self.p2_length, \
+                                        phase_list = [ self.ph_2 ] )
             if int( self.p3_length.split(' ')[0] ) != 0:
-                self.pb.pulser_pulse( name = 'P2', channel = self.p3_typ, start = self.p3_start, length = self.p3_length )
+                self.pb.pulser_pulse( name = 'P2', channel = self.p3_typ, start = self.p3_start, length = self.p3_length, \
+                                        phase_list = [ self.ph_3 ] )
             if int( self.p4_length.split(' ')[0] ) != 0:
-                self.pb.pulser_pulse( name = 'P3', channel = self.p4_typ, start = self.p4_start, length = self.p4_length )
+                self.pb.pulser_pulse( name = 'P3', channel = self.p4_typ, start = self.p4_start, length = self.p4_length, \
+                                        phase_list = [ self.ph_4 ]  )
             if int( self.p5_length.split(' ')[0] ) != 0:
-                self.pb.pulser_pulse( name = 'P4', channel = self.p5_typ, start = self.p5_start, length = self.p5_length )
+                self.pb.pulser_pulse( name = 'P4', channel = self.p5_typ, start = self.p5_start, length = self.p5_length, \
+                                        phase_list = [ self.ph_5 ] )
             if int( self.p6_length.split(' ')[0] ) != 0:
-                self.pb.pulser_pulse( name = 'P5', channel = self.p6_typ, start = self.p6_start, length = self.p6_length )
-
+                self.pb.pulser_pulse( name = 'P5', channel = self.p6_typ, start = self.p6_start, length = self.p6_length, \
+                                        phase_list = [ self.ph_6 ]  )
+            if int( self.p7_length.split(' ')[0] ) != 0:
+                self.pb.pulser_pulse( name = 'P6', channel = self.p7_typ, start = self.p7_start, length = self.p7_length, \
+                                        phase_list = [ self.ph_7 ]  )
 
         else:
             self.pb.pulser_repetition_rate( '10 Hz' )
@@ -430,24 +556,36 @@ class MainWindow(QtWidgets.QMainWindow):
             self.p4_start = self.add_ns( int( self.remove_ns( self.p4_start ) ) + self.laser_q_switch_delay )
             self.p5_start = self.add_ns( int( self.remove_ns( self.p5_start ) ) + self.laser_q_switch_delay )
             self.p6_start = self.add_ns( int( self.remove_ns( self.p6_start ) ) + self.laser_q_switch_delay )
+            self.p7_start = self.add_ns( int( self.remove_ns( self.p7_start ) ) + self.laser_q_switch_delay )
 
             if int( self.p1_length.split(' ')[0] ) != 0:
-                self.pb.pulser_pulse( name = 'P0', channel = self.p1_typ, start = self.p1_start, length = self.p1_length )
+                self.pb.pulser_pulse( name = 'P0', channel = self.p1_typ, start = self.p1_start, length = self.p1_length, \
+                                        phase_list = [ self.ph_1 ] )
             if int( self.p2_length.split(' ')[0] ) != 0:
-                self.pb.pulser_pulse( name = 'P1', channel = self.p2_typ, start = self.p2_start, length = self.p2_length )
+                self.pb.pulser_pulse( name = 'P1', channel = self.p2_typ, start = self.p2_start, length = self.p2_length, \
+                                        phase_list = [ self.ph_2 ] )
             if int( self.p3_length.split(' ')[0] ) != 0:
-                self.pb.pulser_pulse( name = 'P2', channel = self.p3_typ, start = self.p3_start, length = self.p3_length )
+                self.pb.pulser_pulse( name = 'P2', channel = self.p3_typ, start = self.p3_start, length = self.p3_length, \
+                                        phase_list = [ self.ph_3 ] )
             if int( self.p4_length.split(' ')[0] ) != 0:
-                self.pb.pulser_pulse( name = 'P3', channel = self.p4_typ, start = self.p4_start, length = self.p4_length )
+                self.pb.pulser_pulse( name = 'P3', channel = self.p4_typ, start = self.p4_start, length = self.p4_length, \
+                                        phase_list = [ self.ph_4 ] )
             if int( self.p5_length.split(' ')[0] ) != 0:
-                self.pb.pulser_pulse( name = 'P4', channel = self.p5_typ, start = self.p5_start, length = self.p5_length )
+                self.pb.pulser_pulse( name = 'P4', channel = self.p5_typ, start = self.p5_start, length = self.p5_length, \
+                                        phase_list = [ self.ph_5 ] )
             if int( self.p6_length.split(' ')[0] ) != 0:
-                self.pb.pulser_pulse( name = 'P5', channel = self.p6_typ, start = self.p6_start, length = self.p6_length )
+                self.pb.pulser_pulse( name = 'P5', channel = self.p6_typ, start = self.p6_start, length = self.p6_length, \
+                                        phase_list = [ self.ph_6 ] )
+            if int( self.p7_length.split(' ')[0] ) != 0:
+                self.pb.pulser_pulse( name = 'P6', channel = self.p7_typ, start = self.p7_start, length = self.p7_length, \
+                                        phase_list = [ self.ph_7 ] )
 
             self.errors.appendPlainText( '165 us is added to all the pulses except the LASER pulse' )
 
 
-        self.pb.pulser_update()
+        # before adding pulse phases
+        ##self.pb.pulser_update()
+        self.pb.pulser_next_phase()
         # the next line gives rise to a bag with FC
         #self.bh15.magnet_field( self.mag_field )
 
@@ -466,7 +604,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # in order to finish a test
         time.sleep( 0.1 )
 
-        print( self.test_process.exitcode )
+        #print( self.test_process.exitcode )
 
         if self.test_process.exitcode == 0:
             self.test_process.join()

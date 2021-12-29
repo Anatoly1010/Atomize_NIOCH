@@ -28,11 +28,11 @@ from PyQt5.Qt import Qt as QtConst
 from pyqtgraph.dockarea import DockArea
 import atomize.main.messenger_socket_server as socket_server
 ###AWG
-sys.path.append('/home/pulseepr/Sources/AWG/Examples/python')
+#sys.path.append('/home/pulseepr/Sources/AWG/Examples/python')
 #sys.path.append('/home/anatoly/AWG/spcm_examples/python')
 
-from pyspcm import *
-from spcm_tools import *
+#from pyspcm import *
+#from spcm_tools import *
 
 class MainWindow(QtWidgets.QMainWindow):
     """
@@ -177,6 +177,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.label_creator.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.label_filename.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.script_chooser.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
         self.script_chooser.currentIndexChanged.connect(self.script_open_combo)
         self.script = self.text_to_script_name( self.script_chooser.currentText() )
@@ -813,6 +814,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # scroll to Experimental parameters
         QtCore.QTimer.singleShot(0, lambda: self.textEdit.verticalScrollBar().setValue(9))
+
+        self.label_filename.setText( str( self.script ) )
 
     def save_file(self, filename):
         """
