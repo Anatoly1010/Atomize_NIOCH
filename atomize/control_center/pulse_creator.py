@@ -6,6 +6,7 @@ import sys
 import time
 from multiprocessing import Process, Pipe
 #from PyQt5.QtWidgets import QListView, QAction, QWidget
+from PyQt5.QtWidgets import QFileDialog
 from PyQt5 import QtWidgets, uic #, QtCore, QtGui
 from PyQt5.QtGui import QIcon
 import atomize.general_modules.general_functions as general
@@ -26,6 +27,8 @@ class MainWindow(QtWidgets.QMainWindow):
         gui_path = os.path.join(path_to_main,'gui/pulse_main_window.ui')
         icon_path = os.path.join(path_to_main, 'gui/icon_pulse.png')
         self.setWindowIcon( QIcon(icon_path) )
+
+        self.path = os.path.join(path_to_main, '..', 'tests/pulse_epr')
 
         self.destroyed.connect(lambda: self._on_destroyed())                # connect some actions to exit
         # Load the UI Page
@@ -194,6 +197,95 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ph_6 = self.phase_converted( self.Phase_6.currentText() )
         self.Phase_7.currentIndexChanged.connect(self.phase_7)
         self.ph_7 = self.phase_converted( self.Phase_7.currentText() )
+
+        self.menu_bar_file()
+
+    def menu_bar_file(self):
+        """
+        Design settings for QMenuBar
+        """
+        self.menuBar.setStyleSheet("QMenuBar { color: rgb(193, 202, 227); } \
+                            QMenu::item { color: rgb(211, 194, 78); } QMenu::item:selected {color: rgb(193, 202, 227); }")
+        self.action_read.triggered.connect( self.open_file_dialog )
+        self.action_save.triggered.connect( self.save_file_dialog )
+
+    def open_file_dialog(self):
+        """
+        A function to open a new window for choosing a pulse list
+        """
+        filedialog = QFileDialog(self, 'Open File', directory = self.path, filter = "Pulse List (*.pulse)",\
+            options = QtWidgets.QFileDialog.DontUseNativeDialog)
+        # use QFileDialog.DontUseNativeDialog to change directory
+        filedialog.setStyleSheet("QWidget { background-color : rgb(42, 42, 64); color: rgb(211, 194, 78);}")
+        filedialog.setFileMode(QtWidgets.QFileDialog.AnyFile)
+        filedialog.fileSelected.connect(self.open_file)
+        filedialog.show()
+
+    def save_file_dialog(self):
+        """
+        A function to open a new window for choosing a pulse list
+        """
+        filedialog = QFileDialog(self, 'Save File', directory = self.path, filter = "Pulse List (*.pulse)",\
+            options = QtWidgets.QFileDialog.DontUseNativeDialog)
+        filedialog.setAcceptMode(QFileDialog.AcceptSave)
+        # use QFileDialog.DontUseNativeDialog to change directory
+        filedialog.setStyleSheet("QWidget { background-color : rgb(42, 42, 64); color: rgb(211, 194, 78);}")
+        filedialog.setFileMode(QtWidgets.QFileDialog.AnyFile)
+        filedialog.fileSelected.connect(self.save_file)
+        filedialog.show()
+
+    def open_file(self, filename):
+        """
+        A function to open a pulse list
+        :param filename: string
+        """
+        text = open(filename).read()
+        lines = text.split('\n')
+
+        self.setter(text, 0, self.P1_type, self.P1_st, self.P1_len, self.Phase_1)
+        self.setter(text, 1, self.P2_type, self.P2_st, self.P2_len, self.Phase_2)
+        self.setter(text, 2, self.P3_type, self.P3_st, self.P3_len, self.Phase_3)
+        self.setter(text, 3, self.P4_type, self.P4_st, self.P4_len, self.Phase_4)
+        self.setter(text, 4, self.P5_type, self.P5_st, self.P5_len, self.Phase_5)
+        self.setter(text, 5, self.P6_type, self.P6_st, self.P6_len, self.Phase_6)
+        self.setter(text, 6, self.P7_type, self.P7_st, self.P7_len, self.Phase_7)
+        self.Rep_rate.setValue( int( lines[7] ) )
+        self.Field.setValue( float( lines[8] ) )
+
+        #self.errors.setPlainText( str( text.split('\n')[3].split(', ')[3] ) )
+        #self.errors.appendPlainText( str( self.p1_start ) + ' ' + str( self.p4_start ) + ' ' + str( self.p7_start ) )
+        #self.errors.appendPlainText( str( self.p1_length ) + ' ' + str( self.p4_length ) + ' ' + str( self.p7_length ) )
+        #self.errors.appendPlainText( str( self.p1_typ ) + ' ' + str( self.p4_typ ) + ' ' + str( self.p7_typ ) )
+        #self.errors.appendPlainText( str( self.ph_1 ) + ' ' + str( self.ph_4 ) + ' ' + str( self.ph_7 ) )
+
+    def setter(self, text, index, typ, st, leng, phase):
+        """
+        Auxiliary function to set all the values from *.pulse file
+        """
+        array = text.split('\n')[index].split(', ')
+
+        typ.setCurrentText( array[0] )
+        st.setValue( int( array[1] ) )
+        leng.setValue( int( array[2] ) )
+        phase.setCurrentText( str( array[3] ) )
+
+    def save_file(self, filename):
+        """
+        A function to save a new pulse list
+        :param filename: string
+        """
+        if filename[-5:] != 'pulse':
+            filename = filename + '.pulse'
+        with open(filename, 'w') as file:
+            file.write( self.P1_type.currentText() + ', ' + str(self.P1_st.value()) + ', ' + str(self.P1_len.value()) + ', ' + self.Phase_1.currentText() + '\n' )
+            file.write( self.P2_type.currentText() + ', ' + str(self.P2_st.value()) + ', ' + str(self.P2_len.value()) + ', ' + self.Phase_2.currentText() + '\n' )
+            file.write( self.P3_type.currentText() + ', ' + str(self.P3_st.value()) + ', ' + str(self.P3_len.value()) + ', ' + self.Phase_3.currentText() + '\n' )
+            file.write( self.P4_type.currentText() + ', ' + str(self.P4_st.value()) + ', ' + str(self.P4_len.value()) + ', ' + self.Phase_4.currentText() + '\n' )
+            file.write( self.P5_type.currentText() + ', ' + str(self.P5_st.value()) + ', ' + str(self.P5_len.value()) + ', ' + self.Phase_5.currentText() + '\n' )
+            file.write( self.P6_type.currentText() + ', ' + str(self.P6_st.value()) + ', ' + str(self.P6_len.value()) + ', ' + self.Phase_6.currentText() + '\n' )
+            file.write( self.P7_type.currentText() + ', ' + str(self.P7_st.value()) + ', ' + str(self.P7_len.value()) + ', ' + self.Phase_7.currentText() + '\n' )
+            file.write( str(self.Rep_rate.value()) + '\n' )
+            file.write( str(self.Field.value()) + '\n' )
 
     def phase_converted(self, ph_str):
         if ph_str == '+x':

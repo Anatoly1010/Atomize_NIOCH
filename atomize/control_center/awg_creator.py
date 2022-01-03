@@ -7,6 +7,7 @@ import time
 import numpy as np
 from multiprocessing import Process, Pipe
 #from PyQt5.QtWidgets import QListView, QAction, QWidget
+from PyQt5.QtWidgets import QFileDialog
 from PyQt5 import QtWidgets, uic #, QtCore, QtGui
 from PyQt5.QtGui import QIcon
 import atomize.general_modules.general_functions as general
@@ -28,6 +29,8 @@ class MainWindow(QtWidgets.QMainWindow):
         gui_path = os.path.join(path_to_main,'gui/awg_main_window.ui')
         icon_path = os.path.join(path_to_main, 'gui/icon_pulse.png')
         self.setWindowIcon( QIcon(icon_path) )
+
+        self.path = os.path.join(path_to_main, '..', 'tests/pulse_epr')
 
         self.destroyed.connect(lambda: self._on_destroyed())                # connect some actions to exit
         # Load the UI Page
@@ -316,8 +319,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ph_7 = float( self.phase_converted( self.Phase_7.currentText() ) )
 
         # freq
-        #self.freq_1.valueChanged.connect(self.p1_freq_f)
-        #self.p1_freq = self.add_mhz( self.freq_1.value() )
+        self.freq_1.valueChanged.connect(self.p1_freq_f)
+        self.p1_freq = self.add_mhz( self.freq_1.value() )
 
         self.freq_2.valueChanged.connect(self.p2_freq_f)
         self.p2_freq = self.add_mhz( int( self.freq_2.value() ) )
@@ -355,6 +358,125 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.coef_7.valueChanged.connect(self.p7_coef_f)
         self.p7_coef = round( 100 / self.coef_7.value() , 2 )
+
+        self.menuBar.setStyleSheet("QMenuBar { color: rgb(193, 202, 227); } \
+                    QMenu::item { color: rgb(211, 194, 78); } QMenu::item:selected {color: rgb(193, 202, 227); }")
+        self.action_read.triggered.connect( self.open_file_dialog )
+        self.action_save.triggered.connect( self.save_file_dialog )
+
+    def open_file_dialog(self):
+        """
+        A function to open a new window for choosing a pulse list
+        """
+        filedialog = QFileDialog(self, 'Open File', directory = self.path, filter = "AWG pulse List (*.awg)",\
+            options = QtWidgets.QFileDialog.DontUseNativeDialog)
+        # use QFileDialog.DontUseNativeDialog to change directory
+        filedialog.setStyleSheet("QWidget { background-color : rgb(42, 42, 64); color: rgb(211, 194, 78);}")
+        filedialog.setFileMode(QtWidgets.QFileDialog.AnyFile)
+        filedialog.fileSelected.connect(self.open_file)
+        filedialog.show()
+
+    def save_file_dialog(self):
+        """
+        A function to open a new window for choosing a pulse list
+        """
+        filedialog = QFileDialog(self, 'Save File', directory = self.path, filter = "AWG pulse List (*.awg)",\
+            options = QtWidgets.QFileDialog.DontUseNativeDialog)
+        filedialog.setAcceptMode(QFileDialog.AcceptSave)
+        # use QFileDialog.DontUseNativeDialog to change directory
+        filedialog.setStyleSheet("QWidget { background-color : rgb(42, 42, 64); color: rgb(211, 194, 78);}")
+        filedialog.setFileMode(QtWidgets.QFileDialog.AnyFile)
+        filedialog.fileSelected.connect(self.save_file)
+        filedialog.show()
+
+    def open_file(self, filename):
+        """
+        A function to open a pulse list
+        :param filename: string
+        """
+        text = open(filename).read()
+        lines = text.split('\n')
+
+        self.setter(text, 0, self.P1_type, self.P1_st, self.P1_len, self.P1_sig, self.freq_1, self.Wurst_sweep_1, self.coef_1, self.Phase_1)
+        self.setter(text, 1, self.P2_type, self.P2_st, self.P2_len, self.P2_sig, self.freq_2, self.Wurst_sweep_2, self.coef_2, self.Phase_2)
+        self.setter(text, 2, self.P3_type, self.P3_st, self.P3_len, self.P3_sig, self.freq_3, self.Wurst_sweep_3, self.coef_3, self.Phase_3)
+        self.setter(text, 3, self.P4_type, self.P4_st, self.P4_len, self.P4_sig, self.freq_4, self.Wurst_sweep_4, self.coef_4, self.Phase_4)
+        self.setter(text, 4, self.P5_type, self.P5_st, self.P5_len, self.P5_sig, self.freq_5, self.Wurst_sweep_5, self.coef_5, self.Phase_5)
+        self.setter(text, 5, self.P6_type, self.P6_st, self.P6_len, self.P6_sig, self.freq_6, self.Wurst_sweep_6, self.coef_6, self.Phase_6)
+        self.setter(text, 6, self.P7_type, self.P7_st, self.P7_len, self.P7_sig, self.freq_7, self.Wurst_sweep_7, self.coef_7, self.Phase_7)
+
+        self.Rep_rate.setValue( int( lines[7] ) )
+        self.Field.setValue( float( lines[8] ) )
+        self.Delay.setValue( float( lines[9] ) )
+        self.Ampl_1.setValue( int( lines[10] ) )
+        self.Ampl_2.setValue( int( lines[11] ) )
+        self.Phase.setValue( float( lines[12] ) )
+        self.N_wurst.setValue( int( lines[13] ) )
+
+        #self.errors.setPlainText( str( text.split('\n')[3].split(', ')[3] ) )
+        #self.errors.appendPlainText( str( self.p1_start ) + ' ' + str( self.p4_start ) + ' ' + str( self.p7_start ) )
+        #self.errors.appendPlainText( str( self.p1_length ) + ' ' + str( self.p4_length ) + ' ' + str( self.p7_length ) )
+        #self.errors.appendPlainText( str( self.p1_typ ) + ' ' + str( self.p4_typ ) + ' ' + str( self.p7_typ ) )
+        #self.errors.appendPlainText( str( self.ph_1 ) + ' ' + str( self.ph_4 ) + ' ' + str( self.ph_7 ) )
+
+    def setter(self, text, index, typ, st, leng, sig, freq, w_sweep, coef, phase):
+        """
+        Auxiliary function to set all the values from *.awg file
+        """
+        array = text.split('\n')[index].split(', ')
+
+        typ.setCurrentText( array[0] )
+        if index != 0:
+            st.setValue( float( array[1] ) )
+            leng.setValue( float( array[2] ) )
+            sig.setValue( float( array[3] ) )
+        else:
+            st.setValue( int( array[1] ) )
+            leng.setValue( int( array[2] ) )
+            sig.setValue( int( array[3] ) )
+
+        freq.setValue( int( array[4] ) )
+        w_sweep.setValue( int( array[5] ) )
+        coef.setValue( int( array[6] ) )
+        phase.setCurrentText( str( array[7] ) )
+
+    def save_file(self, filename):
+        """
+        A function to save a new pulse list
+        :param filename: string
+        """
+        if filename[-3:] != 'awg':
+            filename = filename + '.awg'
+        with open(filename, 'w') as file:
+            file.write( self.P1_type.currentText() + ', ' + str(self.P1_st.value()) + ', ' + str(self.P1_len.value()) + ', '\
+                + str(self.P1_sig.value()) + ', ' + str(self.freq_1.value()) + ', ' + str(self.Wurst_sweep_1.value()) + ', '\
+                + str(self.coef_1.value()) + ', ' + self.Phase_1.currentText() + '\n' )
+            file.write( self.P2_type.currentText() + ', ' + str(self.P2_st.value()) + ', ' + str(self.P2_len.value()) + ', '\
+                + str(self.P2_sig.value()) + ', ' + str(self.freq_2.value()) + ', ' + str(self.Wurst_sweep_2.value()) + ', '\
+                + str(self.coef_2.value()) + ', ' + self.Phase_2.currentText() + '\n' )
+            file.write( self.P3_type.currentText() + ', ' + str(self.P3_st.value()) + ', ' + str(self.P3_len.value()) + ', '\
+                + str(self.P3_sig.value()) + ', ' + str(self.freq_3.value()) + ', ' + str(self.Wurst_sweep_3.value()) + ', '\
+                + str(self.coef_3.value()) + ', ' + self.Phase_3.currentText() + '\n' )
+            file.write( self.P4_type.currentText() + ', ' + str(self.P4_st.value()) + ', ' + str(self.P4_len.value()) + ', '\
+                + str(self.P4_sig.value()) + ', ' + str(self.freq_4.value()) + ', ' + str(self.Wurst_sweep_4.value()) + ', '\
+                + str(self.coef_4.value()) + ', ' + self.Phase_4.currentText() + '\n' )
+            file.write( self.P5_type.currentText() + ', ' + str(self.P5_st.value()) + ', ' + str(self.P5_len.value()) + ', '\
+                + str(self.P5_sig.value()) + ', ' + str(self.freq_5.value()) + ', ' + str(self.Wurst_sweep_5.value()) + ', '\
+                + str(self.coef_5.value()) + ', ' + self.Phase_5.currentText() + '\n' )
+            file.write( self.P6_type.currentText() + ', ' + str(self.P6_st.value()) + ', ' + str(self.P6_len.value()) + ', '\
+                + str(self.P6_sig.value()) + ', ' + str(self.freq_6.value()) + ', ' + str(self.Wurst_sweep_6.value()) + ', '\
+                + str(self.coef_6.value()) + ', ' + self.Phase_6.currentText() + '\n' )
+            file.write( self.P7_type.currentText() + ', ' + str(self.P7_st.value()) + ', ' + str(self.P7_len.value()) + ', '\
+                + str(self.P7_sig.value()) + ', ' + str(self.freq_7.value()) + ', ' + str(self.Wurst_sweep_7.value()) + ', '\
+                + str(self.coef_7.value()) + ', ' + self.Phase_7.currentText() + '\n' )
+
+            file.write( str(self.Rep_rate.value()) + '\n' )
+            file.write( str(self.Field.value()) + '\n' )
+            file.write( str(self.Delay.value()) + '\n' )
+            file.write( str(self.Ampl_1.value()) + '\n' )
+            file.write( str(self.Ampl_2.value()) + '\n' )
+            file.write( str(self.Phase.value()) + '\n' )
+            file.write( str(self.N_wurst.value()) + '\n' )
 
     def add_ns(self, string1):
         """

@@ -7,7 +7,7 @@ import sys
 import socket
 #import numpy as np
 from multiprocessing import Process, Pipe
-from PyQt5.QtWidgets import QWidget #QListView, QAction
+from PyQt5.QtWidgets import QWidget, QFileDialog #QListView, QAction
 from PyQt5 import QtWidgets, uic #, QtCore, QtGui
 from PyQt5.QtGui import QIcon
 # should be inside dig_on() function;
@@ -28,10 +28,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.destroyed.connect(lambda: self._on_destroyed())         # connect some actions to exit
         
         # Load the UI Page
-        path_to_main = os.path.dirname(os.path.abspath(__file__))
-        gui_path = os.path.join(path_to_main,'gui/dig_main_window.ui')
-        icon_path = os.path.join(path_to_main, 'gui/icon_dig.png')
+        self.path_to_main = os.path.dirname(os.path.abspath(__file__))
+        gui_path = os.path.join(self.path_to_main,'gui/dig_main_window.ui')
+        icon_path = os.path.join(self.path_to_main, 'gui/icon_dig.png')
         self.setWindowIcon( QIcon(icon_path) )
+
+        self.path = os.path.join(self.path_to_main, '..', 'tests/pulse_epr')
 
         uic.loadUi(gui_path, self)                        # Design file
 
@@ -59,6 +61,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.label_7.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_8.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_9.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.label_10.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.label_11.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
 
         # Spinboxes
         #self.Timescale.lineEdit().setReadOnly( True )   # block input from keyboard
@@ -98,6 +102,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.number_averages = int( self.Acq_number.value() )
         self.Acq_number.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
 
+        self.menuBar.setStyleSheet("QMenuBar { color: rgb(193, 202, 227); } \
+                            QMenu::item { color: rgb(211, 194, 78); } QMenu::item:selected {color: rgb(193, 202, 227); }")
+        self.action_read.triggered.connect( self.open_file_dialog )
+        self.action_save.triggered.connect( self.save_file_dialog )
+
+        self.shift_box.setStyleSheet("QCheckBox { color : rgb(193, 202, 227); }")
+        self.baseline_box.setStyleSheet("QCheckBox { color : rgb(193, 202, 227); }")
+
+        self.shift_box.stateChanged.connect( self.simul_shift )
+
         """
         Create a process to interact with an experimental script that will run on a different thread.
         We need a different thread here, since PyQt GUI applications have a main thread of execution 
@@ -106,6 +120,87 @@ class MainWindow(QtWidgets.QMainWindow):
         the application
         """
         self.worker = Worker()
+
+    def simul_shift(self):
+        """
+        Special function for simultaneous change of number of points and horizontal offset
+        """
+        if self.shift_box.checkState() == 2: # checked
+            self.Timescale.valueChanged.disconnect()
+            #self.Hor_offset.valueChanged.disconnect() 
+            self.Timescale.valueChanged.connect(self.timescale_hor_offset)
+            #self.Hor_offset.valueChanged.connect(self.timescale_hor_offset)
+        elif self.shift_box.checkState() == 0: # unchecked
+            self.Timescale.valueChanged.disconnect()
+            self.Timescale.valueChanged.connect(self.timescale)
+            self.points = int( self.Timescale.value() )
+            #self.Hor_offset.valueChanged.disconnect() 
+            self.Hor_offset.valueChanged.connect(self.hor_offset)
+            self.posttrigger = int( self.Hor_offset.value() )
+
+    def open_file_dialog(self):
+        """
+        A function to open a new window for choosing parameters
+        """
+        filedialog = QFileDialog(self, 'Open File', directory = self.path, filter = "Digitizer Parameters (*.param)",\
+            options = QtWidgets.QFileDialog.DontUseNativeDialog)
+        # use QFileDialog.DontUseNativeDialog to change directory
+        filedialog.setStyleSheet("QWidget { background-color : rgb(42, 42, 64); color: rgb(211, 194, 78);}")
+        filedialog.setFileMode(QtWidgets.QFileDialog.AnyFile)
+        filedialog.fileSelected.connect(self.open_file)
+        filedialog.show()
+
+    def save_file_dialog(self):
+        """
+        A function to open a new window for choosing parameters
+        """
+        filedialog = QFileDialog(self, 'Save File', directory = self.path, filter = "Digitizer Parameters (*.param)",\
+            options = QtWidgets.QFileDialog.DontUseNativeDialog)
+        filedialog.setAcceptMode(QFileDialog.AcceptSave)
+        # use QFileDialog.DontUseNativeDialog to change directory
+        filedialog.setStyleSheet("QWidget { background-color : rgb(42, 42, 64); color: rgb(211, 194, 78);}")
+        filedialog.setFileMode(QtWidgets.QFileDialog.AnyFile)
+        filedialog.fileSelected.connect(self.save_file)
+        filedialog.show()
+
+    def open_file(self, filename):
+        """
+        A function to open parameters
+        :param filename: string
+        """
+        text = open(filename).read()
+        lines = text.split('\n')
+
+        self.shift_box.setCheckState(0)
+        self.Timescale.setValue( int( lines[0] ) )
+        self.Time_per_point.setCurrentText( str( lines[1] ) )
+        self.Hor_offset.setValue( int( lines[2] ) )
+        self.Win_left.setValue( int( lines[3] ) )
+        self.Win_right.setValue( int( lines[4] ) )
+        self.Chan_range.setCurrentText( str( lines[5] ) )
+        self.Ch0_offset.setValue( int( lines[6] ) )
+        self.Ch1_offset.setValue( int( lines[7] ) )
+        self.Acq_number.setValue( int( lines[8] ) )
+
+        self.dig_stop()
+
+    def save_file(self, filename):
+        """
+        A function to save a new set of parameters
+        :param filename: string
+        """
+        if filename[-5:] != 'param':
+            filename = filename + '.param'
+        with open(filename, 'w') as file:
+            file.write( str(self.Timescale.value()) + '\n' )
+            file.write( str(self.Time_per_point.currentText()) + '\n' )
+            file.write( str(self.Hor_offset.value()) + '\n' )
+            file.write( str(self.Win_left.value()) + '\n' )
+            file.write( str(self.Win_right.value()) + '\n' )
+            file.write( str(self.Chan_range.currentText()) + '\n' )
+            file.write( str(self.Ch0_offset.value()) + '\n' )
+            file.write( str(self.Ch1_offset.value()) + '\n' )
+            file.write( str(self.Acq_number.value()) + '\n' )
 
     def _on_destroyed(self):
         """
@@ -126,18 +221,40 @@ class MainWindow(QtWidgets.QMainWindow):
         self._on_destroyed()
         sys.exit()
 
+    def timescale_hor_offset(self):
+        """
+        A function to simultaneously change a number of points and horizontal offset of the digitizer
+        """
+        dif = abs( self.points - self.posttrigger )
+        points_copy = self.points
+        #posttrigger_copy = self.posttrigger
+
+        self.timescale()
+        self.posttrigger = self.points - dif
+        self.Hor_offset.setValue( self.posttrigger )
+        #print( self.posttrigger )
+        
+        try:
+            self.parent_conn.send( 'HO' + str( self.posttrigger ) )
+        except AttributeError:
+            self.message('Digitizer is not running')
+
     def timescale(self):
         """
-        A function to change a horizontal offset of the digitizer
+        A function to change a number of points of the digitizer
         """
         self.points = int( self.Timescale.value() )
         if self.points % 16 != 0:
             self.points = self.round_to_closest( self.points, 16 )
             self.Timescale.setValue( self.points )
 
-        if self.points - self.posttrigger < 16:
-            self.points = self.points + 16
-            self.Timescale.setValue( self.points )
+        if self.shift_box.checkState() == 0:
+            if self.points - self.posttrigger < 16:
+                self.points = self.points + 16
+                self.Timescale.setValue( self.points )
+        else:
+            pass
+
         try:
             self.parent_conn.send( 'PO' + str( self.points ) )
         except AttributeError:
@@ -250,14 +367,14 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         A function to stop digitizer
         """
+        path_to_main = os.path.abspath( os.getcwd() )
+        path_file = os.path.join(path_to_main, 'atomize/control_center/digitizer.param')
+
         try:
             self.parent_conn.send('exit')
             self.digitizer_process.join()
         except AttributeError:
             self.message('Digitizer is not running')
-
-        path_to_main = os.path.abspath( os.getcwd() )
-        path_file = os.path.join(path_to_main, 'atomize/control_center/digitizer.param')
 
         file_to_read = open(path_file, 'w')
         file_to_read.write('Points: ' + str( self.points ) +'\n')
