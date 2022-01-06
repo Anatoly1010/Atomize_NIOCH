@@ -144,6 +144,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.button_awg.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
          border-style: outset; color: rgb(193, 202, 227);}\
           QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
+        self.button_phasing.clicked.connect(self.start_phasing)
+        self.button_phasing.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
+         border-style: outset; color: rgb(193, 202, 227);}\
+          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
 
         self.fft_analyzer.clicked.connect(self.start_fft_control)
         self.fft_analyzer.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
@@ -241,6 +245,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.process_tune = QtCore.QProcess(self)
         self.process_awg = QtCore.QProcess(self)
         self.process_fft = QtCore.QProcess(self)
+        self.process_phasing = QtCore.QProcess(self)
         # check where we are
         self.system = platform.system()
         if self.system == 'Windows':
@@ -260,6 +265,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.process_tune.setProgram('python.exe')
             self.process_awg.setProgram('python.exe')
             self.process_fft.setProgram('python.exe')
+            self.process_phasing.setProgram('python.exe')
         elif self.system == 'Linux':
             self.editor = str(config['DEFAULT']['editor'])
             if self.editor == 'nano' or self.editor == 'vi':
@@ -281,6 +287,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.process_tune.setProgram('python3')
             self.process_awg.setProgram('python3')
             self.process_fft.setProgram('python3')
+            self.process_phasing.setProgram('python3')
 
         self.process.finished.connect(self.on_finished_checking)
         self.process_python.finished.connect(self.on_finished_script)
@@ -526,6 +533,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.process_tune.close()
         self.process_awg.close()
         self.process_fft.close()
+        self.process_phasing.close()
 
     def quit(self):
         """
@@ -545,6 +553,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.process_tune.terminate()
         self.process_awg.terminate()
         self.process_fft.terminate()
+        self.process_phasing.terminate()
         sys.exit()
         ####
         #### QProcess: Destroyed while process ("python3") is still running.
@@ -578,6 +587,13 @@ class MainWindow(QtWidgets.QMainWindow):
         elif self.test_flag == 0 and exec_code == True:
             self.process_python.setArguments([self.script])
             self.process_python.start()
+
+    def start_phasing(self):
+        """
+        A function to run online phase cycling.
+        """
+        self.process_phasing.setArguments(['atomize/control_center/phasing.py'])
+        self.process_phasing.start()
 
     def start_fft_control(self):
         """

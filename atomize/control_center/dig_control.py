@@ -112,6 +112,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.shift_box.stateChanged.connect( self.simul_shift )
 
+        # flag for not writing the data when digitizer is off
+        self.opened = 0
         """
         Create a process to interact with an experimental script that will run on a different thread.
         We need a different thread here, since PyQt GUI applications have a main thread of execution 
@@ -135,7 +137,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.Timescale.valueChanged.connect(self.timescale)
             self.points = int( self.Timescale.value() )
             #self.Hor_offset.valueChanged.disconnect() 
-            self.Hor_offset.valueChanged.connect(self.hor_offset)
+            #self.Hor_offset.valueChanged.connect(self.hor_offset)
             self.posttrigger = int( self.Hor_offset.value() )
 
     def open_file_dialog(self):
@@ -168,21 +170,25 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to open parameters
         :param filename: string
         """
+        self.opened = 1
+
         text = open(filename).read()
         lines = text.split('\n')
 
         self.shift_box.setCheckState(0)
-        self.Timescale.setValue( int( lines[0] ) )
-        self.Time_per_point.setCurrentText( str( lines[1] ) )
-        self.Hor_offset.setValue( int( lines[2] ) )
-        self.Win_left.setValue( int( lines[3] ) )
-        self.Win_right.setValue( int( lines[4] ) )
-        self.Chan_range.setCurrentText( str( lines[5] ) )
-        self.Ch0_offset.setValue( int( lines[6] ) )
-        self.Ch1_offset.setValue( int( lines[7] ) )
-        self.Acq_number.setValue( int( lines[8] ) )
+        self.Timescale.setValue( int( lines[0].split(': ')[1] ) )
+        self.Time_per_point.setCurrentText( str( lines[1].split(': ')[1] ) )
+        self.Hor_offset.setValue( int( lines[2].split(': ')[1] ) )
+        self.Win_left.setValue( int( lines[3].split(': ')[1] ) )
+        self.Win_right.setValue( int( lines[4].split(': ')[1] ) )
+        self.Chan_range.setCurrentText( str( lines[5].split(': ')[1] ) )
+        self.Ch0_offset.setValue( int( lines[6].split(': ')[1] ) )
+        self.Ch1_offset.setValue( int( lines[7].split(': ')[1] ) )
+        self.Acq_number.setValue( int( lines[8].split(': ')[1] ) )
 
         self.dig_stop()
+
+        self.opened = 0
 
     def save_file(self, filename):
         """
@@ -192,15 +198,15 @@ class MainWindow(QtWidgets.QMainWindow):
         if filename[-5:] != 'param':
             filename = filename + '.param'
         with open(filename, 'w') as file:
-            file.write( str(self.Timescale.value()) + '\n' )
-            file.write( str(self.Time_per_point.currentText()) + '\n' )
-            file.write( str(self.Hor_offset.value()) + '\n' )
-            file.write( str(self.Win_left.value()) + '\n' )
-            file.write( str(self.Win_right.value()) + '\n' )
-            file.write( str(self.Chan_range.currentText()) + '\n' )
-            file.write( str(self.Ch0_offset.value()) + '\n' )
-            file.write( str(self.Ch1_offset.value()) + '\n' )
-            file.write( str(self.Acq_number.value()) + '\n' )
+            file.write( 'Points: ' + str(self.Timescale.value()) + '\n' )
+            file.write( 'Time per point: ' + str(self.Time_per_point.currentText()) + '\n' )
+            file.write( 'Horizontal offset: ' + str(self.Hor_offset.value()) + '\n' )
+            file.write( 'Window left: ' + str(self.Win_left.value()) + '\n' )
+            file.write( 'Window right: ' + str(self.Win_right.value()) + '\n' )
+            file.write( 'Range: ' + str(self.Chan_range.currentText()) + '\n' )
+            file.write( 'Ch0 offset: ' + str(self.Ch0_offset.value()) + '\n' )
+            file.write( 'Ch1 offset: ' + str(self.Ch1_offset.value()) + '\n' )
+            file.write( 'Acquisitions: ' + str(self.Acq_number.value()) + '\n' )
 
     def _on_destroyed(self):
         """
@@ -226,7 +232,7 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to simultaneously change a number of points and horizontal offset of the digitizer
         """
         dif = abs( self.points - self.posttrigger )
-        points_copy = self.points
+        #points_copy = self.points
         #posttrigger_copy = self.posttrigger
 
         self.timescale()
@@ -234,10 +240,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.Hor_offset.setValue( self.posttrigger )
         #print( self.posttrigger )
         
-        try:
-            self.parent_conn.send( 'HO' + str( self.posttrigger ) )
-        except AttributeError:
-            self.message('Digitizer is not running')
+        #if self.opened == 0:
+        #    try:
+        #        self.parent_conn.send( 'HO' + str( self.posttrigger ) )
+        #    except AttributeError:
+        #        self.message('Digitizer is not running')
+
+        #self.opened = 0
 
     def timescale(self):
         """
@@ -255,10 +264,13 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             pass
 
-        try:
-            self.parent_conn.send( 'PO' + str( self.points ) )
-        except AttributeError:
-            self.message('Digitizer is not running')
+        if self.opened == 0:
+            try:
+                self.parent_conn.send( 'PO' + str( self.points ) )
+            except AttributeError:
+                self.message('Digitizer is not running')
+
+        #self.opened = 0
 
     def sample_rate(self):
         """
@@ -276,10 +288,14 @@ class MainWindow(QtWidgets.QMainWindow):
             self.Win_right.setValue(self.cur_win_right / self.time_per_point)
 
         self.s_rate = int( 1000 / self.time_per_point )
-        try:
-            self.parent_conn.send( 'SR' + str( self.s_rate ) + ',' + str( self.cur_win_left ) + ',' + str( self.cur_win_right )  )
-        except AttributeError:
-            self.message('Digitizer is not running')
+
+        if self.opened == 0:
+            try:
+                self.parent_conn.send( 'SR' + str( self.s_rate ) + ',' + str( self.cur_win_left ) + ',' + str( self.cur_win_right )  )
+            except AttributeError:
+                self.message('Digitizer is not running')
+
+        #self.opened = 0
 
     def win_left(self):
         """
@@ -290,10 +306,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self.cur_win_left = self.points * self.time_per_point
             self.Win_left.setValue( self.cur_win_left / self.time_per_point )
         
-        try:
-            self.parent_conn.send( 'WL' + str( self.cur_win_left ) )
-        except AttributeError:
-            self.message('Digitizer is not running')
+        if self.opened == 0:
+            try:
+                self.parent_conn.send( 'WL' + str( self.cur_win_left ) )
+            except AttributeError:
+                self.message('Digitizer is not running')
+
+        #self.opened = 0
 
     def win_right(self):
         self.cur_win_right = int( self.Win_right.value() ) * self.time_per_point
@@ -301,10 +320,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self.cur_win_right = self.points * self.time_per_point
             self.Win_right.setValue( self.cur_win_right / self.time_per_point )
 
-        try:
-            self.parent_conn.send( 'WR' + str( self.cur_win_right ) )
-        except AttributeError:
-            self.message('Digitizer is not running')
+        if self.opened == 0:
+            try:
+                self.parent_conn.send( 'WR' + str( self.cur_win_right ) )
+            except AttributeError:
+                self.message('Digitizer is not running')
+
+        #self.opened = 0
 
     def hor_offset(self):
         """
@@ -318,50 +340,70 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.points - self.posttrigger <= 16:
             self.posttrigger = self.points - 16
             self.Hor_offset.setValue( self.posttrigger )
-        try:
-            self.parent_conn.send( 'HO' + str( self.posttrigger ) )
-        except AttributeError:
-            self.message('Digitizer is not running')
+
+        if self.opened == 0:
+            try:
+                self.parent_conn.send( 'HO' + str( self.posttrigger ) )
+            except AttributeError:
+                self.message('Digitizer is not running')
+
+        #self.opened = 0
 
     def chan_range(self):
         """
         A function to change range of the channels
         """
         self.ampl = int( self.Chan_range.currentText() )
-        try:
-            self.parent_conn.send( 'AM' + str( self.ampl ) )
-        except AttributeError:
-            self.message('Digitizer is not running')
+
+        if self.opened == 0:
+            try:
+                self.parent_conn.send( 'AM' + str( self.ampl ) )
+            except AttributeError:
+                self.message('Digitizer is not running')
+
+        #self.opened = 0
 
     def ch0_offset(self):
         """
         A function to change an offset of CH0
         """
         self.offset_0 = int( self.Ch0_offset.value() )
-        try:
-            self.parent_conn.send( 'O0' + str( self.offset_0 ) )
-        except AttributeError:
-            self.message('Digitizer is not running')
+
+        if self.opened == 0:
+            try:
+                self.parent_conn.send( 'O0' + str( self.offset_0 ) )
+            except AttributeError:
+                self.message('Digitizer is not running')
+
+        #self.opened = 0
 
     def ch1_offset(self):
         """
         A function to send an offset of CH1
         """
         self.offset_1 = int( self.Ch1_offset.value() )
-        try:
-            self.parent_conn.send( 'O1' + str( self.offset_1 ) )
-        except AttributeError:
-            self.message('Digitizer is not running')
+
+        if self.opened == 0:
+            try:
+                self.parent_conn.send( 'O1' + str( self.offset_1 ) )
+            except AttributeError:
+                self.message('Digitizer is not running')
+
+        #self.opened = 0
 
     def acq_number(self):
         """
         A function to change number of averages
         """
         self.number_averages = int( self.Acq_number.value() )
-        try:
-            self.parent_conn.send( 'NA' + str( self.number_averages ) )
-        except AttributeError:
-            self.message('Digitizer is not running')
+
+        if self.opened == 0:
+            try:
+                self.parent_conn.send( 'NA' + str( self.number_averages ) )
+            except AttributeError:
+                self.message('Digitizer is not running')
+
+        #self.opened = 0
 
     def dig_stop(self):
         """
@@ -370,11 +412,14 @@ class MainWindow(QtWidgets.QMainWindow):
         path_to_main = os.path.abspath( os.getcwd() )
         path_file = os.path.join(path_to_main, 'atomize/control_center/digitizer.param')
 
-        try:
-            self.parent_conn.send('exit')
-            self.digitizer_process.join()
-        except AttributeError:
-            self.message('Digitizer is not running')
+        if self.opened == 0:
+            try:
+                self.parent_conn.send('exit')
+                self.digitizer_process.join()
+            except AttributeError:
+                self.message('Digitizer is not running')
+
+        #self.opened = 0
 
         file_to_read = open(path_file, 'w')
         file_to_read.write('Points: ' + str( self.points ) +'\n')

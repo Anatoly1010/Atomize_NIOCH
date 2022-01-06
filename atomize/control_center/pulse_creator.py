@@ -249,8 +249,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setter(text, 4, self.P5_type, self.P5_st, self.P5_len, self.Phase_5)
         self.setter(text, 5, self.P6_type, self.P6_st, self.P6_len, self.Phase_6)
         self.setter(text, 6, self.P7_type, self.P7_st, self.P7_len, self.Phase_7)
-        self.Rep_rate.setValue( int( lines[7] ) )
-        self.Field.setValue( float( lines[8] ) )
+        self.Rep_rate.setValue( int( lines[7].split(': ')[1] ) )
+        self.Field.setValue( float( lines[8].split(': ')[1] ) )
 
         #self.errors.setPlainText( str( text.split('\n')[3].split(', ')[3] ) )
         #self.errors.appendPlainText( str( self.p1_start ) + ' ' + str( self.p4_start ) + ' ' + str( self.p7_start ) )
@@ -262,7 +262,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Auxiliary function to set all the values from *.pulse file
         """
-        array = text.split('\n')[index].split(', ')
+        array = text.split('\n')[index].split(': ')[1].split(', ')
 
         typ.setCurrentText( array[0] )
         st.setValue( int( array[1] ) )
@@ -277,15 +277,15 @@ class MainWindow(QtWidgets.QMainWindow):
         if filename[-5:] != 'pulse':
             filename = filename + '.pulse'
         with open(filename, 'w') as file:
-            file.write( self.P1_type.currentText() + ', ' + str(self.P1_st.value()) + ', ' + str(self.P1_len.value()) + ', ' + self.Phase_1.currentText() + '\n' )
-            file.write( self.P2_type.currentText() + ', ' + str(self.P2_st.value()) + ', ' + str(self.P2_len.value()) + ', ' + self.Phase_2.currentText() + '\n' )
-            file.write( self.P3_type.currentText() + ', ' + str(self.P3_st.value()) + ', ' + str(self.P3_len.value()) + ', ' + self.Phase_3.currentText() + '\n' )
-            file.write( self.P4_type.currentText() + ', ' + str(self.P4_st.value()) + ', ' + str(self.P4_len.value()) + ', ' + self.Phase_4.currentText() + '\n' )
-            file.write( self.P5_type.currentText() + ', ' + str(self.P5_st.value()) + ', ' + str(self.P5_len.value()) + ', ' + self.Phase_5.currentText() + '\n' )
-            file.write( self.P6_type.currentText() + ', ' + str(self.P6_st.value()) + ', ' + str(self.P6_len.value()) + ', ' + self.Phase_6.currentText() + '\n' )
-            file.write( self.P7_type.currentText() + ', ' + str(self.P7_st.value()) + ', ' + str(self.P7_len.value()) + ', ' + self.Phase_7.currentText() + '\n' )
-            file.write( str(self.Rep_rate.value()) + '\n' )
-            file.write( str(self.Field.value()) + '\n' )
+            file.write( 'P1: ' + self.P1_type.currentText() + ', ' + str(self.P1_st.value()) + ', ' + str(self.P1_len.value()) + ', ' + self.Phase_1.currentText() + '\n' )
+            file.write( 'P2: ' + self.P2_type.currentText() + ', ' + str(self.P2_st.value()) + ', ' + str(self.P2_len.value()) + ', ' + self.Phase_2.currentText() + '\n' )
+            file.write( 'P3: ' + self.P3_type.currentText() + ', ' + str(self.P3_st.value()) + ', ' + str(self.P3_len.value()) + ', ' + self.Phase_3.currentText() + '\n' )
+            file.write( 'P4: ' + self.P4_type.currentText() + ', ' + str(self.P4_st.value()) + ', ' + str(self.P4_len.value()) + ', ' + self.Phase_4.currentText() + '\n' )
+            file.write( 'P5: ' + self.P5_type.currentText() + ', ' + str(self.P5_st.value()) + ', ' + str(self.P5_len.value()) + ', ' + self.Phase_5.currentText() + '\n' )
+            file.write( 'P6: ' + self.P6_type.currentText() + ', ' + str(self.P6_st.value()) + ', ' + str(self.P6_len.value()) + ', ' + self.Phase_6.currentText() + '\n' )
+            file.write( 'P7: ' + self.P7_type.currentText() + ', ' + str(self.P7_st.value()) + ', ' + str(self.P7_len.value()) + ', ' + self.Phase_7.currentText() + '\n' )
+            file.write( 'Rep rate: ' + str(self.Rep_rate.value()) + '\n' )
+            file.write( 'Field: ' + str(self.Field.value()) + '\n' )
 
     def phase_converted(self, ph_str):
         if ph_str == '+x':

@@ -319,8 +319,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ph_7 = float( self.phase_converted( self.Phase_7.currentText() ) )
 
         # freq
-        self.freq_1.valueChanged.connect(self.p1_freq_f)
-        self.p1_freq = self.add_mhz( self.freq_1.value() )
+        #self.freq_1.valueChanged.connect(self.p1_freq_f)
+        #self.p1_freq = self.add_mhz( self.freq_1.value() )
 
         self.freq_2.valueChanged.connect(self.p2_freq_f)
         self.p2_freq = self.add_mhz( int( self.freq_2.value() ) )
@@ -405,13 +405,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setter(text, 5, self.P6_type, self.P6_st, self.P6_len, self.P6_sig, self.freq_6, self.Wurst_sweep_6, self.coef_6, self.Phase_6)
         self.setter(text, 6, self.P7_type, self.P7_st, self.P7_len, self.P7_sig, self.freq_7, self.Wurst_sweep_7, self.coef_7, self.Phase_7)
 
-        self.Rep_rate.setValue( int( lines[7] ) )
-        self.Field.setValue( float( lines[8] ) )
-        self.Delay.setValue( float( lines[9] ) )
-        self.Ampl_1.setValue( int( lines[10] ) )
-        self.Ampl_2.setValue( int( lines[11] ) )
-        self.Phase.setValue( float( lines[12] ) )
-        self.N_wurst.setValue( int( lines[13] ) )
+        self.Rep_rate.setValue( int( lines[7].split(': ')[1] ) )
+        self.Field.setValue( float( lines[8].split(': ')[1] ) )
+        self.Delay.setValue( float( lines[9].split(': ')[1] ) )
+        self.Ampl_1.setValue( int( lines[10].split(': ')[1] ) )
+        self.Ampl_2.setValue( int( lines[11].split(': ')[1] ) )
+        self.Phase.setValue( float( lines[12].split(': ')[1] ) )
+        self.N_wurst.setValue( int( lines[13].split(': ')[1] ) )
 
         #self.errors.setPlainText( str( text.split('\n')[3].split(', ')[3] ) )
         #self.errors.appendPlainText( str( self.p1_start ) + ' ' + str( self.p4_start ) + ' ' + str( self.p7_start ) )
@@ -423,7 +423,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Auxiliary function to set all the values from *.awg file
         """
-        array = text.split('\n')[index].split(', ')
+        array = text.split('\n')[index].split(': ')[1].split(', ')
 
         typ.setCurrentText( array[0] )
         if index != 0:
@@ -448,35 +448,35 @@ class MainWindow(QtWidgets.QMainWindow):
         if filename[-3:] != 'awg':
             filename = filename + '.awg'
         with open(filename, 'w') as file:
-            file.write( self.P1_type.currentText() + ', ' + str(self.P1_st.value()) + ', ' + str(self.P1_len.value()) + ', '\
+            file.write( 'P1: ' + self.P1_type.currentText() + ', ' + str(self.P1_st.value()) + ', ' + str(self.P1_len.value()) + ', '\
                 + str(self.P1_sig.value()) + ', ' + str(self.freq_1.value()) + ', ' + str(self.Wurst_sweep_1.value()) + ', '\
                 + str(self.coef_1.value()) + ', ' + self.Phase_1.currentText() + '\n' )
-            file.write( self.P2_type.currentText() + ', ' + str(self.P2_st.value()) + ', ' + str(self.P2_len.value()) + ', '\
+            file.write( 'P2: ' + self.P2_type.currentText() + ', ' + str(self.P2_st.value()) + ', ' + str(self.P2_len.value()) + ', '\
                 + str(self.P2_sig.value()) + ', ' + str(self.freq_2.value()) + ', ' + str(self.Wurst_sweep_2.value()) + ', '\
                 + str(self.coef_2.value()) + ', ' + self.Phase_2.currentText() + '\n' )
-            file.write( self.P3_type.currentText() + ', ' + str(self.P3_st.value()) + ', ' + str(self.P3_len.value()) + ', '\
+            file.write( 'P3: ' + self.P3_type.currentText() + ', ' + str(self.P3_st.value()) + ', ' + str(self.P3_len.value()) + ', '\
                 + str(self.P3_sig.value()) + ', ' + str(self.freq_3.value()) + ', ' + str(self.Wurst_sweep_3.value()) + ', '\
                 + str(self.coef_3.value()) + ', ' + self.Phase_3.currentText() + '\n' )
-            file.write( self.P4_type.currentText() + ', ' + str(self.P4_st.value()) + ', ' + str(self.P4_len.value()) + ', '\
+            file.write( 'P4: ' + self.P4_type.currentText() + ', ' + str(self.P4_st.value()) + ', ' + str(self.P4_len.value()) + ', '\
                 + str(self.P4_sig.value()) + ', ' + str(self.freq_4.value()) + ', ' + str(self.Wurst_sweep_4.value()) + ', '\
                 + str(self.coef_4.value()) + ', ' + self.Phase_4.currentText() + '\n' )
-            file.write( self.P5_type.currentText() + ', ' + str(self.P5_st.value()) + ', ' + str(self.P5_len.value()) + ', '\
+            file.write( 'P5: ' + self.P5_type.currentText() + ', ' + str(self.P5_st.value()) + ', ' + str(self.P5_len.value()) + ', '\
                 + str(self.P5_sig.value()) + ', ' + str(self.freq_5.value()) + ', ' + str(self.Wurst_sweep_5.value()) + ', '\
                 + str(self.coef_5.value()) + ', ' + self.Phase_5.currentText() + '\n' )
-            file.write( self.P6_type.currentText() + ', ' + str(self.P6_st.value()) + ', ' + str(self.P6_len.value()) + ', '\
+            file.write( 'P6: ' + self.P6_type.currentText() + ', ' + str(self.P6_st.value()) + ', ' + str(self.P6_len.value()) + ', '\
                 + str(self.P6_sig.value()) + ', ' + str(self.freq_6.value()) + ', ' + str(self.Wurst_sweep_6.value()) + ', '\
                 + str(self.coef_6.value()) + ', ' + self.Phase_6.currentText() + '\n' )
-            file.write( self.P7_type.currentText() + ', ' + str(self.P7_st.value()) + ', ' + str(self.P7_len.value()) + ', '\
+            file.write( 'P7: ' + self.P7_type.currentText() + ', ' + str(self.P7_st.value()) + ', ' + str(self.P7_len.value()) + ', '\
                 + str(self.P7_sig.value()) + ', ' + str(self.freq_7.value()) + ', ' + str(self.Wurst_sweep_7.value()) + ', '\
                 + str(self.coef_7.value()) + ', ' + self.Phase_7.currentText() + '\n' )
 
-            file.write( str(self.Rep_rate.value()) + '\n' )
-            file.write( str(self.Field.value()) + '\n' )
-            file.write( str(self.Delay.value()) + '\n' )
-            file.write( str(self.Ampl_1.value()) + '\n' )
-            file.write( str(self.Ampl_2.value()) + '\n' )
-            file.write( str(self.Phase.value()) + '\n' )
-            file.write( str(self.N_wurst.value()) + '\n' )
+            file.write( 'Rep rate: ' + str(self.Rep_rate.value()) + '\n' )
+            file.write( 'Field: ' + str(self.Field.value()) + '\n' )
+            file.write( 'Delay: ' + str(self.Delay.value()) + '\n' )
+            file.write( 'Ampl 1: ' + str(self.Ampl_1.value()) + '\n' )
+            file.write( 'Ampl 2: ' + str(self.Ampl_2.value()) + '\n' )
+            file.write( 'Phase: ' + str(self.Phase.value()) + '\n' )
+            file.write( 'N WURST: ' + str(self.N_wurst.value()) + '\n' )
 
     def add_ns(self, string1):
         """

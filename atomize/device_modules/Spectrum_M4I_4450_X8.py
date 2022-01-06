@@ -678,7 +678,7 @@ class Spectrum_M4I_4450_X8:
                     self.points = pnts
 
             elif len(points) == 0:
-                return self.test_points    
+                return self.points #############
             else:
                 assert( 1 == 2 ), 'Incorrect argument'
 

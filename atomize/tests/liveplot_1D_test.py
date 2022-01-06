@@ -15,7 +15,7 @@ STEP = 2
 j = 1
 wind = 50
 
-data_x = np.zeros(POINTS)
+data_x = np.random.rand(POINTS)
 data_y = np.zeros(POINTS)
 x_axis = np.linspace(0, (POINTS - 1)*STEP, num = POINTS) 
 
@@ -39,8 +39,8 @@ for i in range(POINTS):
     
     start_time = time.time()
     ##p1 = Thread(target=general.plot_1d, args=('Plot XY Test', xs, ys, ), kwargs={'label': 'test data2', 'timeaxis': 'False',} )
-    #a = general.plot_1d('EXP_NAME', x_axis, (data_x, data_y), label = 'test2', xname = 'Delay', xscale = 'ns', yname = 'Area', yscale = 'V*s', vline = (STEP*i, ), pr = a, text=str(STEP*i))
-    a = general.plot_1d('EXP_NAME', x_axis, data_x, xname = 'Delay', xscale = 'ns', yname = 'Area', yscale = 'V*s', label = 'cur2', vline = (STEP*i, ), pr = a)
+    a = general.plot_1d('EXP_NAME', x_axis, (data_x, data_y), label = 'test', xname = 'Delay', xscale = 'ns', yname = 'Area', yscale = 'V*s', vline = (STEP*i, ), pr = a, text=str(STEP*i))
+    #a = general.plot_1d('EXP_NAME', x_axis, data_x, xname = 'Delay', xscale = 'ns', yname = 'Area', yscale = 'V*s', label = 'cur2', vline = (STEP*i, ), pr = a)
     #general.plot_1d('EXP_NAME', x_axis, data_x, xname = 'Delay', xscale = 'ns', yname = 'Area', yscale = 'V*s', label = 'cur2', vline = (STEP*i, ))
 
     #a = general.plot_2d('EXP_NAME', data, start_step = ( (0, 1), (0, 1) ), xname = 'Time',\
