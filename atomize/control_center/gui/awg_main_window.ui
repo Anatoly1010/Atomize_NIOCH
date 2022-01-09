@@ -1000,7 +1000,7 @@
          </font>
         </property>
         <property name="text">
-         <string>WURST Sweep (MHz)</string>
+         <string>Wurst Sweep (MHz)</string>
         </property>
        </widget>
       </item>
@@ -1890,7 +1890,7 @@
      <rect>
       <x>0</x>
       <y>0</y>
-      <width>135</width>
+      <width>159</width>
       <height>100</height>
      </rect>
     </property>

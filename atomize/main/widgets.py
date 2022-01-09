@@ -165,7 +165,6 @@ class CrosshairDock(CloseableDock):
         open_action.triggered.connect(self.file_dialog) # self.open_file_dialog
         self.menu.addAction(open_action)
 
-        # +1 color
         self.avail_colors = [pg.mkPen(color=(0,0,255),width=1), pg.mkPen(color=(0,0,0),width=1),pg.mkPen(color=(255,153,0),width=1),
         pg.mkPen(color=(255,0,255),width=1), pg.mkPen(color=(0,255,0),width=1), pg.mkPen(color=(255,255,255),width=1)]
         self.avail_symbols= ['x','p','star','s','o','+']
@@ -320,7 +319,7 @@ class CrosshairDock(CloseableDock):
                                 # Text label above the graph
                                 temp = kwargs.get('text', '')
                                 if temp != '':
-                                    self.setTitle( temp )           
+                                    self.setTitle( temp )
 
                 else:
                     kwargs['pen'] = self.used_colors[name] = self.avail_colors.pop()
@@ -341,7 +340,6 @@ class CrosshairDock(CloseableDock):
                 shiftAction_2 = QtWidgets.QWidgetAction(self)
                 self.add_del_shift_actions(name, del_action_2, shifter_2, shiftAction_2)
     
-    # +1 function
     def add_del_shift_actions(self, gr_name, del_act, shiftspinbox, shift_act):
         """
         05-01-2021

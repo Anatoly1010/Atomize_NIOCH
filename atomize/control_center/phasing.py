@@ -25,7 +25,7 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).__init__(*args, **kwargs)
         
         path_to_main = os.path.dirname(os.path.abspath(__file__))
-        gui_path = os.path.join(path_to_main,'gui/phasing.ui')
+        gui_path = os.path.join(path_to_main,'gui/phasing_main_window.ui')
         icon_path = os.path.join(path_to_main, 'gui/icon_pulse.png')
         self.setWindowIcon( QIcon(icon_path) )
 
@@ -409,6 +409,7 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to open a pulse list
         :param filename: string
         """
+        self.opened = 1
         text = open(filename).read()
         lines = text.split('\n')
 
@@ -574,6 +575,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         return length
 
+    # stop?
     def _on_destroyed(self):
         """
         A function to do some actions when the main window is closing.
@@ -585,6 +587,8 @@ class MainWindow(QtWidgets.QMainWindow):
         except AttributeError:
             self.message('Digitizer is not running')
         self.digitizer_process.join()
+        self.dig_stop()
+        
         ##self.pb.pulser_stop()
         #sys.exit()
 
@@ -900,9 +904,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.errors.appendPlainText( '165 us is added to all the pulses except the LASER pulse' )
 
+        self.errors.appendPlainText( self.pb.pulser_pulse_list() )
+
         # before adding pulse phases
-        ##self.pb.pulser_update()
-        ###self.pb.pulser_next_phase()
+        #self.pb.pulser_update()
+        # ?
+        self.pb.pulser_next_phase()
 
     def update(self):
         """
@@ -923,12 +930,16 @@ class MainWindow(QtWidgets.QMainWindow):
             self.test_process.join()
 
             # RUN
-            self.pb.pulser_clear()
-            self.pb.pulser_test_flag('None') 
+            # ?
+            # can be problem here:
+            # maybe it should be moved to pulser_test()
+            # and deleted from here
+            #self.pb.pulser_clear()
+            #self.pulse_sequence()
+            #self.errors.appendPlainText( self.pb.pulser_pulse_list() )
+            
+            #self.pb.pulser_test_flag('None')
 
-            ###self.bh15.magnet_setup( self.mag_field, 0.5 )
-            self.pulse_sequence()
-            self.errors.appendPlainText( self.pb.pulser_pulse_list() )
             self.dig_start()
 
         else:
@@ -940,7 +951,8 @@ class MainWindow(QtWidgets.QMainWindow):
                                         '3. Pulses are longer or equal to 12 ns\n' + \
                                         '4. Field Controller is stucked\n' + \
                                         '5. LASER pulse should not be in 208-232; 152-182; 102-126; <76 ns from first MW\n' + \
-                                        '\nPulser is stopped\n')
+                                        '6. Phase sequence does not have equal length for all pulses with nonzero length\n' + \
+                                        '\nPulser is stopped')
 
     def pulser_test(self, conn, flag):
         """
@@ -1064,7 +1076,7 @@ class Worker(QWidget):
         #from atomize.main.client import LivePlotClient
 
         self.command = 'start'
-        
+    
     def dig_on(self, conn, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16):
         """
         function that contains updating of the digitizer
@@ -1225,7 +1237,9 @@ class Worker(QWidget):
             ###print('exit')
             dig.digitizer_stop()
             dig.digitizer_close()
-            pb.pulser_clear()
+            # ?
+            #pb.pulser_clear()
+            
             pb.pulser_stop()
 
 def main():
