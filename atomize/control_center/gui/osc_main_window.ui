@@ -94,6 +94,9 @@
       </property>
       <item row="1" column="1">
        <widget class="QSpinBox" name="Wind">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -113,6 +116,9 @@
       </item>
       <item row="9" column="1">
        <widget class="QSpinBox" name="Ch4_scale">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -135,6 +141,9 @@
       </item>
       <item row="12" column="1">
        <widget class="QSpinBox" name="Acq_number">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -146,9 +155,6 @@
         </property>
         <property name="maximum">
          <number>10000</number>
-        </property>
-        <property name="stepType">
-         <enum>QAbstractSpinBox::DefaultStepType</enum>
         </property>
         <property name="value">
          <number>10</number>
@@ -169,6 +175,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Start</string>
         </property>
@@ -182,6 +191,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Window (ns)</string>
         </property>
@@ -189,6 +201,9 @@
       </item>
       <item row="6" column="1">
        <widget class="QSpinBox" name="Ch3_scale">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -217,6 +232,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>CH3 Scale (mV)</string>
         </property>
@@ -234,6 +252,9 @@
       </item>
       <item row="10" column="1">
        <widget class="QSpinBox" name="Ch4_offset">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -271,6 +292,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Stop</string>
         </property>
@@ -284,6 +308,9 @@
           <bold>true</bold>
           <kerning>true</kerning>
          </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
          <string>Horizontal Offset (ns)</string>
@@ -308,6 +335,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>CH3 Offset (mV)</string>
         </property>
@@ -327,6 +357,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Exit</string>
         </property>
@@ -334,6 +367,9 @@
       </item>
       <item row="7" column="1">
        <widget class="QSpinBox" name="Ch3_offset">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -350,6 +386,9 @@
       </item>
       <item row="0" column="1">
        <widget class="QSpinBox" name="Hor_offset">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="readOnly">
          <bool>false</bool>
         </property>
@@ -378,6 +417,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Acquisitions</string>
         </property>
@@ -390,6 +432,9 @@
           <weight>75</weight>
           <bold>true</bold>
          </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
          <string>CH4 Scale (mV)</string>
@@ -404,6 +449,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>CH4 Offset (mV)</string>
         </property>
@@ -411,6 +459,9 @@
       </item>
       <item row="4" column="1">
        <widget class="QSpinBox" name="Ch2_offset">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -443,6 +494,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>CH2 Scale (mV)</string>
         </property>
@@ -450,6 +504,9 @@
       </item>
       <item row="3" column="1">
        <widget class="QSpinBox" name="Ch2_scale">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -487,6 +544,9 @@
           <weight>75</weight>
           <bold>true</bold>
          </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
          <string>CH2 Offset (mV)</string>

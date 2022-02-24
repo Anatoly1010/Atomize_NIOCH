@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>344</width>
-    <height>500</height>
+    <height>482</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,13 +19,13 @@
   <property name="minimumSize">
    <size>
     <width>344</width>
-    <height>500</height>
+    <height>482</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>344</width>
-    <height>500</height>
+    <height>482</height>
    </size>
   </property>
   <property name="sizeIncrement">
@@ -39,6 +39,9 @@
     <weight>50</weight>
     <bold>false</bold>
    </font>
+  </property>
+  <property name="contextMenuPolicy">
+   <enum>Qt::NoContextMenu</enum>
   </property>
   <property name="windowTitle">
    <string>MI-4450-x8 Control v 0.1</string>
@@ -56,13 +59,13 @@
    <property name="minimumSize">
     <size>
      <width>344</width>
-     <height>480</height>
+     <height>470</height>
     </size>
    </property>
    <property name="maximumSize">
     <size>
      <width>344</width>
-     <height>480</height>
+     <height>470</height>
     </size>
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout">
@@ -112,6 +115,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Start</string>
         </property>
@@ -124,6 +130,9 @@
           <weight>75</weight>
           <bold>true</bold>
          </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
          <string>Time per Point (ns)</string>
@@ -138,6 +147,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>FFT Baseline Correction</string>
         </property>
@@ -145,6 +157,9 @@
       </item>
       <item row="7" column="1">
        <widget class="QSpinBox" name="Win_left">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -171,6 +186,9 @@
       </item>
       <item row="1" column="1">
        <widget class="QSpinBox" name="Timescale">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="readOnly">
          <bool>false</bool>
         </property>
@@ -225,6 +243,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>CH0 Offset (%)</string>
         </property>
@@ -232,6 +253,9 @@
       </item>
       <item row="11" column="1">
        <widget class="QSpinBox" name="Ch0_offset">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -260,6 +284,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>CH0, CH1 Range (mV)</string>
         </property>
@@ -272,6 +299,9 @@
           <weight>75</weight>
           <bold>true</bold>
          </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
          <string>Integration Window Right</string>
@@ -290,6 +320,9 @@
       </item>
       <item row="10" column="1">
        <widget class="QComboBox" name="Chan_range">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <item>
          <property name="text">
           <string>500</string>
@@ -320,6 +353,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Horizontal Offset</string>
         </property>
@@ -333,6 +369,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Integration Window Left</string>
         </property>
@@ -340,6 +379,9 @@
       </item>
       <item row="2" column="1">
        <widget class="QComboBox" name="Time_per_point">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <item>
          <property name="text">
           <string>2</string>
@@ -384,6 +426,9 @@
       </item>
       <item row="14" column="1">
        <widget class="QSpinBox" name="Acq_number">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -395,9 +440,6 @@
         </property>
         <property name="maximum">
          <number>5000</number>
-        </property>
-        <property name="stepType">
-         <enum>QAbstractSpinBox::DefaultStepType</enum>
         </property>
         <property name="value">
          <number>1</number>
@@ -411,6 +453,9 @@
           <weight>75</weight>
           <bold>true</bold>
          </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
          <string>Acquisitions</string>
@@ -430,6 +475,9 @@
           <weight>75</weight>
           <bold>true</bold>
          </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
          <string>Exit</string>
@@ -454,6 +502,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Shift Simultaneously</string>
         </property>
@@ -461,6 +512,9 @@
       </item>
       <item row="12" column="1">
        <widget class="QSpinBox" name="Ch1_offset">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -486,6 +540,9 @@
       </item>
       <item row="8" column="1">
        <widget class="QSpinBox" name="Win_right">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -511,6 +568,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>CH1 Offset (%)</string>
         </property>
@@ -518,8 +578,11 @@
       </item>
       <item row="16" column="1">
        <widget class="QCheckBox" name="baseline_box">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
-          <string> </string>
+         <string/>
         </property>
         <property name="checked">
          <bool>true</bool>
@@ -528,8 +591,11 @@
       </item>
       <item row="5" column="1">
        <widget class="QCheckBox" name="shift_box">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
-         <string> </string>
+         <string/>
         </property>
        </widget>
       </item>
@@ -547,6 +613,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Stop</string>
         </property>
@@ -554,6 +623,9 @@
       </item>
       <item row="4" column="1">
        <widget class="QSpinBox" name="Hor_offset">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -583,6 +655,9 @@
           <kerning>true</kerning>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Points</string>
         </property>
@@ -598,7 +673,7 @@
      <x>0</x>
      <y>0</y>
      <width>344</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="font">
@@ -612,8 +687,8 @@
      <rect>
       <x>301</x>
       <y>173</y>
-      <width>159</width>
-      <height>100</height>
+      <width>135</width>
+      <height>94</height>
      </rect>
     </property>
     <property name="font">

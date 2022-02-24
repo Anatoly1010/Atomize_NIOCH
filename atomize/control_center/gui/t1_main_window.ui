@@ -91,6 +91,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Delta Pulses 1-2 (ns)</string>
         </property>
@@ -98,6 +101,9 @@
       </item>
       <item row="13" column="1">
        <widget class="QSpinBox" name="box_points">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -144,6 +150,9 @@
         <property name="tabletTracking">
          <bool>false</bool>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="verticalScrollBarPolicy">
          <enum>Qt::ScrollBarAlwaysOff</enum>
         </property>
@@ -151,7 +160,7 @@
          <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu Bold'; font-size:10pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8.25pt; font-weight:400; font-style:normal;&quot;&gt;
 &lt;p style=&quot; margin-top:7px; margin-bottom:7px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Ubuntu'; font-size:11pt;&quot;&gt;Exp T1&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="overwriteMode">
@@ -172,6 +181,9 @@ p, li { white-space: pre-wrap; }
       </item>
       <item row="14" column="1">
        <widget class="QSpinBox" name="box_averag">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -206,6 +218,9 @@ p, li { white-space: pre-wrap; }
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="layoutDirection">
          <enum>Qt::LeftToRight</enum>
         </property>
@@ -222,6 +237,9 @@ p, li { white-space: pre-wrap; }
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Number of Scans</string>
         </property>
@@ -229,6 +247,9 @@ p, li { white-space: pre-wrap; }
       </item>
       <item row="21" column="1">
        <widget class="QSpinBox" name="box_graph">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -254,6 +275,9 @@ p, li { white-space: pre-wrap; }
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Repetition Rate (Hz)</string>
         </property>
@@ -261,6 +285,9 @@ p, li { white-space: pre-wrap; }
       </item>
       <item row="1" column="1">
        <widget class="QSpinBox" name="box_delta">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -283,6 +310,9 @@ p, li { white-space: pre-wrap; }
       </item>
       <item row="16" column="1">
        <widget class="QSpinBox" name="box_scan">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -294,9 +324,6 @@ p, li { white-space: pre-wrap; }
         </property>
         <property name="maximum">
          <number>100</number>
-        </property>
-        <property name="stepType">
-         <enum>QAbstractSpinBox::DefaultStepType</enum>
         </property>
         <property name="value">
          <number>1</number>
@@ -316,6 +343,9 @@ p, li { white-space: pre-wrap; }
           <weight>75</weight>
           <bold>true</bold>
          </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
          <string>Exit</string>
@@ -339,6 +369,9 @@ p, li { white-space: pre-wrap; }
           <weight>75</weight>
           <bold>true</bold>
          </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
          <string>Curve Name</string>
@@ -369,6 +402,9 @@ p, li { white-space: pre-wrap; }
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Start</string>
         </property>
@@ -376,6 +412,9 @@ p, li { white-space: pre-wrap; }
       </item>
       <item row="3" column="1">
        <widget class="QSpinBox" name="box_time_step">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -404,6 +443,9 @@ p, li { white-space: pre-wrap; }
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Points</string>
         </property>
@@ -418,6 +460,9 @@ p, li { white-space: pre-wrap; }
           <kerning>true</kerning>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Pi/2 Length (ns)</string>
         </property>
@@ -425,6 +470,9 @@ p, li { white-space: pre-wrap; }
       </item>
       <item row="6" column="1">
        <widget class="QDoubleSpinBox" name="box_field">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -456,6 +504,9 @@ p, li { white-space: pre-wrap; }
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Draw Each # Point</string>
         </property>
@@ -473,6 +524,9 @@ p, li { white-space: pre-wrap; }
       </item>
       <item row="0" column="1">
        <widget class="QSpinBox" name="box_length">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="readOnly">
          <bool>false</bool>
         </property>
@@ -517,6 +571,9 @@ p, li { white-space: pre-wrap; }
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Acquisitions</string>
         </property>
@@ -545,6 +602,9 @@ p, li { white-space: pre-wrap; }
         <property name="mouseTracking">
          <bool>false</bool>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="verticalScrollBarPolicy">
          <enum>Qt::ScrollBarAlwaysOff</enum>
         </property>
@@ -552,7 +612,7 @@ p, li { white-space: pre-wrap; }
          <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu Bold'; font-size:10pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8.25pt; font-weight:400; font-style:normal;&quot;&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Ubuntu'; font-size:11pt;&quot;&gt;c1&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
        </widget>
@@ -564,6 +624,9 @@ p, li { white-space: pre-wrap; }
           <weight>75</weight>
           <bold>true</bold>
          </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
          <string>Field (G)</string>
@@ -578,6 +641,9 @@ p, li { white-space: pre-wrap; }
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Time Step (ns)</string>
         </property>
@@ -591,6 +657,9 @@ p, li { white-space: pre-wrap; }
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Experiment Name</string>
         </property>
@@ -598,6 +667,9 @@ p, li { white-space: pre-wrap; }
       </item>
       <item row="4" column="1">
        <widget class="QSpinBox" name="box_rep_rate">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -626,6 +698,9 @@ p, li { white-space: pre-wrap; }
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Delta Pulses 2-3 (ns)</string>
         </property>
@@ -633,6 +708,9 @@ p, li { white-space: pre-wrap; }
       </item>
       <item row="2" column="1">
        <widget class="QSpinBox" name="box_delta_echo">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>

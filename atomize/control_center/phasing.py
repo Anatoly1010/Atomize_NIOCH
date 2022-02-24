@@ -29,7 +29,7 @@ class MainWindow(QtWidgets.QMainWindow):
         icon_path = os.path.join(path_to_main, 'gui/icon_pulse.png')
         self.setWindowIcon( QIcon(icon_path) )
 
-        self.path = os.path.join(path_to_main, '..', 'tests/pulse_epr')
+        self.path = os.path.join(path_to_main, '..', '..', '..', '..', 'Experimental_Data')
 
         self.destroyed.connect(lambda: self._on_destroyed())                # connect some actions to exit
         # Load the UI Page
@@ -915,6 +915,8 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         A function to run pulses
         """
+        # Stop if necessary
+        self.dig_stop()
         # TEST RUN
         self.errors.clear()
         self.parent_conn, self.child_conn = Pipe()
@@ -934,12 +936,11 @@ class MainWindow(QtWidgets.QMainWindow):
             # can be problem here:
             # maybe it should be moved to pulser_test()
             # and deleted from here
-            #self.pb.pulser_clear()
-            #self.pulse_sequence()
+            self.pb.pulser_clear()
+            self.pulse_sequence()
             #self.errors.appendPlainText( self.pb.pulser_pulse_list() )
             
-            #self.pb.pulser_test_flag('None')
-
+            self.pb.pulser_test_flag('None')
             self.dig_start()
 
         else:
@@ -1164,6 +1165,7 @@ class Worker(QWidget):
         data_x = np.zeros( p1 )
         data_y = np.zeros( p1 )
 
+
         # the idea of automatic and dynamic changing is
         # sending a new value of repetition rate via self.command
         # in each cycle we will check the current value of self.command
@@ -1214,10 +1216,13 @@ class Worker(QWidget):
 
             if p16 == 0:
                 # acquisition cycle
-                data_x, data_y = pb.pulser_acquisition_cycle(cycle_data_x, cycle_data_y, acq_cycle = p6[3])
+                data_x, data_y = pb.pulser_acquisition_cycle(cycle_data_x, cycle_data_y , acq_cycle = p6[3])
                 process = general.plot_1d('Digitizer Live', x_axis, ( data_x, data_y ), label = 'ch', xscale = 's', yscale = 'V', \
                                             vline = (p4 * 10**-9, p5 * 10**-9), pr = process )
+
             else:
+                # acquisition cycle
+                data_x, data_y = pb.pulser_acquisition_cycle(cycle_data_x, cycle_data_y , acq_cycle = p6[3])
                 process = general.plot_1d('Digitizer Live', x_axis, ( data_x, data_y ), label = 'ch', xscale = 's', yscale = 'V', \
                                     vline = (p4 * 10**-9, p5 * 10**-9), pr = process )
 
@@ -1233,14 +1238,17 @@ class Worker(QWidget):
             # we read data by conn.recv() only when there is the data to read
             if conn.poll() == True:
                 self.command = conn.recv()
+
         if self.command == 'exit':
-            ###print('exit')
+
             dig.digitizer_stop()
             dig.digitizer_close()
             # ?
             #pb.pulser_clear()
             
             pb.pulser_stop()
+            pb.pulser_pulse_reset()
+
 
 def main():
     """

@@ -85,6 +85,9 @@
       </property>
       <item row="1" column="1">
        <widget class="QDoubleSpinBox" name="Att2_prd">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -113,6 +116,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>30 MHz</string>
         </property>
@@ -129,6 +135,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>105 MHz</string>
         </property>
@@ -136,6 +145,9 @@
       </item>
       <item row="3" column="1">
        <widget class="QDoubleSpinBox" name="Fv_ctrl">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -165,6 +177,9 @@
           <kerning>true</kerning>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Attenuator PRD1 (dB)</string>
         </property>
@@ -172,6 +187,9 @@
       </item>
       <item row="0" column="1">
        <widget class="QDoubleSpinBox" name="Att1_prd">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="readOnly">
          <bool>false</bool>
         </property>
@@ -193,9 +211,6 @@
         <property name="singleStep">
          <double>0.500000000000000</double>
         </property>
-        <property name="stepType">
-         <enum>QAbstractSpinBox::DefaultStepType</enum>
-        </property>
         <property name="value">
          <double>0.000000000000000</double>
         </property>
@@ -213,6 +228,9 @@
       </item>
       <item row="6" column="1">
        <widget class="QSpinBox" name="Att_prm">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -238,6 +256,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>300 MHz</string>
         </property>
@@ -248,6 +269,9 @@
       </item>
       <item row="4" column="1">
        <widget class="QDoubleSpinBox" name="Fv_prm">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -306,6 +330,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Frequency (MHz)</string>
         </property>
@@ -318,6 +345,9 @@
           <weight>75</weight>
           <bold>true</bold>
          </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
          <string>Cut-Off Frequency</string>
@@ -337,6 +367,9 @@
           <weight>75</weight>
           <bold>true</bold>
          </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="layoutDirection">
          <enum>Qt::LeftToRight</enum>
@@ -360,8 +393,11 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
-         <string>Initialize</string>
+         <string>Reset</string>
         </property>
        </widget>
       </item>
@@ -372,6 +408,9 @@
           <weight>75</weight>
           <bold>true</bold>
          </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
          <string>Attenuator PRD2 (dB)</string>
@@ -386,6 +425,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Pulse Test Phase (deg)</string>
         </property>
@@ -399,6 +441,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Video Attenuation (dB)</string>
         </property>
@@ -411,6 +456,9 @@
           <weight>75</weight>
           <bold>true</bold>
          </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
          <string>Signal Phase (deg)</string>
@@ -431,6 +479,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Exit</string>
         </property>
@@ -438,6 +489,9 @@
       </item>
       <item row="7" column="1">
        <widget class="QSpinBox" name="K_prm">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -460,6 +514,9 @@
       </item>
       <item row="9" column="1">
        <widget class="QSpinBox" name="Synt">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -467,13 +524,10 @@
          <bool>false</bool>
         </property>
         <property name="minimum">
-         <number>9000</number>
+         <number>8000</number>
         </property>
         <property name="maximum">
-         <number>10000</number>
-        </property>
-        <property name="stepType">
-         <enum>QAbstractSpinBox::DefaultStepType</enum>
+         <number>12000</number>
         </property>
         <property name="value">
          <number>9563</number>
@@ -487,6 +541,9 @@
           <weight>75</weight>
           <bold>true</bold>
          </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
          <string>Amplification (dB)</string>
@@ -533,6 +590,9 @@
         <weight>50</weight>
         <bold>false</bold>
        </font>
+      </property>
+      <property name="contextMenuPolicy">
+       <enum>Qt::NoContextMenu</enum>
       </property>
       <property name="readOnly">
        <bool>true</bool>

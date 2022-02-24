@@ -94,6 +94,9 @@
       </property>
       <item row="1" column="1">
        <widget class="QSpinBox" name="P1_st">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -113,6 +116,9 @@
       </item>
       <item row="19" column="7">
        <widget class="QSpinBox" name="Acq_number">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -129,6 +135,9 @@
       </item>
       <item row="19" column="1">
        <widget class="QDoubleSpinBox" name="Delay">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -148,6 +157,9 @@
       </item>
       <item row="9" column="3">
        <widget class="QSpinBox" name="coef_3">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -177,6 +189,9 @@
       </item>
       <item row="9" column="6">
        <widget class="QSpinBox" name="coef_6">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -208,6 +223,9 @@
           <height>80</height>
          </size>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="verticalScrollBarPolicy">
          <enum>Qt::ScrollBarAlwaysOff</enum>
         </property>
@@ -233,6 +251,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Pulse Phase List</string>
         </property>
@@ -240,6 +261,9 @@
       </item>
       <item row="8" column="6">
        <widget class="QSpinBox" name="Wurst_sweep_6">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -268,6 +292,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Horizontal Offset</string>
         </property>
@@ -275,6 +302,9 @@
       </item>
       <item row="7" column="6">
        <widget class="QSpinBox" name="freq_6">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -297,6 +327,9 @@
       </item>
       <item row="18" column="1">
        <widget class="QDoubleSpinBox" name="Field">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -328,6 +361,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Pulse Type</string>
         </property>
@@ -341,6 +377,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Integration Right</string>
         </property>
@@ -348,6 +387,9 @@
       </item>
       <item row="2" column="2">
        <widget class="QDoubleSpinBox" name="P2_sig">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -370,6 +412,9 @@
       </item>
       <item row="2" column="1">
        <widget class="QSpinBox" name="P1_sig">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="inputMethodHints">
          <set>Qt::ImhDigitsOnly</set>
         </property>
@@ -403,6 +448,9 @@
           <width>140</width>
           <height>16777215</height>
          </size>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
         </property>
         <item>
          <property name="text">
@@ -438,6 +486,9 @@
       </item>
       <item row="9" column="1">
        <widget class="QSpinBox" name="coef_1">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -469,6 +520,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Amplitude 1 (mV)</string>
         </property>
@@ -488,6 +542,9 @@
           <height>80</height>
          </size>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="verticalScrollBarPolicy">
          <enum>Qt::ScrollBarAlwaysOff</enum>
         </property>
@@ -501,6 +558,9 @@
       </item>
       <item row="1" column="4">
        <widget class="QDoubleSpinBox" name="P4_st">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -526,6 +586,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Points</string>
         </property>
@@ -533,6 +596,9 @@
       </item>
       <item row="2" column="4">
        <widget class="QDoubleSpinBox" name="P4_sig">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -552,6 +618,9 @@
       </item>
       <item row="7" column="5">
        <widget class="QSpinBox" name="freq_5">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -580,6 +649,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Shift Togheter</string>
         </property>
@@ -587,6 +659,9 @@
       </item>
       <item row="17" column="7">
        <widget class="QSpinBox" name="Win_left">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -610,6 +685,9 @@
       </item>
       <item row="17" column="5">
        <widget class="QSpinBox" name="Timescale">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -648,6 +726,9 @@
       </item>
       <item row="8" column="5">
        <widget class="QSpinBox" name="Wurst_sweep_5">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -670,6 +751,9 @@
       </item>
       <item row="7" column="7">
        <widget class="QSpinBox" name="freq_7">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -686,6 +770,9 @@
       </item>
       <item row="8" column="2">
        <widget class="QSpinBox" name="Wurst_sweep_2">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -708,6 +795,9 @@
       </item>
       <item row="2" column="7">
        <widget class="QDoubleSpinBox" name="P7_sig">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -730,6 +820,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Repetition Rate (Hz)</string>
         </property>
@@ -744,6 +837,9 @@
           <kerning>true</kerning>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Pulse Start (ns)</string>
         </property>
@@ -751,6 +847,9 @@
       </item>
       <item row="9" column="2">
        <widget class="QSpinBox" name="coef_2">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -770,6 +869,9 @@
       </item>
       <item row="2" column="3">
        <widget class="QDoubleSpinBox" name="P3_sig">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -798,6 +900,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Amplitude (%)</string>
         </property>
@@ -805,6 +910,9 @@
       </item>
       <item row="3" column="1">
        <widget class="QSpinBox" name="P1_len">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -830,6 +938,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>N WURST</string>
         </property>
@@ -843,6 +954,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Integration Left</string>
         </property>
@@ -850,6 +964,9 @@
       </item>
       <item row="18" column="5">
        <widget class="QSpinBox" name="Hor_offset">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -878,6 +995,9 @@
           <bold>false</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="undoRedoEnabled">
          <bool>false</bool>
         </property>
@@ -891,6 +1011,9 @@
       </item>
       <item row="3" column="5">
        <widget class="QDoubleSpinBox" name="P5_len">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -916,6 +1039,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Online FFT</string>
         </property>
@@ -923,6 +1049,9 @@
       </item>
       <item row="17" column="3">
        <widget class="QSpinBox" name="Ampl_1">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -945,6 +1074,9 @@
       </item>
       <item row="7" column="4">
        <widget class="QSpinBox" name="freq_4">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -967,6 +1099,9 @@
       </item>
       <item row="2" column="5">
        <widget class="QDoubleSpinBox" name="P5_sig">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -986,6 +1121,9 @@
       </item>
       <item row="18" column="3">
        <widget class="QSpinBox" name="Ampl_2">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -1008,6 +1146,9 @@
       </item>
       <item row="9" column="5">
        <widget class="QSpinBox" name="coef_5">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -1033,6 +1174,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Phase (deg)</string>
         </property>
@@ -1052,6 +1196,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Amplitude 2 (mV)</string>
         </property>
@@ -1059,6 +1206,9 @@
       </item>
       <item row="19" column="5">
        <widget class="QCheckBox" name="shift_box">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string/>
         </property>
@@ -1066,6 +1216,9 @@
       </item>
       <item row="17" column="1">
        <widget class="QSpinBox" name="Rep_rate">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -1100,6 +1253,9 @@
           <height>80</height>
          </size>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="verticalScrollBarPolicy">
          <enum>Qt::ScrollBarAlwaysOff</enum>
         </property>
@@ -1116,6 +1272,9 @@
       </item>
       <item row="3" column="3">
        <widget class="QDoubleSpinBox" name="P3_len">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -1149,6 +1308,9 @@
           <width>140</width>
           <height>16777215</height>
          </size>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
         </property>
         <item>
          <property name="text">
@@ -1196,6 +1358,9 @@
           <height>16777215</height>
          </size>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <item>
          <property name="text">
           <string>SINE</string>
@@ -1230,6 +1395,9 @@
       </item>
       <item row="3" column="6">
        <widget class="QDoubleSpinBox" name="P6_len">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -1263,6 +1431,9 @@
           <width>140</width>
           <height>16777215</height>
          </size>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
         </property>
         <item>
          <property name="text">
@@ -1298,6 +1469,9 @@
       </item>
       <item row="8" column="4">
        <widget class="QSpinBox" name="Wurst_sweep_4">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -1320,6 +1494,9 @@
       </item>
       <item row="9" column="7">
        <widget class="QSpinBox" name="coef_7">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -1342,6 +1519,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Wurst Sweep (MHz)</string>
         </property>
@@ -1349,6 +1529,9 @@
       </item>
       <item row="7" column="2">
        <widget class="QSpinBox" name="freq_2">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -1371,6 +1554,9 @@
       </item>
       <item row="1" column="3">
        <widget class="QDoubleSpinBox" name="P3_st">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -1393,6 +1579,9 @@
       </item>
       <item row="9" column="4">
        <widget class="QSpinBox" name="coef_4">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -1424,6 +1613,9 @@
           <height>80</height>
          </size>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="verticalScrollBarPolicy">
          <enum>Qt::ScrollBarAlwaysOff</enum>
         </property>
@@ -1440,6 +1632,9 @@
       </item>
       <item row="1" column="2">
        <widget class="QDoubleSpinBox" name="P2_st">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="readOnly">
          <bool>false</bool>
         </property>
@@ -1465,6 +1660,9 @@
       </item>
       <item row="8" column="3">
        <widget class="QSpinBox" name="Wurst_sweep_3">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -1498,6 +1696,9 @@
           <width>140</width>
           <height>80</height>
          </size>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="verticalScrollBarPolicy">
          <enum>Qt::ScrollBarAlwaysOff</enum>
@@ -1534,6 +1735,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Exit</string>
         </property>
@@ -1552,6 +1756,9 @@
           <width>140</width>
           <height>16777215</height>
          </size>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="currentIndex">
          <number>0</number>
@@ -1590,6 +1797,9 @@
       </item>
       <item row="18" column="7">
        <widget class="QSpinBox" name="Win_right">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -1606,6 +1816,9 @@
       </item>
       <item row="8" column="7">
        <widget class="QSpinBox" name="Wurst_sweep_7">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -1625,6 +1838,9 @@
       </item>
       <item row="20" column="1">
        <widget class="QSpinBox" name="N_wurst">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -1644,6 +1860,9 @@
       </item>
       <item row="7" column="1">
        <widget class="QSpinBox" name="freq_1">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -1678,6 +1897,9 @@
           <height>16777215</height>
          </size>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="currentIndex">
          <number>0</number>
         </property>
@@ -1696,6 +1918,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Delay (ns)</string>
         </property>
@@ -1703,6 +1928,9 @@
       </item>
       <item row="19" column="3">
        <widget class="QDoubleSpinBox" name="Phase">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="wrapping">
          <bool>true</bool>
         </property>
@@ -1735,6 +1963,9 @@
       </item>
       <item row="3" column="4">
        <widget class="QDoubleSpinBox" name="P4_len">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -1754,6 +1985,9 @@
       </item>
       <item row="8" column="1">
        <widget class="QSpinBox" name="Wurst_sweep_1">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -1788,6 +2022,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Update</string>
         </property>
@@ -1795,6 +2032,9 @@
       </item>
       <item row="1" column="5">
        <widget class="QDoubleSpinBox" name="P5_st">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -1820,6 +2060,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Frequency (MHz)</string>
         </property>
@@ -1832,6 +2075,9 @@
           <weight>75</weight>
           <bold>true</bold>
          </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
          <string>Pulse Length (ns)</string>
@@ -1852,6 +2098,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Stop</string>
         </property>
@@ -1859,6 +2108,9 @@
       </item>
       <item row="3" column="2">
        <widget class="QDoubleSpinBox" name="P2_len">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -1893,6 +2145,9 @@
           <height>80</height>
          </size>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="verticalScrollBarPolicy">
          <enum>Qt::ScrollBarAlwaysOff</enum>
         </property>
@@ -1909,6 +2164,9 @@
       </item>
       <item row="1" column="6">
        <widget class="QDoubleSpinBox" name="P6_st">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -1934,6 +2192,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Field (G)</string>
         </property>
@@ -1941,6 +2202,9 @@
       </item>
       <item row="20" column="5">
        <widget class="QCheckBox" name="fft_box">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string/>
         </property>
@@ -1953,6 +2217,9 @@
           <weight>75</weight>
           <bold>true</bold>
          </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
          <string>Acquisitions</string>
@@ -1973,6 +2240,9 @@
           <height>80</height>
          </size>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="verticalScrollBarPolicy">
          <enum>Qt::ScrollBarAlwaysOff</enum>
         </property>
@@ -1989,6 +2259,9 @@
       </item>
       <item row="7" column="3">
        <widget class="QSpinBox" name="freq_3">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -2011,6 +2284,9 @@
       </item>
       <item row="3" column="7">
        <widget class="QDoubleSpinBox" name="P7_len">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -2024,6 +2300,9 @@
       </item>
       <item row="1" column="7">
        <widget class="QDoubleSpinBox" name="P7_st">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -2046,6 +2325,9 @@
           <bold>true</bold>
          </font>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="text">
          <string>Pulse Sigma (ns)</string>
         </property>
@@ -2064,6 +2346,9 @@
           <width>140</width>
           <height>16777215</height>
          </size>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
         </property>
         <item>
          <property name="text">
@@ -2099,6 +2384,9 @@
       </item>
       <item row="2" column="6">
        <widget class="QDoubleSpinBox" name="P6_sig">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
@@ -2126,7 +2414,7 @@
      <x>0</x>
      <y>0</y>
      <width>1286</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="font">
@@ -2140,8 +2428,8 @@
      <rect>
       <x>0</x>
       <y>0</y>
-      <width>159</width>
-      <height>100</height>
+      <width>135</width>
+      <height>94</height>
      </rect>
     </property>
     <property name="font">

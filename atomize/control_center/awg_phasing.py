@@ -702,7 +702,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.message('Digitizer is not running')
         except AttributeError:
             self.message('Digitizer is not running')
-        self.digitizer_process.join()
+        #self.digitizer_process.join()
         self.dig_stop()
 
         # ?
@@ -713,7 +713,7 @@ class MainWindow(QtWidgets.QMainWindow):
         ##self.awg.awg_stop()
         ##self.awg.awg_close()
         ##self.pb.pulser_stop()
-        #sys.exit()
+        sys.exit()
 
     def quit(self):
         """
@@ -1378,7 +1378,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.awg.awg_setup()
 
         #general.message( str( self.pb.pulser_pulse_list() ) )
-        self.errors.appendPlainText( self.awg.awg_pulse_list() )
+        
+        ############# DO NOT WORK:
+        #self.errors.appendPlainText( self.awg.awg_pulse_list() )
+        #############
 
         self.pb.pulser_update()
         self.awg.awg_next_phase()
@@ -1391,6 +1394,8 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         A function to run pulses
         """
+        # Stop if necessary
+        self.dig_stop()
         # TEST RUN
         self.errors.clear()
         
@@ -1400,7 +1405,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.test_process.start()
 
         # in order to finish a test
-        time.sleep( 0.2 )
+        time.sleep( 0.4 )
 
         if self.test_process.exitcode == 0:
             self.test_process.join()
@@ -1409,14 +1414,14 @@ class MainWindow(QtWidgets.QMainWindow):
             # can be problem here:
             # maybe it should be moved to pulser_test()
             # and deleted from here
-            ##self.awg.awg_clear()
-            ##self.awg.__init__()
-            ##self.pb.pulser_clear()
-            ##self.pulse_sequence()
+            self.awg.awg_clear()
+            self.awg.__init__()
+            self.pb.pulser_clear()
+            self.pulse_sequence()
             ##self.errors.appendPlainText( self.awg.awg_pulse_list() )
             
-            #self.pb.pulser_test_flag( 'None' )
-            #self.awg.awg_test_flag( 'None' )
+            self.pb.pulser_test_flag( 'None' )
+            self.awg.awg_test_flag( 'None' )
 
             self.dig_start()
 
@@ -1746,6 +1751,8 @@ class Worker(QWidget):
                 process = general.plot_1d('Digitizer Live', x_axis, ( data_x, data_y ), label = 'ch', xscale = 's', yscale = 'V', \
                                             vline = (p4 * 10**-9, p5 * 10**-9), pr = process )
             else:
+                # acquisition cycle
+                data_x, data_y = pb.pulser_acquisition_cycle(cycle_data_x, cycle_data_y, acq_cycle = p6[3])
                 process = general.plot_1d('Digitizer Live', x_axis, ( data_x, data_y ), label = 'ch', xscale = 's', yscale = 'V', \
                                     vline = (p4 * 10**-9, p5 * 10**-9), pr = process )
 
