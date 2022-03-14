@@ -937,6 +937,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # maybe it should be moved to pulser_test()
             # and deleted from here
             self.pb.pulser_clear()
+            self.pb.pulser_test_flag('test')
             self.pulse_sequence()
             #self.errors.appendPlainText( self.pb.pulser_pulse_list() )
             
@@ -945,7 +946,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         else:
             self.test_process.join()
-            self.pb.pulser_stop()
+            #14-03-2021
+            #self.pb.pulser_stop()
             self.errors.appendPlainText( 'Incorrect pulse setting. Check that your pulses:\n' + \
                                         '1. Not overlapped\n' + \
                                         '2. Distance between MW pulses is more than 40 ns\n' + \

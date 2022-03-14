@@ -246,22 +246,20 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         A function to simultaneously change a number of points and horizontal offset of the digitizer
         """
-        dif = abs( self.points - self.posttrigger )
-        #points_copy = self.points
-        #posttrigger_copy = self.posttrigger
+        dif = self.points - self.posttrigger 
 
-        self.timescale()
-        self.posttrigger = self.points - dif
-        self.Hor_offset.setValue( self.posttrigger )
-        #print( self.posttrigger )
-        
-        #if self.opened == 0:
-        #    try:
-        #        self.parent_conn.send( 'HO' + str( self.posttrigger ) )
-        #    except AttributeError:
-        #        self.message('Digitizer is not running')
-
-        #self.opened = 0
+        # number of points can be lower than posttrigger since we firstly adjust them
+        if dif > 0 and dif <= 176:  
+            self.opened = 1
+            self.timescale()
+            self.opened = 0
+            self.posttrigger = self.points - abs( dif )
+            self.Hor_offset.setValue( self.posttrigger )
+            self.timescale()
+        else:
+            self.timescale()
+            self.posttrigger = self.points - abs( dif )
+            self.Hor_offset.setValue( self.posttrigger )
 
     def timescale(self):
         """

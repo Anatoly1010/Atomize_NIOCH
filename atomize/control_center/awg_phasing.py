@@ -1380,7 +1380,7 @@ class MainWindow(QtWidgets.QMainWindow):
         #general.message( str( self.pb.pulser_pulse_list() ) )
         
         ############# DO NOT WORK:
-        #self.errors.appendPlainText( self.awg.awg_pulse_list() )
+        self.errors.appendPlainText( self.awg.awg_pulse_list() )
         #############
 
         self.pb.pulser_update()
@@ -1405,7 +1405,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.test_process.start()
 
         # in order to finish a test
-        time.sleep( 0.4 )
+        time.sleep( 0.3 )
 
         if self.test_process.exitcode == 0:
             self.test_process.join()
@@ -1417,6 +1417,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.awg.awg_clear()
             self.awg.__init__()
             self.pb.pulser_clear()
+            # init will set the 'None' flag
+            self.pb.pulser_test_flag( 'test' )
+            self.awg.awg_test_flag( 'test' )
             self.pulse_sequence()
             ##self.errors.appendPlainText( self.awg.awg_pulse_list() )
             
@@ -1440,7 +1443,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # no need in stop and close, since AWG is not opened
             #self.awg.awg_stop()
             #self.awg.awg_close()
-            self.pb.pulser_stop()
+            #self.pb.pulser_stop()
 
     def pulser_test(self, conn, flag):
         """
