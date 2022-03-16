@@ -312,7 +312,7 @@
          <bool>false</bool>
         </property>
         <property name="minimum">
-         <number>0</number>
+         <number>-250</number>
         </property>
         <property name="maximum">
          <number>250</number>
@@ -628,7 +628,7 @@
          <bool>false</bool>
         </property>
         <property name="minimum">
-         <number>0</number>
+         <number>-250</number>
         </property>
         <property name="maximum">
          <number>250</number>
@@ -756,6 +756,9 @@
         </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="minimum">
+         <number>-250</number>
         </property>
         <property name="maximum">
          <number>250</number>
@@ -1084,7 +1087,7 @@
          <bool>false</bool>
         </property>
         <property name="minimum">
-         <number>0</number>
+         <number>-250</number>
         </property>
         <property name="maximum">
          <number>250</number>
@@ -1539,7 +1542,7 @@
          <bool>false</bool>
         </property>
         <property name="minimum">
-         <number>0</number>
+         <number>-250</number>
         </property>
         <property name="maximum">
          <number>250</number>
@@ -2269,7 +2272,7 @@
          <bool>false</bool>
         </property>
         <property name="minimum">
-         <number>0</number>
+         <number>-250</number>
         </property>
         <property name="maximum">
          <number>250</number>
@@ -2414,7 +2417,7 @@
      <x>0</x>
      <y>0</y>
      <width>1286</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <property name="font">
@@ -2428,8 +2431,8 @@
      <rect>
       <x>0</x>
       <y>0</y>
-      <width>135</width>
-      <height>94</height>
+      <width>156</width>
+      <height>100</height>
      </rect>
     </property>
     <property name="font">

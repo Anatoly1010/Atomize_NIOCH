@@ -31,7 +31,7 @@ class MainWindow(QtWidgets.QMainWindow):
         icon_path = os.path.join(path_to_main, 'gui/icon_pulse.png')
         self.setWindowIcon( QIcon(icon_path) )
 
-        self.path = os.path.join(path_to_main, '..', 'tests/pulse_epr')
+        self.path = os.path.join(path_to_main, '..', '..', '..', '..', 'Experimental_Data')
 
         self.destroyed.connect(lambda: self._on_destroyed())                # connect some actions to exit
         # Load the UI Page
@@ -440,17 +440,27 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         A function to simultaneously change a number of points and horizontal offset of the digitizer
         """
-        dif = abs( self.points - self.posttrigger )
+        dif = self.points - self.posttrigger 
+        points_temp = self.points
 
-        self.timescale()
-        self.posttrigger = self.points - dif
-        self.Hor_offset.setValue( self.posttrigger )
-        
-        #if self.opened == 0:
-        #    try:
-        #        self.parent_conn_dig.send( 'HO' + str( self.posttrigger ) )
-        #    except AttributeError:
-        #        self.message('Digitizer is not running')
+        # number of points can be lower than posttrigger since we firstly adjust them
+        if dif > 0 and dif <= 176:
+            self.opened = 1
+            self.timescale()
+            self.opened = 0
+            # check whether we increase or decrease number of points
+            if self.points < points_temp:
+                self.posttrigger = self.points - abs( dif )
+                self.Hor_offset.setValue( self.posttrigger )
+                self.timescale()
+            else:
+                self.posttrigger = self.points - abs( dif )
+                self.timescale()
+                self.Hor_offset.setValue( self.posttrigger )
+        else:
+            self.timescale()
+            self.posttrigger = self.points - abs( dif )
+            self.Hor_offset.setValue( self.posttrigger )
 
     def timescale(self):
         """

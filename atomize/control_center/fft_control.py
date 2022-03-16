@@ -247,15 +247,22 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to simultaneously change a number of points and horizontal offset of the digitizer
         """
         dif = self.points - self.posttrigger 
+        points_temp = self.points
 
         # number of points can be lower than posttrigger since we firstly adjust them
         if dif > 0 and dif <= 176:  
             self.opened = 1
             self.timescale()
             self.opened = 0
-            self.posttrigger = self.points - abs( dif )
-            self.Hor_offset.setValue( self.posttrigger )
-            self.timescale()
+            # check whether we increase or decrease number of points
+            if self.points < points_temp:
+                self.posttrigger = self.points - abs( dif )
+                self.Hor_offset.setValue( self.posttrigger )
+                self.timescale()
+            else:
+                self.posttrigger = self.points - abs( dif )
+                self.timescale()
+                self.Hor_offset.setValue( self.posttrigger )
         else:
             self.timescale()
             self.posttrigger = self.points - abs( dif )

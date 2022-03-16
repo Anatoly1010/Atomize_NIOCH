@@ -175,8 +175,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def time_step(self):
         self.cur_step = int( self.box_time_step.value() )
-        if self.cur_step % 2 != 0:
-            self.cur_step = self.cur_step + 1
+        if self.cur_step % 4 != 0:
+            self.cur_step = self.cur_step + self.cur_step % 4
             self.box_time_step.setValue( self.cur_step )
         #print(self.cur_start_field)
 
@@ -331,6 +331,7 @@ class Worker(QWidget):
         AVERAGES = p10
         SCANS = p7
         process = 'None'
+
 
         # PULSES
         REP_RATE = str(p6) + ' Hz'

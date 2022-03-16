@@ -66,7 +66,7 @@ QTabBar::tab:selected {
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <property name="iconSize">
        <size>
@@ -617,7 +617,7 @@ QTabBar::tab:selected {
            </font>
           </property>
           <property name="text">
-           <string>Created by Anatoly Melnikov; www.github.com/Anatoly1010; anatoly.melnikov@tomo.nsc.ru; 2021; v 0.23; 03/02/2022</string>
+           <string>Created by Anatoly Melnikov; www.github.com/Anatoly1010; anatoly.melnikov@tomo.nsc.ru; 2021; v 0.24; 16/03/2022</string>
           </property>
          </widget>
         </item>
