@@ -814,7 +814,13 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to set AWG CH1 phase shift
         """
         self.cur_phase = self.Phase.value() * np.pi * 2 / 360
-    
+        ####
+        try:
+            self.errors.appendPlainText( str( self.cur_phase ) )
+            self.parent_conn_dig.send( 'PH' + str( self.cur_phase ) )
+        except AttributeError:
+            self.message('Digitizer is not running')
+
     def p2_coef_f(self):
         """
         A function to change pulse 2 coefficient
@@ -1377,7 +1383,11 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.p7_typ != 'BLANK':
                 self.pb.pulser_pulse(name = 'P13', channel = 'AWG', start = self.p7_start_rect, length = self.round_length( self.P7_len.value() ) )
 
-        self.awg.phase_shift_ch1_seq_mode = self.cur_phase
+        ###
+        #self.awg.phase_shift_ch1_seq_mode = self.cur_phase
+        self.awg.phase_x = self.cur_phase
+        ###
+
         self.awg.awg_channel('CH0', 'CH1')
         self.awg.awg_card_mode('Single Joined')
         self.awg.awg_clock_mode('External')
@@ -1621,7 +1631,11 @@ class Worker(QWidget):
         dig.digitizer_number_of_averages( p3 )
         dig.digitizer_setup()
 
-        awg.phase_shift_ch1_seq_mode = p17
+        ###
+        #awg.phase_shift_ch1_seq_mode = p17
+        awg.phase_x = p17
+        ###
+
         awg.awg_channel('CH0', 'CH1')
         awg.awg_card_mode('Single Joined')
         awg.awg_clock_mode('External')
@@ -1746,6 +1760,11 @@ class Worker(QWidget):
                 bh15.magnet_field( p15 )
             elif self.command[0:2] == 'FF':
                 p16 = int( self.command[2:] )
+            elif self.command[0:2] == 'PH':
+                p17 = float( self.command[2:] )
+
+            ###
+            awg.phase_x = p17
 
             pb.pulser_update()
             # phase cycle

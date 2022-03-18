@@ -47,6 +47,8 @@ class Spectrum_M4I_6631_X8:
         self.min_freq = int(float(self.specific_parameters['min_freq'])) # in MHz
         self.phase_shift_ch1_seq_mode = float(self.specific_parameters['ch1_phase_shift']) # in radians
 
+        self.phase_x = np.pi/2
+
         # Delays and restrictions
         # MaxDACValue corresponds to the amplitude of the output signal; MaxDACValue - Amplitude and so on
         # lMaxDACValue = int32 (0)
@@ -702,7 +704,7 @@ class Spectrum_M4I_6631_X8:
                         element['phase'] = self.pulse_array_init[index]['phase']
                         self.reset_count = 0
                     elif element['phase_list'][self.current_phase_index] == '-x':
-                        element['phase'] = self.pulse_array_init[index]['phase'] + np.pi
+                        element['phase'] = self.pulse_array_init[index]['phase'] + self.phase_x #+ np.pi
                         self.reset_count = 0
 
                     elif element['phase_list'][self.current_phase_index] == '+y':
