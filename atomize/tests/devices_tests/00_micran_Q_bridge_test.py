@@ -35,7 +35,7 @@ signal.signal(signal.SIGTERM, cleanup)
 # start + length for the second pulse should be divisible by 32
 
 # EXP3; Amplitude Drop; A Pulse should be at least 416 ns long
-awg.awg_pulse(name = 'P0', channel = 'CH0', func = 'TEST3', frequency = '0 MHz', phase = 0, length = '2016 ns', sigma = '2016 ns', start = '0 ns')
+#awg.awg_pulse(name = 'P0', channel = 'CH0', func = 'TEST3', frequency = '0 MHz', phase = 0, length = '2016 ns', sigma = '2016 ns', start = '0 ns')
 # pulse length should be divisible by 32
 
 ####################################################

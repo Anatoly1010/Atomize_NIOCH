@@ -6,10 +6,10 @@ import sys
 import gc
 import random
 ###AWG
-sys.path.append('/home/pulseepr/Sources/AWG/Examples/python')
+##sys.path.append('/home/pulseepr/Sources/AWG/Examples/python')
 ###sys.path.append('/home/anatoly/AWG/spcm_examples/python')
 #sys.path.append('/home/anatoly/awg_files/python')
-#sys.path.append('C:/Users/User/Desktop/Examples/python')
+sys.path.append('C:/Users/User/Desktop/Examples/python')
 from math import sin, pi, exp, log2
 from itertools import groupby, chain
 from copy import deepcopy
@@ -37,7 +37,7 @@ class Spectrum_M4I_6631_X8:
 
         self.timebase_dict = {'ms': 1000000, 'us': 1000, 'ns': 1, }
         self.channel_dict = {'CH0': 0, 'CH1': 1, }
-        self.function_dict = {'SINE': 0, 'GAUSS': 1, 'SINC': 2, 'BLANK': 3, 'WURST': 4, }
+        self.function_dict = {'SINE': 0, 'GAUSS': 1, 'SINC': 2, 'BLANK': 3, 'WURST': 4, 'TEST': 5, 'TEST2': 6, 'TEST3': 7, }
 
         # Limits and Ranges (depends on the exact model):
         #clock = float(self.specific_parameters['clock'])
@@ -47,7 +47,7 @@ class Spectrum_M4I_6631_X8:
         self.min_freq = int(float(self.specific_parameters['min_freq'])) # in MHz
         self.phase_shift_ch1_seq_mode = float(self.specific_parameters['ch1_phase_shift']) # in radians
 
-        self.phase_x = np.pi/2
+        ###self.phase_x = np.pi/2
 
         # Delays and restrictions
         # MaxDACValue corresponds to the amplitude of the output signal; MaxDACValue - Amplitude and so on
@@ -599,11 +599,11 @@ class Spectrum_M4I_6631_X8:
             # Function type
             temp_func = str(func)
             assert (temp_func in self.function_dict), 'Incorrect pulse type. Only SINE, GAUSS, SINC, BLANK, and WURST pulses are available'
-            if temp_func == 'WURST':
+            if temp_func == 'WURST' or temp_func == 'TEST2':
                 assert ( len(frequency) == 2 ), 'For WURST pulse frequency should be a tuple: frequency = ("Center MHz", "Sweep MHz")'
 
             # Frequency
-            if temp_func != 'WURST':
+            if temp_func != 'WURST' and temp_func != 'TEST2':
                 temp_freq = frequency.split(" ")
                 coef = temp_freq[1]
                 p_freq = float(temp_freq[0])
@@ -704,7 +704,7 @@ class Spectrum_M4I_6631_X8:
                         element['phase'] = self.pulse_array_init[index]['phase']
                         self.reset_count = 0
                     elif element['phase_list'][self.current_phase_index] == '-x':
-                        element['phase'] = self.pulse_array_init[index]['phase'] + self.phase_x #+ np.pi
+                        element['phase'] = self.pulse_array_init[index]['phase'] + np.pi #+ self.phase_x
                         self.reset_count = 0
 
                     elif element['phase_list'][self.current_phase_index] == '+y':
@@ -2085,7 +2085,7 @@ class Spectrum_M4I_6631_X8:
                         gc.collect()
                         self.visualize_counter = 0
 
-                    xs = 0.8*np.arange( int(self.memsize) )
+                    xs = 1000/self.sample_rate*np.arange( int(self.memsize) )
                     # A way to convert c_types poinet back to np.array
                     # np.ctypeslib.as_array(buf, shape = (int(self.memsize), ))
                     # also try
@@ -2105,7 +2105,7 @@ class Spectrum_M4I_6631_X8:
                         gc.collect()
                         self.visualize_counter = 0
 
-                    xs = 0.8*np.arange( int(self.memsize) )
+                    xs = 1000/self.sample_rate*np.arange( int(self.memsize) )
                     # A way to convert c_types poinet back to np.array
                     # np.ctypeslib.as_array(buf, shape = (int(self.memsize), ))
                     general.plot_1d('Buffer_single_joined', xs, np.ctypeslib.as_array(buf, shape = (int(self.memsize), )), \
@@ -2122,7 +2122,7 @@ class Spectrum_M4I_6631_X8:
                         gc.collect()
                         self.visualize_counter = 0
 
-                    xs = 0.8*np.arange( int(self.memsize) )
+                    xs = 1000/self.sample_rate*np.arange( int(self.memsize) )
                     general.plot_1d('Buffer_single', xs, np.ctypeslib.as_array(buf, shape = (int(self.memsize * 2), ))[0::2], \
                                     label = 'ch0')
                     general.plot_1d('Buffer_single', xs, 2 * self.maxCAD + np.ctypeslib.as_array(buf, shape = (int(self.memsize * 2), ))[1::2], \
@@ -2140,7 +2140,7 @@ class Spectrum_M4I_6631_X8:
                         gc.collect()
                         self.visualize_counter = 0
 
-                    xs = 0.8*np.arange( int(self.memsize) )
+                    xs = 1000/self.sample_rate*np.arange( int(self.memsize) )
                     ##sin = self.maxCAD * np.sin(2*np.pi*xs*0.125)
                     general.plot_1d('Buffer_single_joined', xs, np.ctypeslib.as_array(buf, shape = (int(self.memsize * 2), ))[0::2], \
                                     label = 'ch0')
@@ -2159,7 +2159,7 @@ class Spectrum_M4I_6631_X8:
                         gc.collect()
                         self.visualize_counter = 0
 
-                    xs = 0.8*np.arange( int(self.memsize) )
+                    xs = 1000/self.sample_rate*np.arange( int(self.memsize) )
                     general.plot_1d('Buffer_multi', xs, np.ctypeslib.as_array(buf, shape = (int(self.memsize), )), \
                                     label = 'ch0 or ch1')
                
@@ -2174,7 +2174,7 @@ class Spectrum_M4I_6631_X8:
                         gc.collect()
                         self.visualize_counter = 0
 
-                    xs = 0.8*np.arange( int(self.memsize) )
+                    xs = 1000/self.sample_rate*np.arange( int(self.memsize) )
                     general.plot_1d('Buffer_multi', xs, np.ctypeslib.as_array(buf, shape = (int(self.memsize * 2), ))[0::2], \
                                     label = 'ch0')
                     general.plot_1d('Buffer_multi', xs, 2 * self.maxCAD + np.ctypeslib.as_array(buf, shape = (int(self.memsize * 2), ))[1::2], \
@@ -2182,7 +2182,7 @@ class Spectrum_M4I_6631_X8:
 
             elif self.sequence_mode == 1:
                 if self.channel != 3:
-                    xs = np.arange( 0, int(self.qwBufferSize.value/2) )*0.8
+                    xs = np.arange( 0, int(self.qwBufferSize.value/2) )*1000/self.sample_rate
 
                     general.plot_1d('Buffer_sequence', xs, np.ctypeslib.as_array(self.full_buffer[0], shape = (int(self.qwBufferSize.value/2), )),\
                                         label = '0ch0')
@@ -2201,7 +2201,7 @@ class Spectrum_M4I_6631_X8:
                         self.visualize_counter = 0
 
                 elif self.channel == 3:
-                    xs = np.arange( 0, int(self.qwBufferSize.value/4) )*0.8
+                    xs = np.arange( 0, int(self.qwBufferSize.value/4) )*1000/self.sample_rate
                 
                     general.plot_1d('Buffer_sequence', xs, np.ctypeslib.as_array(self.full_buffer[0], \
                                     shape = (int(self.qwBufferSize.value/2), ))[0::2], label = '0ch0')
@@ -2242,7 +2242,7 @@ class Spectrum_M4I_6631_X8:
                         gc.collect()
                         self.visualize_counter = 0
 
-                    xs = 0.8*np.arange( int(self.memsize) )
+                    xs = 1000/self.sample_rate*np.arange( int(self.memsize) )
                     general.plot_1d('Buffer_single', xs, np.ctypeslib.as_array(buf, shape = (int(self.memsize), )), \
                                     label = 'ch0 or ch1')
 
@@ -2258,7 +2258,7 @@ class Spectrum_M4I_6631_X8:
                         gc.collect()
                         self.visualize_counter = 0
 
-                    xs = 0.8*np.arange( int(self.memsize) )
+                    xs = 1000/self.sample_rate*np.arange( int(self.memsize) )
                     # A way to convert c_types poinet back to np.array
                     #np.ctypeslib.as_array(buf, shape = (int(self.memsize), ))
                     general.plot_1d('Buffer_single_joined', xs, np.ctypeslib.as_array(buf, shape = (int(self.memsize), )), \
@@ -2275,7 +2275,7 @@ class Spectrum_M4I_6631_X8:
                         gc.collect()
                         self.visualize_counter = 0
 
-                    xs = 0.8*np.arange( int(self.memsize) )
+                    xs = 1000/self.sample_rate*np.arange( int(self.memsize) )
                     general.plot_1d('Buffer_single', xs, np.ctypeslib.as_array(buf, shape = (int(self.memsize * 2), ))[0::2], \
                                     label = 'ch0')
                     general.plot_1d('Buffer_single', xs, 2 * self.maxCAD + np.ctypeslib.as_array(buf, shape = (int(self.memsize * 2), ))[1::2], \
@@ -2293,7 +2293,7 @@ class Spectrum_M4I_6631_X8:
                         gc.collect()
                         self.visualize_counter = 0
 
-                    xs = 0.8*np.arange( int(self.memsize) )
+                    xs = 1000/self.sample_rate*np.arange( int(self.memsize) )
                     general.plot_1d('Buffer_single_joined', xs, np.ctypeslib.as_array(buf, shape = (int(self.memsize * 2), ))[0::2], \
                                     label = 'ch0')
                     general.plot_1d('Buffer_single_joined', xs, 2 * self.maxCAD + np.ctypeslib.as_array(buf, shape = (int(self.memsize * 2), ))[1::2], \
@@ -2310,7 +2310,7 @@ class Spectrum_M4I_6631_X8:
                         gc.collect()
                         self.visualize_counter = 0
 
-                    xs = 0.8*np.arange( int(self.memsize) )
+                    xs = 1000/self.sample_rate*np.arange( int(self.memsize) )
                     general.plot_1d('Buffer_multi', xs, np.ctypeslib.as_array(buf, shape = (int(self.memsize), )), \
                                     label = 'ch0 or ch1')
                
@@ -2325,7 +2325,7 @@ class Spectrum_M4I_6631_X8:
                         gc.collect()
                         self.visualize_counter = 0
 
-                    xs = 0.8*np.arange( int(self.memsize) )
+                    xs = 1000/self.sample_rate*np.arange( int(self.memsize) )
                     general.plot_1d('Buffer_multi', xs, np.ctypeslib.as_array(buf, shape = (int(self.memsize * 2), ))[0::2], \
                                     label = 'ch0')
                     general.plot_1d('Buffer_multi', xs, 2 * self.maxCAD + np.ctypeslib.as_array(buf, shape = (int(self.memsize * 2), ))[1::2], \
@@ -2996,7 +2996,7 @@ class Spectrum_M4I_6631_X8:
 
                 # get frequency
                 freq = p_array[i]['frequency']
-                if func != 4:
+                if func != 4 and func != 6: # 4 is WURST; 6 is TEST2
                     freq_mhz = int(float(freq[:-3]))
                 else:
                     # for WURST convert center_freq; sweep_freq to start_freq; end_freq
@@ -3086,7 +3086,7 @@ class Spectrum_M4I_6631_X8:
 
                 # get frequency
                 freq = p_array[i]['frequency']
-                if func != 4:
+                if func != 4 and func != 6: # 4 is WURST; 6 is TEST2:
                     freq_mhz = int(float(freq[:-3]))
                 else:
                     # for WURST convert center_freq; sweep_freq to start_freq; end_freq
@@ -3723,7 +3723,7 @@ class Spectrum_M4I_6631_X8:
         pulse_delta_start_smp = (np.asarray(arguments_array[2])).astype('int64')
         pulse_length_smp = (np.asarray(arguments_array[3])).astype('int64')
         pulse_sigma_smp = np.asarray(arguments_array[5])
-        pulse_frequency = np.asarray(arguments_array[6])
+        pulse_frequency = np.asarray(arguments_array[6], dtype=object)
         pulse_amp = np.asarray(arguments_array[7])
         pulse_n_wurst = np.asarray(arguments_array[8])
         
@@ -4102,6 +4102,100 @@ class Spectrum_M4I_6631_X8:
                                             pulse_length_smp[index] )*( pulse_frequency[index][0] / self.sample_rate ) + 0.5 * ( pulse_frequency[index][1] - pulse_frequency[index][0])\
                                              / self.sample_rate * np.arange(0, 0 + pulse_length_smp[index] )**2 / pulse_length_smp[index] ) \
                                              + pulse_phase_np[index] + self.phase_shift_ch1_seq_mode + rnd_phase )).astype(int64)
+
+                elif element == 5: #'TEST'
+                    # vectorized version:
+                    # always zero phase: np.arange(0, 0 + pulse_length_smp[index]) )
+                    # one phase: np.arange(pulse_start_smp[index], pulse_start_smp[index] + pulse_length_smp[index]) )
+                    amp = self.maxCAD / pulse_amp[index]
+                    freq_conv = pulse_frequency[index] / self.sample_rate
+                    ph1 = pulse_phase_np[index]
+                    ph2 = pulse_phase_np[index] + self.phase_shift_ch1_seq_mode
+                    pulse_end = (pulse_start_smp[index] + pulse_length_smp[index])
+                    # linear part 128 ns; divisible by 32
+                    l_part = 128
+                    coef = 1/l_part
+
+                    #CH1
+                    self.pnBuffer[2*pulse_start_smp[index]:2*(pulse_end)][0::2] = \
+                                (amp * np.sin(2*np.pi*(( np.arange(0, pulse_length_smp[index]) ))*freq_conv + ph1 )).astype(int64)
+                    # linear part
+                    if index + 1 != len( arguments_array[0] ):
+                        self.pnBuffer[2*pulse_end:2*(pulse_end + l_part)][0::2] = (0 + amp * coef * np.arange(1, l_part+1) + ph1 ).astype(int64)
+                        self.pnBuffer[2*(pulse_end + l_part):2*pulse_start_smp[index + 1]][0::2] = amp
+
+                    #CH2
+                    self.pnBuffer[2*pulse_start_smp[index]:2*(pulse_end)][1::2] = \
+                                (amp * np.sin(2*np.pi*(( np.arange(0, pulse_length_smp[index]) ))*freq_conv + ph2)).astype(int64)
+                    # linear part
+                    if index + 1 != len( arguments_array[0] ):
+                        self.pnBuffer[2*pulse_end:2*(pulse_end + l_part)][1::2] = (amp - amp * coef * np.arange(0, l_part) + ph1 ).astype(int64)
+                        self.pnBuffer[2*(pulse_end + l_part):2*pulse_start_smp[index + 1]][1::2] = self.pnBuffer[2*(pulse_end + l_part) + 1 ]
+
+                elif element == 6: #'TEST2'
+                    # vectorized version:
+                    # always zero phase: np.arange(0, 0 + pulse_length_smp[index]) )
+                    # one phase: np.arange(pulse_start_smp[index], pulse_start_smp[index] + pulse_length_smp[index]) )
+                    amp = self.maxCAD / pulse_amp[index]
+                    freq_0 = pulse_frequency[index][0] / self.sample_rate
+                    freq_1 = pulse_frequency[index][1] / self.sample_rate
+                    ph1 = pulse_phase_np[index]
+                    ph2 = pulse_phase_np[index] + self.phase_shift_ch1_seq_mode
+                    pulse_end = (pulse_start_smp[index] + pulse_length_smp[index])
+                    sw_par = ( freq_1 - freq_0 ) / pulse_length_smp[index]
+
+                    #chirp pulse
+                    # sin(phi0 + 2*pi*(c/2*t^2 + f0*t)), where c=(f1 - f0)/T; T is sweep time
+
+                    #CH1
+                    self.pnBuffer[2*pulse_start_smp[index]:2*(pulse_end)][0::2] = \
+                                (amp * np.sin(2*np.pi*( freq_0*np.arange(0, pulse_length_smp[index]) +  \
+                                0.5*sw_par*np.arange(0, pulse_length_smp[index])*np.arange(0, pulse_length_smp[index]) ) + ph1 )).astype(int64)
+                    # linear part 100 ns
+                    #if index + 1 != len( arguments_array[0] ):
+                    #    self.pnBuffer[2*pulse_end:2*(pulse_end + 100)][0::2] = (0 + amp * 0.01 * np.arange(1, 101) + ph1 ).astype(int64)
+                    #    self.pnBuffer[2*(pulse_end + 100):2*pulse_start_smp[index + 1]][0::2] = amp
+
+                    #CH2
+                    self.pnBuffer[2*pulse_start_smp[index]:2*(pulse_end)][1::2] = \
+                                (amp * np.sin(2*np.pi*( freq_0*np.arange(0, pulse_length_smp[index]) +  \
+                                0.5*sw_par*np.arange(0, pulse_length_smp[index])*np.arange(0, pulse_length_smp[index]) ) + ph2 )).astype(int64)
+                    # linear part 100 ns
+                    #if index + 1 != len( arguments_array[0] ):
+                    #    self.pnBuffer[2*pulse_end:2*(pulse_end + 100)][1::2] = (amp - amp * 0.01 * np.arange(0, 100) + ph1 ).astype(int64)
+                    #    self.pnBuffer[2*(pulse_end + 100):2*pulse_start_smp[index + 1]][1::2] = self.pnBuffer[2*(pulse_end + 100) + 1 ]
+
+                elif element == 7: #'TEST3'
+                    # vectorized version:
+                    # always zero phase: np.arange(0, 0 + pulse_length_smp[index]) )
+                    # one phase: np.arange(pulse_start_smp[index], pulse_start_smp[index] + pulse_length_smp[index]) )
+                    amp = self.maxCAD / pulse_amp[index]
+                    freq_conv = pulse_frequency[index] / self.sample_rate
+                    ph1 = pulse_phase_np[index]
+                    ph2 = pulse_phase_np[index] + self.phase_shift_ch1_seq_mode
+                    pulse_end = (pulse_start_smp[index] + pulse_length_smp[index])
+                    pulse_middle_point = int( (pulse_start_smp[index] + pulse_length_smp[index]/2) )
+                    # linear part 96 ns; divisible by 32
+                    l_part = 96
+                    # amplitude drop
+                    coef = 1/2
+                    coef2 = coef/l_part
+
+                    #CH1
+                    self.pnBuffer[2*pulse_start_smp[index]:2*(pulse_end)][0::2] = \
+                                (amp * np.sin(2*np.pi*(( np.arange(0, pulse_length_smp[index]) ))*freq_conv + ph1 )).astype(int64)
+                    # linear part down
+                    self.pnBuffer[2*(pulse_middle_point-l_part):2*(pulse_middle_point)][0::2] = (0 - amp * coef2 * np.arange(1, l_part+1) + ph1 ).astype(int64)
+                    # linear part up
+                    self.pnBuffer[2*(pulse_middle_point):2*(pulse_middle_point+l_part)][0::2] = (-amp * coef + amp * coef2 * np.arange(1, l_part+1) + ph1 ).astype(int64)
+
+                    #CH2
+                    self.pnBuffer[2*pulse_start_smp[index]:2*(pulse_end)][1::2] = \
+                                (amp * np.sin(2*np.pi*(( np.arange(0, pulse_length_smp[index]) ))*freq_conv + ph2)).astype(int64)
+                    # linear part down
+                    self.pnBuffer[2*(pulse_middle_point-l_part):2*(pulse_middle_point)][1::2] = (amp - amp * coef2 * np.arange(1, l_part+1) + ph1 ).astype(int64)
+                    # linear part up
+                    self.pnBuffer[2*(pulse_middle_point):2*(pulse_middle_point+l_part)][1::2] = (amp * coef + amp * coef2 * np.arange(1, l_part+1) + ph1 ).astype(int64)
 
             return self.pvBuffer, self.pnBuffer.ctypes.data_as(ptr16) #STANDARD: return self.pvBuffer, self.pnBuffer
     
