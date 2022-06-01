@@ -128,6 +128,12 @@
         <property name="contextMenuPolicy">
          <enum>Qt::NoContextMenu</enum>
         </property>
+        <property name="verticalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+        <property name="horizontalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
         <property name="plainText">
          <string>[+x]</string>
         </property>
@@ -387,6 +393,12 @@
         <property name="contextMenuPolicy">
          <enum>Qt::NoContextMenu</enum>
         </property>
+        <property name="verticalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+        <property name="horizontalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
         <property name="plainText">
          <string>[+x]</string>
         </property>
@@ -506,6 +518,12 @@
         <property name="contextMenuPolicy">
          <enum>Qt::NoContextMenu</enum>
         </property>
+        <property name="verticalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+        <property name="horizontalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
         <property name="plainText">
          <string>[+x]</string>
         </property>
@@ -610,6 +628,12 @@
         <property name="contextMenuPolicy">
          <enum>Qt::NoContextMenu</enum>
         </property>
+        <property name="verticalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+        <property name="horizontalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
         <property name="plainText">
          <string>[+x]</string>
         </property>
@@ -657,7 +681,7 @@
          <bool>false</bool>
         </property>
         <property name="decimals">
-         <number>1</number>
+         <number>2</number>
         </property>
         <property name="minimum">
          <double>100.000000000000000</double>
@@ -1075,7 +1099,7 @@
          <number>32</number>
         </property>
         <property name="maximum">
-         <number>6400</number>
+         <number>10000</number>
         </property>
         <property name="singleStep">
          <number>16</number>
@@ -1100,7 +1124,7 @@
          <number>16</number>
         </property>
         <property name="maximum">
-         <number>6400</number>
+         <number>10000</number>
         </property>
         <property name="singleStep">
          <number>16</number>
@@ -1239,7 +1263,7 @@
      <x>0</x>
      <y>0</y>
      <width>1286</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="maximumSize">
@@ -1260,7 +1284,7 @@
       <x>271</x>
       <y>219</y>
       <width>135</width>
-      <height>100</height>
+      <height>94</height>
      </rect>
     </property>
     <property name="sizePolicy">
