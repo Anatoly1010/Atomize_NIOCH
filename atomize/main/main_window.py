@@ -182,6 +182,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.button_laser.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
          border-style: outset; color: rgb(193, 202, 227);}\
           QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
+        self.button_ph_cor.clicked.connect(self.start_ph_cor)
+        self.button_ph_cor.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
+         border-style: outset; color: rgb(193, 202, 227);}\
+          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
 
         self.label_creator.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
@@ -251,6 +255,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.process_fft = QtCore.QProcess(self)
         self.process_phasing = QtCore.QProcess(self)
         self.process_awg_phasing = QtCore.QProcess(self)
+        self.process_ph_cor = QtCore.QProcess(self)
         # check where we are
         self.system = platform.system()
         if self.system == 'Windows':
@@ -272,6 +277,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.process_fft.setProgram('python.exe')
             self.process_phasing.setProgram('python.exe')
             self.process_awg_phasing.setProgram('python.exe')
+            self.process_ph_cor.setProgram('python.exe')
         elif self.system == 'Linux':
             self.editor = str(config['DEFAULT']['editor'])
             if self.editor == 'nano' or self.editor == 'vi':
@@ -295,6 +301,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.process_fft.setProgram('python3')
             self.process_phasing.setProgram('python3')
             self.process_awg_phasing.setProgram('python3')
+            self.process_ph_cor.setProgram('python3')
 
         self.process.finished.connect(self.on_finished_checking)
         self.process_python.finished.connect(self.on_finished_script)
@@ -542,6 +549,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.process_fft.close()
         self.process_phasing.close()
         self.process_awg_phasing.close()
+        self.process_ph_cor.close()
 
     def quit(self):
         """
@@ -563,6 +571,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.process_fft.terminate()
         self.process_phasing.terminate()
         self.process_awg_phasing.terminate()
+        self.process_ph_cor.terminate()
         sys.exit()
         ####
         #### QProcess: Destroyed while process ("python3") is still running.
@@ -671,6 +680,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def start_laser_preset(self):
         self.process_laser.setArguments(['atomize/control_center/laser_preset.py'])
         self.process_laser.start()
+
+    def start_ph_cor(self):
+        self.process_ph_cor.setArguments(['atomize/control_center/phase_cor.py'])
+        self.process_ph_cor.start()
 
     def start_echo_preset(self):
         self.process_echo.setArguments(['atomize/control_center/echo_det_preset.py'])

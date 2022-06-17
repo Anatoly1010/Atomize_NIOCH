@@ -14,6 +14,58 @@ class Fast_Fourier():
         else:
             self.test_flag = 'None'
 
+    def zero_ph(self, freq, data_i, data_q, cor1, cor2):
+        if self.test_flag != 'test':
+            data = data_i + 1j*data_q
+            data = data*np.exp(1j*cor1 + 1j*cor2*freq)
+
+            return np.real(data), np.imag(data)
+
+        elif self.test_flag == 'test':
+            data = data_i + 1j*data_q
+            data = data*np.exp(1j*cor1 + 1j*cor2*freq)
+
+            return np.real(data), np.imag(data)
+    
+    def first_ph(self, freq, data_i, data_q, cor1, cor2):
+        if self.test_flag != 'test':
+            data = data_i + 1j*data_q
+            data = data*np.exp(1j*cor1 + 1j*cor2*freq)
+
+            return np.real(data), np.imag(data) 
+
+        elif self.test_flag == 'test':
+            data = data_i + 1j*data_q
+            data = data*np.exp(1j*cor1 + 1j*cor2*freq)
+
+            return np.real(data), np.imag(data)
+
+    def fft_re_im(self, x_axis_length, data_i, data_q, sample_spacing):
+        if self.test_flag != 'test':
+
+            data = data_i + 1j*data_q
+            sp = np.fft.fft( data, axis = 1 )
+
+            freq = np.fft.fftfreq(x_axis_length, sample_spacing*10**(-3))
+            i = np.argsort(freq)
+
+            sp.real = sp.real[:,i]
+            sp.imag = sp.imag[:,i]
+
+            return freq[i], sp.real, sp.imag
+
+        elif self.test_flag == 'test':
+            data = data_i + 1j*data_q
+            sp = np.fft.fft( data, axis = 1 )
+
+            freq = np.fft.fftfreq(x_axis_length, sample_spacing*10**(-3))
+            i = np.argsort(freq)
+
+            sp_real = np.real(sp)[:,i]
+            sp_imag = np.imag(sp)[:,i]
+
+            return freq, sp_real, sp_imag
+
     def fft(self, x_axis, data_i, data_q, sample_spacing): #, baseline_point
         if self.test_flag != 'test':
             #if baseline_point != 0:

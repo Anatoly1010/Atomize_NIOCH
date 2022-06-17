@@ -617,7 +617,7 @@ QTabBar::tab:selected {
            </font>
           </property>
           <property name="text">
-           <string>Created by Anatoly Melnikov; www.github.com/Anatoly1010; anatoly.melnikov@tomo.nsc.ru; 2021; v 0.24; 16/03/2022</string>
+           <string>Created by Anatoly Melnikov; www.github.com/Anatoly1010; anatoly.melnikov@tomo.nsc.ru; 2021; v 0.25; 17/06/2022</string>
           </property>
          </widget>
         </item>
@@ -1126,6 +1126,28 @@ QTabBar::tab:selected {
             </property>
             <property name="text">
              <string>AWG Phase Cycling</string>
+            </property>
+           </widget>
+          </item>
+          <item row="9" column="1">
+           <widget class="QPushButton" name="button_ph_cor">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>40</height>
+             </size>
+            </property>
+            <property name="font">
+             <font>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">background-color: rgb(136, 138, 133);</string>
+            </property>
+            <property name="text">
+             <string>Phase Correction</string>
             </property>
            </widget>
           </item>
