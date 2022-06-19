@@ -10,13 +10,13 @@ import atomize.general_modules.csv_opener_saver as openfile
 file_handler = openfile.Saver_Opener()
 
 a = 'None'
-POINTS = 5
+POINTS = 50
 STEP = 2
 j = 1
 wind = 50
 
 data_x = np.random.rand(POINTS)
-data_y = np.zeros(POINTS)
+data_y = np.random.rand(POINTS)
 x_axis = np.linspace(0, (POINTS - 1)*STEP, num = POINTS) 
 
 data = np.zeros( (2, int(wind), POINTS) )
@@ -33,7 +33,7 @@ for i in range(POINTS):
     x, y = np.random.rand(wind), np.random.rand(wind)
 
     data[0, :, i] = ( data[0, :, i] * (j - 1) + x ) / j
-    data[1, :, i] = ( data[0, :, i] * (j - 1) + y ) / j
+    data[1, :, i] = ( data[1, :, i] * (j - 1) + y ) / j
 
     general.wait('100 ms')
     
