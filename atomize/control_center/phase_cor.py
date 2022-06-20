@@ -39,15 +39,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.label_2.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_3.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_4.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.label_5.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
 
         self.deg_rad = 57.2957795131
+        self.sec_order_coef = -2*np.pi/2
 
         # Spinboxes
         self.First.valueChanged.connect(self.phase_correction)
         self.first_cor = float( self.First.value() )
         self.First.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
         self.Second.valueChanged.connect(self.phase_correction)
-        self.second_cor = float( self.Second.value() )
+        self.second_cor = self.sec_order_coef / ( float( self.Second.value() ) * 1000 )
         self.Second.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
         self.Zero.valueChanged.connect(self.phase_correction)
         self.zero_cor = float( self.Zero.value() ) / self.deg_rad
@@ -284,14 +286,14 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             pass
 
-        if self.zero_cor > 360/2/np.pi:
+        if self.zero_cor > 2*np.pi:
             self.Zero.setValue(0.0)
             self.zero_cor = float( self.Zero.value() ) / self.deg_rad
         else:
             pass
 
         self.first_cor = float( self.First.value() )
-        self.second_cor = float( self.Second.value() )
+        self.second_cor = self.sec_order_coef / ( float( self.Second.value() ) * 1000 )
 
         if self.op_2d == 1:
             freq, fft_x, fft_y = self.fft.fft( self.data_i[0][self.drop:], self.data_i[:,self.drop:], self.data_q[:,self.drop:], self.h_res, re = 'True' )
