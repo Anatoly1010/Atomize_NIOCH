@@ -30,8 +30,8 @@ class MainWindow(QtWidgets.QMainWindow):
         icon_path = os.path.join(self.path_to_main, 'gui/icon_dig.png')
         self.setWindowIcon( QIcon(icon_path) )
 
-        #self.path = os.path.join(self.path_to_main, '..', '..', '..', '..', 'Experimental_Data')
-        self.path = os.path.join(self.path_to_main, '..', '..', '..', '..', '00_Experimental_Data/2022')
+        self.path = os.path.join(self.path_to_main, '..', '..', '..', '..', 'Experimental_Data')
+        #self.path = os.path.join(self.path_to_main, '..', '..', '..', '..', '00_Experimental_Data/2022')
         
         uic.loadUi(gui_path, self)                        # Design file
 
