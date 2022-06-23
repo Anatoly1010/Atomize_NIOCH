@@ -30,8 +30,9 @@ class MainWindow(QtWidgets.QMainWindow):
         icon_path = os.path.join(self.path_to_main, 'gui/icon_dig.png')
         self.setWindowIcon( QIcon(icon_path) )
 
-        self.path = os.path.join(self.path_to_main, '..', 'tests/pulse_epr')
-
+        #self.path = os.path.join(self.path_to_main, '..', '..', '..', '..', 'Experimental_Data')
+        self.path = os.path.join(self.path_to_main, '..', '..', '..', '..', '00_Experimental_Data/2022')
+        
         uic.loadUi(gui_path, self)                        # Design file
 
         # text labels
@@ -49,7 +50,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.first_cor = float( self.First.value() )
         self.First.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
         self.Second.valueChanged.connect(self.phase_correction)
-        self.second_cor = self.sec_order_coef / ( float( self.Second.value() ) * 1000 )
+        self.second_cor = float( self.Second.value() )
+        if self.second_cor != 0.0:
+            self.second_cor = self.sec_order_coef / ( float( self.Second.value() ) * 1000 )
+
         self.Second.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
         self.Zero.valueChanged.connect(self.phase_correction)
         self.zero_cor = float( self.Zero.value() ) / self.deg_rad
@@ -116,10 +120,13 @@ class MainWindow(QtWidgets.QMainWindow):
         # 3 or 4 columns variant
         if len( self.data_1d ) == 4:
             freq, fft_x, fft_y = self.fft.fft( self.data_1d[0][self.drop:], self.data_1d[1][self.drop:], self.data_1d[2][self.drop:], self.h_res, re = 'True' )
+            data = self.fft.ph_correction( freq, fft_x, fft_y, self.zero_cor, self.first_cor, self.second_cor )
+
         elif len( self.data_1d ) == 5:
             freq, fft_x, fft_y = self.fft.fft( self.data_1d[0][self.drop:], self.data_1d[1][self.drop:], self.data_1d[3][self.drop:], self.h_res, re = 'True' )
+            data = self.fft.ph_correction( freq, fft_x, fft_y, self.zero_cor, self.first_cor, self.second_cor )
 
-        general.plot_1d('FT Data 1D', freq, ( fft_x, fft_y ), xname = 'Frequency Offset', xscale = 'MHz', yname = 'Intensity', yscale = 'Arb. U.', label = 'FFT')
+        general.plot_1d('FT Data 1D', freq, ( data[0], data[1] ), xname = 'Frequency Offset', xscale = 'MHz', yname = 'Intensity', yscale = 'Arb. U.', label = 'FFT')
 
         self.op_1d = 1
         self.op_2d = 0
@@ -165,13 +172,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.data_i = np.genfromtxt(filename, dtype = float, delimiter = ',')
         self.data_q = np.genfromtxt(filename2, dtype = float, delimiter = ',')
 
-        data_i = self.data_i
-        data_i[:,self.drop] = 0.5 * data_i[:,self.drop]
-        data_q = self.data_q
-        data_q[:,self.drop] = 0.5 * data_q[:,self.drop]
+        #data_i = self.data_i
+        #data_i[:,self.drop] = 0.5 * data_i[:,self.drop]
+        #data_q = self.data_q
+        #data_q[:,self.drop] = 0.5 * data_q[:,self.drop]
 
-        freq, fft_x, fft_y = self.fft.fft( data_i[0][self.drop:], data_i[:,self.drop:], data_q[:,self.drop:], self.h_res, re = 'True' )
-        data = np.array( (np.transpose(fft_x), np.transpose(fft_y) ) )
+        freq, fft_x, fft_y = self.fft.fft( self.data_i[0][self.drop:], self.data_i[:,self.drop:], self.data_q[:,self.drop:], self.h_res, re = 'True' )
+        data = self.fft.ph_correction( freq, fft_x, fft_y, self.zero_cor, self.first_cor, self.second_cor )
 
         general.plot_2d('FT Data', data, start_step = ( (round( freq[0], 0 ), freq[1] - freq[0]), (0, self.v_res) ), xname = 'Frequency Offset',\
             xscale = 'MHz', yname = 'Delay', yscale = 'ns', zname = 'Intensity', zscale = 'V')
@@ -293,7 +300,9 @@ class MainWindow(QtWidgets.QMainWindow):
             pass
 
         self.first_cor = float( self.First.value() )
-        self.second_cor = self.sec_order_coef / ( float( self.Second.value() ) * 1000 )
+        self.second_cor = float( self.Second.value() )
+        if self.second_cor != 0.0:
+            self.second_cor = self.sec_order_coef / ( float( self.Second.value() ) * 1000 )
 
         if self.op_2d == 1:
             freq, fft_x, fft_y = self.fft.fft( self.data_i[0][self.drop:], self.data_i[:,self.drop:], self.data_q[:,self.drop:], self.h_res, re = 'True' )

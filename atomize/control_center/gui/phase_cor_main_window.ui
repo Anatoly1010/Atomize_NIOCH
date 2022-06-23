@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>280</width>
-    <height>179</height>
+    <height>200</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,13 +19,13 @@
   <property name="minimumSize">
    <size>
     <width>280</width>
-    <height>179</height>
+    <height>200</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>280</width>
-    <height>179</height>
+    <height>200</height>
    </size>
   </property>
   <property name="sizeIncrement">
@@ -59,13 +59,13 @@
    <property name="minimumSize">
     <size>
      <width>280</width>
-     <height>158</height>
+     <height>178</height>
     </size>
    </property>
    <property name="maximumSize">
     <size>
      <width>280</width>
-     <height>158</height>
+     <height>178</height>
     </size>
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout">
@@ -188,7 +188,7 @@
          <number>4</number>
         </property>
         <property name="minimum">
-         <double>0.010000000000000</double>
+         <double>0.000000000000000</double>
         </property>
         <property name="maximum">
          <double>100.000000000000000</double>
@@ -299,8 +299,8 @@
          </font>
         </property>
         <property name="text">
-         <string>Second Order correction for WURST pulse 
-can be calculated as: 
+         <string>Second Order correction for WURST 
+pulse can be calculated as: 
 SWEEP (MHz) / LENGTH (ns)</string>
         </property>
         <property name="scaledContents">
