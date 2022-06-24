@@ -919,7 +919,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # before adding pulse phases
         #self.pb.pulser_update()
         # ?
-        self.pb.pulser_next_phase()
+        for i in range( len( self.ph_1 ) ):
+            self.pb.pulser_next_phase()
 
     def update(self):
         """

@@ -1404,7 +1404,8 @@ class MainWindow(QtWidgets.QMainWindow):
         #############
 
         self.pb.pulser_update()
-        self.awg.awg_next_phase()
+        for i in range( len( self.ph_1 ) ):
+            self.awg.awg_next_phase()
 
         # the next line gives rise to a bag with FC
         #self.bh15.magnet_field( self.mag_field )
@@ -1453,7 +1454,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.errors.clear()
             self.errors.appendPlainText( 'Incorrect pulse setting. Check that your pulses:\n' + \
                                         '1. Not overlapped\n' + \
-                                        '2. Distance between AWG pulses is more than 40 ns\n' + \
+                                        '2. Distance between AWG pulses is more than 60 ns\n' + \
                                         '3. Pulse length should be longer or equal to sigma\n' + \
                                         '4. Pulses are longer than 8 ns\n' + \
                                         '5. Field Controller is stucked\n' + \
