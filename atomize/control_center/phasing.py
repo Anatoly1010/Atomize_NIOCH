@@ -936,7 +936,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.test_process.start()
 
         # in order to finish a test
-        time.sleep( 0.1 )
+        time.sleep( 0.5 )
         #print( self.test_process.exitcode )
 
         if self.test_process.exitcode == 0:
