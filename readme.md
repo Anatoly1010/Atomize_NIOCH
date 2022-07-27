@@ -11,7 +11,7 @@ Remote control of spectrometers is usually carried out using home-written progra
 
 Atomize uses [liveplot library](https://github.com/PhilReinhold/liveplot) based on pyqtgraph as a main graphics library. [Liveplot](https://github.com/PhilReinhold/liveplot) was originally developed by Phil Reinhold. Since several minor improvements have been made to use it in Atomize.
 
-[Python Programming Language](https://www.python.org/) is used inside experimental scripts, which opens up almost unlimited possibilities for raw experimental data treatment. In addition, with PyQt, one can create experimental scripts with a simple graphical interface, allowing users not familiar with Python to use it. Several examples of scripts (with dummy data) are provided in /atomize/tests/ directory, including a GUI script with extended comments inside. Also a variant of the Atomize with GUI Control Window extension can be found [here.](https://github.com/Anatoly1010/Atomize_NIOCH)<br/><br/>
+[Python Programming Language](https://www.python.org/) is used inside experimental scripts, which opens up almost unlimited possibilities for raw experimental data treatment. In addition, with PyQt, one can create experimental scripts with a simple graphical interface, allowing users not familiar with Python to use it. Several examples of scripts (with dummy data) are provided in /atomize/tests/ directory, including a GUI script with extended comments inside. Also a variant of the Atomize with GUI Control Window extension can be found [here.](https://github.com/Anatoly1010/Atomize_NIOCH)<br/>
 
 Currently there are more than 200 device specific and general functions available for over 25 different devices, including 4 series of devices. If you would like to write a module for the device that is not currently available, please, read this short [instruction.](https://github.com/Anatoly1010/Atomize/blob/master/atomize/documentation/writing_modules.md)
 
@@ -49,10 +49,10 @@ At the moment, Atomize has been tested and is currently used for controlling sev
 - [Protocol settings](https://github.com/Anatoly1010/Atomize/blob/master/atomize/documentation/protocol_settings.md)<br/>
 
 ## Requirements
-- [Python (tested with 3.6+)](https://www.python.org/)
+- [Python (3.8+)](https://www.python.org/)
 - [Numpy](https://numpy.org/)
-- [PyQt5; 5.15+](http://www.riverbankcomputing.com/software/pyqt/download)
-- [pyqtgraph 0.11](http://www.pyqtgraph.org)
+- [PyQt6; 6.1.0+](http://www.riverbankcomputing.com/software/pyqt/download)
+- [pyqtgraph 0.12.2](http://www.pyqtgraph.org)
 - [PyVisa](https://pyvisa.readthedocs.io/en/latest/)
 - [PyVisa-py](https://github.com/pyvisa/pyvisa-py)<br/>
 Optional:
@@ -142,6 +142,8 @@ Python is used to write an experimental script. Examples (with dummy data) can b
     11M6; 13KX3; Tested 04/2021
     - Stanford Research (TCP/IP Socket)
 	PTC10; Tested 07/2021
+	- Scientific Instruments (TCP/IP Socket, RS-232)
+	SCM10 Temperature Monitor; 07/2022
 
 #### [Lock-in Amplifiers](#lock-in-amplifiers-1)
 	- Stanford Research Lock-In Amplifier (GPIB, RS-232)
@@ -201,12 +203,14 @@ The original [C library](http://www.spincore.com/support/spinapi/using_spin_api_
 #### [Delay Generators](#delay-generators-1)
     - Stanford Research DG535 (GPIB); Untested
 
-#### [Balances](#balances-1)
+#### [Balance](#balances-1)
 	- CPWplus 150 (RS-232); Tested 01/2021
 
 #### [Other](#other-1)
-	- Solid-State Relay RODOS-10N (Ethernet); Tested 01/2021
-    - Discrete IO Module Owen-MK110-220.4DN.4R (RS-485); Tested 04/2021
+	- RODOS-10N Solid-State Relay (Ethernet); Tested 01/2021
+    - Owen-MK110-220.4DN.4R Discrete IO Module (RS-485); Tested 04/2021
+    - Cryomagnetics LM-510 Liquid Cryogen Monitor (TCP/IP Socket); Tested 07/2022
+    - Cryomech CPA2896, CPA1110 Digital Panels (RS-485); Tested 07/2022
 
 ## [Available general functions](https://github.com/Anatoly1010/Atomize/blob/master/atomize/documentation/general_functions.md)
 ```python3
@@ -471,25 +475,52 @@ delay_gen_output_polarity(*polarity)
 delay_gen_command(command)
 delay_gen_query(command)
 ```
-### [Balances](https://github.com/Anatoly1010/Atomize/blob/master/atomize/documentation/other_device_functions.md)
+### [Balance](https://github.com/Anatoly1010/Atomize/blob/master/atomize/documentation/other_device_functions.md)
 ```python3
 balance_weight()
 ```
 ### [Other](https://github.com/Anatoly1010/Atomize/blob/master/atomize/documentation/other_device_functions.md)
-#### Solid-sate Relay RODOS-10N (Ethernet)
+#### RODOS-10N Solid-sate Relay (Ethernet)
 ```python3
 relay_turn_on(number)
 relay_turn_off(number)
 ```
-#### Discrete IO Module Owen-MK110-220.4DN.4R (RS-485)
+#### Owen-MK110-220.4DN.4R Discrete IO Module (RS-485)
 ```python3
 discrete_io_input_counter(channel)
 discrete_io_input_counter_reset(channel)
 discrete_io_input_state()
 discrete_io_output_state(*state)
 ```
+#### Cryomech CPA2896, CPA1110 Digital Panels (RS-485)
+```python3
+cryogenic_refrigerator_name()
+cryogenic_refrigerator_state(*state)
+cryogenic_refrigerator_status_data()
+cryogenic_refrigerator_warning_data()
+cryogenic_refrigerator_pressure_scale()
+cryogenic_refrigerator_temperature_scale()
+```
+#### Cryomagnetics LM-510 Liquid Cryogen Monitor (TCP/IP Socket)
+```python3
+level_monitor_name()
+level_monitor_select_channel(*channel)
+level_monitor_boost_mode(*mode)
+level_monitor_high_level_alarm(*level)
+level_monitor_low_level_alarm(*level)
+level_monitor_sensor_length()
+level_monitor_sample_mode(*mode)
+level_monitor_units(*units)
+level_monitor_measure(channel)
+level_monitor_sample_interval(*interval)
+level_monitor_hrc_target_pressure(*pressure)
+level_monitor_hrc_heater_power_limit(*limit)
+level_monitor_hrc_heater_enable(*state)
+level_monitor_command(command)
+level_monitor_query(command)
+```
 
 ## Screenshots
-![](https://github.com/Anatoly1010/Atomize/blob/master/screenshots/screenshot3.png)
 ![](https://github.com/Anatoly1010/Atomize/blob/master/screenshots/screenshot.png)
 ![](https://github.com/Anatoly1010/Atomize/blob/master/screenshots/screenshot2.png)
+![](https://github.com/Anatoly1010/Atomize/blob/master/screenshots/screenshot3.png)
