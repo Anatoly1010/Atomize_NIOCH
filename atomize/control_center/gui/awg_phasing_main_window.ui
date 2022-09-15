@@ -271,7 +271,7 @@
          <bool>false</bool>
         </property>
         <property name="minimum">
-         <number>10</number>
+         <number>-400</number>
         </property>
         <property name="maximum">
          <number>400</number>
@@ -736,7 +736,7 @@
          <bool>false</bool>
         </property>
         <property name="minimum">
-         <number>10</number>
+         <number>-400</number>
         </property>
         <property name="maximum">
          <number>400</number>
@@ -783,7 +783,7 @@
          <bool>false</bool>
         </property>
         <property name="minimum">
-         <number>10</number>
+         <number>-400</number>
         </property>
         <property name="maximum">
          <number>400</number>
@@ -1482,7 +1482,7 @@
          <bool>false</bool>
         </property>
         <property name="minimum">
-         <number>10</number>
+         <number>-400</number>
         </property>
         <property name="maximum">
          <number>400</number>
@@ -1673,7 +1673,7 @@
          <bool>false</bool>
         </property>
         <property name="minimum">
-         <number>10</number>
+         <number>-400</number>
         </property>
         <property name="maximum">
          <number>400</number>
@@ -1826,7 +1826,7 @@
          <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
         <property name="minimum">
-         <number>10</number>
+         <number>-400</number>
         </property>
         <property name="maximum">
          <number>400</number>

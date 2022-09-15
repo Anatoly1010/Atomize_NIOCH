@@ -188,7 +188,7 @@
          <number>4</number>
         </property>
         <property name="minimum">
-         <double>0.000000000000000</double>
+         <double>-100.000000000000000</double>
         </property>
         <property name="maximum">
          <double>100.000000000000000</double>
@@ -327,7 +327,7 @@ SWEEP (MHz) / LENGTH (ns)</string>
      <x>0</x>
      <y>0</y>
      <width>280</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <property name="font">
@@ -341,8 +341,8 @@ SWEEP (MHz) / LENGTH (ns)</string>
      <rect>
       <x>206</x>
       <y>171</y>
-      <width>135</width>
-      <height>138</height>
+      <width>156</width>
+      <height>150</height>
      </rect>
     </property>
     <property name="font">

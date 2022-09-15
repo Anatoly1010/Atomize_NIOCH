@@ -33,7 +33,8 @@ class MainWindow(QtWidgets.QMainWindow):
         icon_path = os.path.join(self.path_to_main, 'gui/icon_dig.png')
         self.setWindowIcon( QIcon(icon_path) )
 
-        self.path = os.path.join(self.path_to_main, '..', 'tests/pulse_epr')
+        #self.path = os.path.join(self.path_to_main, '..', 'tests/pulse_epr')
+        self.path = os.path.join(self.path_to_main, '..', '..', '..', '..', 'Experimental_Data')
 
         uic.loadUi(gui_path, self)                        # Design file
 

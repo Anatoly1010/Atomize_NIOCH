@@ -2030,6 +2030,26 @@ class Spectrum_M4I_6631_X8:
         self.state = 0
         self.current_phase_index = 0
 
+    # UNDOCUMENTED
+    def awg_clear_pulses(self):
+        """
+        A special function for clearing pulses and flags
+        when the card is opened
+        """
+        self.pulse_array = []
+        self.phase_array_length = []
+        self.pulse_name_array = []
+        self.pulse_array_init = []
+        self.pulse_ch0_array = []
+        self.pulse_ch1_array = []
+        
+        self.reset_count = 0
+        self.shift_count = 0
+        self.increment_count = 0
+        self.setting_change_count = 0
+        self.state = 1
+        self.current_phase_index = 0
+
     def awg_test_flag(self, flag):
         """
         A special function for AWG Control module
@@ -4066,9 +4086,18 @@ class Spectrum_M4I_6631_X8:
                     # at = A*( 1 - abs( sin(pi*(t-tp/2)/tp) )^n )
                     # ph = 2*pi*(Fstr*t + 0.5*( Ffin - Fstr )*t^2/tp )
                     # WURST = at*sin(ph + phase_0)
+
+                    # resonator profile correction test
+                    if pulse_frequency[index][1] > 0:
+                        c = 1
+                        #c = 0.5 * ( 1 + np.arange(0, 0 + pulse_length_smp[index] ) * 1.005 - np.arange(0, 0 + pulse_length_smp[index] ) )
+                    else:
+                        c = 1
+                        #c = 0.5 * np.flip(1 + np.arange(0, 0 + pulse_length_smp[index] ) * 1.005 - np.arange(0, 0 + pulse_length_smp[index] ) )
+
                     if pulse_phase_np[index] != 1000:
                         self.pnBuffer[2*pulse_start_smp[index]:2*(pulse_start_smp[index] + pulse_length_smp[index])][0::2] = \
-                                        (self.maxCAD / pulse_amp[index] * ( 1 - np.abs( np.sin( np.pi * ( np.arange(pulse_start_smp[index], pulse_start_smp[index] + \
+                                        (self.maxCAD * c / pulse_amp[index] * ( 1 - np.abs( np.sin( np.pi * ( np.arange(pulse_start_smp[index], pulse_start_smp[index] + \
                                             pulse_length_smp[index]) - mid_point) / pulse_length_smp[index] ) ) ** pulse_n_wurst[index] ) * \
                                             np.sin(2*np.pi*( np.arange(0, 0 + \
                                             pulse_length_smp[index] )*( pulse_frequency[index][0] / self.sample_rate ) + 0.5 * ( pulse_frequency[index][1] - pulse_frequency[index][0])\
@@ -4076,7 +4105,7 @@ class Spectrum_M4I_6631_X8:
                                              + pulse_phase_np[index] )).astype(int64)
 
                         self.pnBuffer[2*pulse_start_smp[index]:2*(pulse_start_smp[index] + pulse_length_smp[index])][1::2] = \
-                                        (self.maxCAD / pulse_amp[index] * ( 1 - np.abs( np.sin( np.pi * ( np.arange(pulse_start_smp[index], pulse_start_smp[index] + \
+                                        (self.maxCAD * c / pulse_amp[index] * ( 1 - np.abs( np.sin( np.pi * ( np.arange(pulse_start_smp[index], pulse_start_smp[index] + \
                                             pulse_length_smp[index]) - mid_point) / pulse_length_smp[index] ) ) ** pulse_n_wurst[index] ) * \
                                             np.sin(2*np.pi*( np.arange(0, 0 + \
                                             pulse_length_smp[index] )*( pulse_frequency[index][0] / self.sample_rate ) + 0.5 * ( pulse_frequency[index][1] - pulse_frequency[index][0])\

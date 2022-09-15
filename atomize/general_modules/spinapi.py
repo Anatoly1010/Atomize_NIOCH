@@ -132,20 +132,20 @@ class SpinAPI():
         self._checkloaded()
         self.spinapi.pb_init.restype = ctypes.c_int
         result = self.spinapi.pb_init()
-        #if result != 0: raise RuntimeError(self.pb_get_error())
-        if result < 0:
-            self.pb_init()
-            self.pb_core_clock(500)
+        if result != 0: raise RuntimeError(self.pb_get_error())
+        #if result < 0:
+        #    self.pb_init()
+        #    self.pb_core_clock(500)
 
-            self.pb_start_programming(0)
-            self.pb_inst(14680064, 0, 0, 16)
+        #    self.pb_start_programming(0)
+        #    self.pb_inst(14680064, 0, 0, 16)
 
-            self.pb_inst(14680064, 1, 0, 16)
+        #    self.pb_inst(14680064, 1, 0, 16)
 
-            self.pb_stop_programming()
-            self.pb_reset()
-            self.pb_start()
-            self.pb_close()
+        #    self.pb_stop_programming()
+        #    self.pb_reset()
+        #    self.pb_start()
+        #    self.pb_close()
 
         return result
 
