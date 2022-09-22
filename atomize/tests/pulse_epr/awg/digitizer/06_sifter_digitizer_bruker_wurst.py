@@ -4,7 +4,7 @@ import datetime
 import numpy as np
 import atomize.math_modules.fft as fft_module
 import atomize.general_modules.general_functions as general
-import atomize.general_modules.return_thread as returnThread
+import atomize.general_modules.returned_thread as returnThread
 import atomize.device_modules.PB_ESR_500_pro as pb_pro
 import atomize.device_modules.Spectrum_M4I_6631_X8 as spectrum
 import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum_dig

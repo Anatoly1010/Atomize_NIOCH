@@ -124,10 +124,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.button_osc.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
          border-style: outset; color: rgb(193, 202, 227);}\
           QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
-        self.button_dig.clicked.connect(self.start_dig_control)
-        self.button_dig.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227);}\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
+        #self.button_dig.clicked.connect(self.start_dig_control)
+        #self.button_dig.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
+        # border-style: outset; color: rgb(193, 202, 227);}\
+        #  QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
         self.button_mw.clicked.connect(self.start_mw_control)
         self.button_mw.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
          border-style: outset; color: rgb(193, 202, 227);}\
@@ -136,14 +136,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.button_temp.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
          border-style: outset; color: rgb(193, 202, 227);}\
           QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
-        self.button_pulse.clicked.connect(self.start_pulse_control)
-        self.button_pulse.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227);}\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
-        self.button_awg.clicked.connect(self.start_awg_control)
-        self.button_awg.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227);}\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
+        #self.button_pulse.clicked.connect(self.start_pulse_control)
+        #self.button_pulse.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
+        # border-style: outset; color: rgb(193, 202, 227);}\
+        #  QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
+        #self.button_awg.clicked.connect(self.start_awg_control)
+        #self.button_awg.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
+        # border-style: outset; color: rgb(193, 202, 227);}\
+        #  QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
         self.button_phasing.clicked.connect(self.start_phasing)
         self.button_phasing.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
          border-style: outset; color: rgb(193, 202, 227);}\
@@ -153,10 +153,10 @@ class MainWindow(QtWidgets.QMainWindow):
          border-style: outset; color: rgb(193, 202, 227);}\
           QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
 
-        self.fft_analyzer.clicked.connect(self.start_fft_control)
-        self.fft_analyzer.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227);}\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
+        #self.fft_analyzer.clicked.connect(self.start_fft_control)
+        #self.fft_analyzer.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
+        # border-style: outset; color: rgb(193, 202, 227);}\
+        #  QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
 
         self.button_t2.clicked.connect(self.start_t2_preset)
         self.button_t2.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
@@ -240,9 +240,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.process = QtCore.QProcess(self)
         self.process_text_editor = QtCore.QProcess(self)
         self.process_python = QtCore.QProcess(self)
-        self.process_pulse = QtCore.QProcess(self)
+        #self.process_pulse = QtCore.QProcess(self)
         self.process_osc = QtCore.QProcess(self)
-        self.process_dig = QtCore.QProcess(self)
+        #self.process_dig = QtCore.QProcess(self)
         self.process_mw = QtCore.QProcess(self)
         self.process_temp = QtCore.QProcess(self)
         self.process_t2 = QtCore.QProcess(self)
@@ -251,8 +251,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.process_laser = QtCore.QProcess(self)
         self.process_eseem = QtCore.QProcess(self)
         self.process_tune = QtCore.QProcess(self)
-        self.process_awg = QtCore.QProcess(self)
-        self.process_fft = QtCore.QProcess(self)
+        #self.process_awg = QtCore.QProcess(self)
+        #self.process_fft = QtCore.QProcess(self)
         self.process_phasing = QtCore.QProcess(self)
         self.process_awg_phasing = QtCore.QProcess(self)
         self.process_ph_cor = QtCore.QProcess(self)
@@ -262,9 +262,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.process_text_editor.setProgram(str(config['DEFAULT']['editorW']))
             self.process.setProgram('python.exe')
             self.process_python.setProgram('python.exe')
-            self.process_pulse.setProgram('python.exe')
+            #self.process_pulse.setProgram('python.exe')
             self.process_osc.setProgram('python.exe')
-            self.process_dig.setProgram('python.exe')
+            #self.process_dig.setProgram('python.exe')
             self.process_mw.setProgram('python.exe')
             self.process_temp.setProgram('python.exe')
             self.process_t2.setProgram('python.exe')
@@ -273,8 +273,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.process_laser.setProgram('python.exe')
             self.process_eseem.setProgram('python.exe')
             self.process_tune.setProgram('python.exe')
-            self.process_awg.setProgram('python.exe')
-            self.process_fft.setProgram('python.exe')
+            #self.process_awg.setProgram('python.exe')
+            #self.process_fft.setProgram('python.exe')
             self.process_phasing.setProgram('python.exe')
             self.process_awg_phasing.setProgram('python.exe')
             self.process_ph_cor.setProgram('python.exe')
@@ -286,9 +286,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.process_text_editor.setProgram(str(config['DEFAULT']['editor']))
             self.process.setProgram('python3')
             self.process_python.setProgram('python3')
-            self.process_pulse.setProgram('python3')
+            #self.process_pulse.setProgram('python3')
             self.process_osc.setProgram('python3')
-            self.process_dig.setProgram('python3')
+            #self.process_dig.setProgram('python3')
             self.process_mw.setProgram('python3')
             self.process_temp.setProgram('python3')
             self.process_t2.setProgram('python3')
@@ -297,8 +297,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.process_laser.setProgram('python3')
             self.process_eseem.setProgram('python3')
             self.process_tune.setProgram('python3')
-            self.process_awg.setProgram('python3')
-            self.process_fft.setProgram('python3')
+            #self.process_awg.setProgram('python3')
+            #self.process_fft.setProgram('python3')
             self.process_phasing.setProgram('python3')
             self.process_awg_phasing.setProgram('python3')
             self.process_ph_cor.setProgram('python3')
@@ -534,9 +534,9 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to do some actions when the main window is closing.
         """
         self.process_python.close()
-        self.process_pulse.close()
+        #self.process_pulse.close()
         self.process_osc.close()
-        self.process_dig.close()
+        #self.process_dig.close()
         self.process_mw.close()
         self.process_temp.close()
         self.process_t2.close()
@@ -545,8 +545,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.process_laser.close()
         self.process_eseem.close()
         self.process_tune.close()
-        self.process_awg.close()
-        self.process_fft.close()
+        #self.process_awg.close()
+        #self.process_fft.close()
         self.process_phasing.close()
         self.process_awg_phasing.close()
         self.process_ph_cor.close()
@@ -556,9 +556,9 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to quit the programm
         """
         self.process_python.terminate()
-        self.process_pulse.terminate()
+        #self.process_pulse.terminate()
         self.process_osc.terminate()
-        self.process_dig.terminate()
+        #self.process_dig.terminate()
         self.process_mw.terminate()
         self.process_temp.terminate()
         self.process_t2.terminate()
@@ -567,8 +567,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.process_laser.terminate()
         self.process_eseem.terminate()
         self.process_tune.terminate()
-        self.process_awg.terminate()
-        self.process_fft.terminate()
+        #self.process_awg.terminate()
+        #self.process_fft.terminate()
         self.process_phasing.terminate()
         self.process_awg_phasing.terminate()
         self.process_ph_cor.terminate()
@@ -620,26 +620,26 @@ class MainWindow(QtWidgets.QMainWindow):
         self.process_phasing.setArguments(['atomize/control_center/phasing.py'])
         self.process_phasing.start()
 
-    def start_fft_control(self):
-        """
-        A function to run an pulse_creator.
-        """
-        self.process_fft.setArguments(['atomize/control_center/fft_control.py'])
-        self.process_fft.start()
+    #def start_fft_control(self):
+    #    """
+    #    A function to run a fft_control.
+    #    """
+    #    self.process_fft.setArguments(['atomize/control_center/fft_control.py'])
+    #    self.process_fft.start()
 
-    def start_awg_control(self):
-        """
-        A function to run an pulse_creator.
-        """
-        self.process_awg.setArguments(['atomize/control_center/awg_creator.py'])
-        self.process_awg.start()
+    #def start_awg_control(self):
+    #    """
+    #    A function to run an awg_creator.
+    #    """
+    #    self.process_awg.setArguments(['atomize/control_center/awg_creator.py'])
+    #    self.process_awg.start()
 
-    def start_pulse_control(self):
-        """
-        A function to run an pulse_creator.
-        """
-        self.process_pulse.setArguments(['atomize/control_center/pulse_creator.py'])
-        self.process_pulse.start()
+    #def start_pulse_control(self):
+    #    """
+    #    A function to run a pulse_creator.
+    #    """
+    #    self.process_pulse.setArguments(['atomize/control_center/pulse_creator.py'])
+    #    self.process_pulse.start()
     
     def start_osc_control(self):
         """
@@ -648,12 +648,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.process_osc.setArguments(['atomize/control_center/osc_control.py'])
         self.process_osc.start()
 
-    def start_dig_control(self):
-        """
-        A function to run an Keysight control.
-        """
-        self.process_dig.setArguments(['atomize/control_center/dig_control.py'])
-        self.process_dig.start()
+    #def start_dig_control(self):
+    #    """
+    #    A function to run an digitizer control.
+    #    """
+    #    self.process_dig.setArguments(['atomize/control_center/dig_control.py'])
+    #    self.process_dig.start()
 
     def start_mw_control(self):
         """

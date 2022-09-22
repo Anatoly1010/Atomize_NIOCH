@@ -110,7 +110,7 @@
          <number>2</number>
         </property>
         <property name="value">
-         <number>32</number>
+         <number>40</number>
         </property>
        </widget>
       </item>
@@ -211,7 +211,7 @@
          <number>2</number>
         </property>
         <property name="value">
-         <number>16</number>
+         <number>20</number>
         </property>
        </widget>
       </item>
@@ -557,7 +557,7 @@
          <double>0.500000000000000</double>
         </property>
         <property name="value">
-         <double>3400.000000000000000</double>
+         <double>3445.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -971,7 +971,7 @@
      <x>0</x>
      <y>0</y>
      <width>936</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="maximumSize">
@@ -992,7 +992,7 @@
       <x>271</x>
       <y>219</y>
       <width>135</width>
-      <height>100</height>
+      <height>94</height>
      </rect>
     </property>
     <property name="sizePolicy">

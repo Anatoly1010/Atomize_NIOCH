@@ -311,8 +311,10 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.points - self.posttrigger < 16:
                 self.points = self.points + 16
                 self.Timescale.setValue( self.points )
-        else:
-            pass
+
+        if self.points - self.posttrigger > 8000:
+            self.points = self.posttrigger + 8000
+            self.Timescale.setValue( self.points )
 
         if self.opened == 0:
             try:
@@ -335,6 +337,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.posttrigger = self.points - 16
             self.Hor_offset.setValue( self.posttrigger )
 
+        if self.points - self.posttrigger > 8000:
+            self.posttrigger = self.points - 8000
+            self.Hor_offset.setValue( self.posttrigger )
+        
         if self.opened == 0:
             try:
                 self.parent_conn_dig.send( 'HO' + str( self.posttrigger ) )

@@ -233,7 +233,7 @@
          <enum>Qt::ScrollBarAlwaysOff</enum>
         </property>
         <property name="plainText">
-         <string>[+x]</string>
+         <string>[+x,-x]</string>
         </property>
         <property name="tabStopWidth">
          <number>10</number>
@@ -349,7 +349,7 @@
          <double>0.500000000000000</double>
         </property>
         <property name="value">
-         <double>3400.000000000000000</double>
+         <double>3445.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -406,7 +406,7 @@
          <double>1.000000000000000</double>
         </property>
         <property name="value">
-         <double>16.000000000000000</double>
+         <double>0.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -431,7 +431,7 @@
          <number>2</number>
         </property>
         <property name="value">
-         <number>100</number>
+         <number>0</number>
         </property>
        </widget>
       </item>
@@ -891,7 +891,7 @@
          <double>1.000000000000000</double>
         </property>
         <property name="value">
-         <double>32.000000000000000</double>
+         <double>0.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -1294,7 +1294,7 @@
          <double>1.000000000000000</double>
         </property>
         <property name="value">
-         <double>32.000000000000000</double>
+         <double>40.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -1710,7 +1710,7 @@
          <enum>Qt::ScrollBarAlwaysOff</enum>
         </property>
         <property name="plainText">
-         <string>[+x]</string>
+         <string>[+x,+x]</string>
         </property>
        </widget>
       </item>
@@ -2130,7 +2130,7 @@
          <double>1.000000000000000</double>
         </property>
         <property name="value">
-         <double>16.000000000000000</double>
+         <double>20.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -2253,7 +2253,7 @@
          <enum>Qt::ScrollBarAlwaysOff</enum>
         </property>
         <property name="plainText">
-         <string>[+x]</string>
+         <string>[+x,-x]</string>
         </property>
         <property name="tabStopWidth">
          <number>10</number>
@@ -2417,7 +2417,7 @@
      <x>0</x>
      <y>0</y>
      <width>1286</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="font">
@@ -2431,8 +2431,8 @@
      <rect>
       <x>0</x>
       <y>0</y>
-      <width>156</width>
-      <height>100</height>
+      <width>135</width>
+      <height>94</height>
      </rect>
     </property>
     <property name="font">

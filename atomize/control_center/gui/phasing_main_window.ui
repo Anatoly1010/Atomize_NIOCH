@@ -239,7 +239,7 @@
          <number>2</number>
         </property>
         <property name="value">
-         <number>32</number>
+         <number>40</number>
         </property>
        </widget>
       </item>
@@ -286,7 +286,7 @@
          <bool>false</bool>
         </property>
         <property name="plainText">
-         <string>[+x]</string>
+         <string>[+x,-x]</string>
         </property>
         <property name="tabStopWidth">
          <number>10</number>
@@ -350,7 +350,7 @@
          <enum>Qt::ScrollBarAlwaysOff</enum>
         </property>
         <property name="plainText">
-         <string>[+x]</string>
+         <string>[+x,-x]</string>
         </property>
        </widget>
       </item>
@@ -581,7 +581,7 @@
          <enum>Qt::ScrollBarAlwaysOff</enum>
         </property>
         <property name="plainText">
-         <string>[+x]</string>
+         <string>[+x,+x]</string>
         </property>
        </widget>
       </item>
@@ -693,7 +693,7 @@
          <double>0.500000000000000</double>
         </property>
         <property name="value">
-         <double>3400.000000000000000</double>
+         <double>3445.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -750,7 +750,7 @@
          <number>2</number>
         </property>
         <property name="value">
-         <number>16</number>
+         <number>20</number>
         </property>
        </widget>
       </item>
