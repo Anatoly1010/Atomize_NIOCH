@@ -38,6 +38,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pb = pb_pro.PB_ESR_500_Pro()
         ###self.bh15 = bh.BH_15()
         
+        # Phase correction
+        self.deg_rad = 57.2957795131
+        self.sec_order_coef = -2*np.pi/2
+
         # First initialization problem
         # corrected directly in the module BH-15
         #try:
@@ -74,6 +78,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.label_11.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_12.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_13.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.label_14.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.label_15.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.label_16.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.label_17.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.label_18.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
 
         # Spinboxes
         self.P1_st.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
@@ -100,6 +109,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.P5_type.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
         self.P6_type.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
         self.P7_type.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
+        self.P_to_drop.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        self.Zero_order.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
+        self.First_order.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
+        self.Second_order.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
 
         self.Phase_1.setStyleSheet("QPlainTextEdit { color: rgb(211, 194, 78); }")
         self.Phase_2.setStyleSheet("QPlainTextEdit { color: rgb(211, 194, 78); }")
@@ -193,6 +206,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self.Phase_7.textChanged.connect(self.phase_7)
         self.ph_7 = self.Phase_7.toPlainText()[1:(len(self.Phase_7.toPlainText())-1)].split(',')
 
+        # Quadrature Phase Correction
+        self.P_to_drop.valueChanged.connect(self.p_to_drop_func)
+        self.p_to_drop = int( self.P_to_drop.value() )
+
+        self.Zero_order.valueChanged.connect(self.zero_order_func)
+        self.zero_order = float( self.Zero_order.value() ) / self.deg_rad
+        
+        self.First_order.valueChanged.connect(self.first_order_func)
+        self.first_order = float( self.First_order.value() )
+
+        self.Second_order.valueChanged.connect(self.second_order_func)
+        self.second_order = float( self.Second_order.value() )
+        if self.second_order != 0.0:
+            self.second_order = self.sec_order_coef / ( float( self.Second_order.value() ) * 1000 )
+
         self.menu_bar_file()
         self.dig_part()
 
@@ -223,14 +251,17 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.shift_box.setStyleSheet("QCheckBox { color : rgb(193, 202, 227); }")
         self.fft_box.setStyleSheet("QCheckBox { color : rgb(193, 202, 227); }")
+        self.Quad_cor.setStyleSheet("QCheckBox { color : rgb(193, 202, 227); }")
 
         self.shift_box.stateChanged.connect( self.simul_shift )
         self.fft_box.stateChanged.connect( self.fft_online )
+        self.Quad_cor.stateChanged.connect( self.quad_online )
 
         # flag for not writing the data when digitizer is off
         self.opened = 0
         self.fft = 0
-        
+        self.quad = 0
+
         """
         Create a process to interact with an experimental script that will run on a different thread.
         We need a different thread here, since PyQt GUI applications have a main thread of execution 
@@ -239,6 +270,83 @@ class MainWindow(QtWidgets.QMainWindow):
         the application
         """
         self.worker = Worker()
+
+    def quad_online(self):
+        """
+        Turn on/off Quadrature phase correction
+        """
+        if self.Quad_cor.checkState() == 2: # checked
+            self.quad = 1
+        elif self.Quad_cor.checkState() == 0: # unchecked
+            self.quad = 0
+        
+        try:
+            self.parent_conn_dig.send( 'QC' + str( self.quad ) )
+        except AttributeError:
+            self.message('Digitizer is not running')
+
+    def zero_order_func(self):
+        """
+        A function to change the zero order phase correction value
+        """
+        self.zero_order = float( self.Zero_order.value() ) / self.deg_rad
+
+        # cycling
+        if self.zero_order < 0.0:
+            self.Zero_order.setValue(360.0)
+            self.zero_order = float( self.Zero_order.value() )/ self.deg_rad
+        else:
+            pass
+
+        if self.zero_order > 2*np.pi:
+            self.Zero_order.setValue(0.0)
+            self.zero_order = float( self.Zero_order.value() ) / self.deg_rad
+        else:
+            pass
+
+        if self.opened == 0:
+            try:
+                self.parent_conn_dig.send( 'ZO' + str( self.zero_order ) )
+            except AttributeError:
+                self.message('Digitizer is not running')
+
+    def first_order_func(self):
+        """
+        A function to change the first order phase correction value
+        """
+        self.first_order = float( self.First_order.value() )
+
+        if self.opened == 0:
+            try:
+                self.parent_conn_dig.send( 'FO' + str( self.first_order ) )
+            except AttributeError:
+                self.message('Digitizer is not running')
+
+    def second_order_func(self):
+        """
+        A function to change the second order phase correction value
+        """
+        self.second_order = float( self.Second_order.value() )
+        if self.second_order != 0.0:
+            self.second_order = self.sec_order_coef / ( float( self.Second_order.value() ) * 1000 )
+        
+        if self.opened == 0:
+            try:
+                self.parent_conn_dig.send( 'SO' + str( self.second_order ) )
+            except AttributeError:
+                self.message('Digitizer is not running')
+
+    def p_to_drop_func(self):
+        """
+        A function to change the number of points to drop
+        """
+        self.p_to_drop = float( self.P_to_drop.value() )
+
+        if self.opened == 0:
+            try:
+                self.parent_conn_dig.send( 'PD' + str( self.p_to_drop ) )
+            except AttributeError:
+                self.message('Digitizer is not running')
 
     def fft_online(self):
         """
@@ -863,8 +971,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.pb.pulser_repetition_rate( self.repetition_rate )
             
             if int( self.p1_length.split(' ')[0] ) != 0:
-                self.pb.pulser_pulse( name = 'P0', channel = self.p1_typ, start = self.p1_start, length = self.p1_length, \
-                                        phase_list = self.ph_1 )
+                self.pb.pulser_pulse( name = 'P0', channel = self.p1_typ, start = self.p1_start, length = self.p1_length)
+                # 2022-10-05
+                #, \phase_list = self.ph_1
             if int( self.p2_length.split(' ')[0] ) != 0:
                 self.pb.pulser_pulse( name = 'P1', channel = self.p2_typ, start = self.p2_start, length = self.p2_length, \
                                         phase_list = self.ph_2 )
@@ -897,8 +1006,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.p7_start = self.add_ns( int( self.remove_ns( self.p7_start ) ) + self.laser_q_switch_delay )
 
             if int( self.p1_length.split(' ')[0] ) != 0:
-                self.pb.pulser_pulse( name = 'P0', channel = self.p1_typ, start = self.p1_start, length = self.p1_length, \
-                                        phase_list = self.ph_1 )
+                self.pb.pulser_pulse( name = 'P0', channel = self.p1_typ, start = self.p1_start, length = self.p1_length)
+                # 2022-10-05
+                #, \phase_list = self.ph_1
             if int( self.p2_length.split(' ')[0] ) != 0:
                 self.pb.pulser_pulse( name = 'P1', channel = self.p2_typ, start = self.p2_start, length = self.p2_length, \
                                         phase_list = self.ph_2 )
@@ -1046,7 +1156,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # sending parameters for initial initialization
         self.digitizer_process = Process( target = self.worker.dig_on, args = ( self.child_conn_dig, self.points, self.posttrigger, self.number_averages, \
                                             self.cur_win_left, self.cur_win_right, p1_list, p2_list, p3_list, p4_list, p5_list, p6_list, p7_list, \
-                                            self.laser_flag, self.repetition_rate.split(' ')[0], self.mag_field, self.fft, ) )
+                                            self.laser_flag, self.repetition_rate.split(' ')[0], self.mag_field, self.fft, self.quad, self.zero_order, self.first_order, \
+                                            self.second_order, self.p_to_drop, ) )
                
         self.digitizer_process.start()
         # send a command in a different thread about the current state
@@ -1097,7 +1208,7 @@ class Worker(QWidget):
 
         self.command = 'start'
     
-    def dig_on(self, conn, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16):
+    def dig_on(self, conn, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18, p19, p20, p21):
         """
         function that contains updating of the digitizer
         """
@@ -1224,6 +1335,16 @@ class Worker(QWidget):
                 bh15.magnet_field( p15 )
             elif self.command[0:2] == 'FF':
                 p16 = int( self.command[2:] )
+            elif self.command[0:2] == 'QC':
+                p17 = int( self.command[2:] )
+            elif self.command[0:2] == 'ZO':
+                p18 = float( self.command[2:] )
+            elif self.command[0:2] == 'FO':
+                p19 = float( self.command[2:] )
+            elif self.command[0:2] == 'SO':
+                p20 = float( self.command[2:] )
+            elif self.command[0:2] == 'PD':
+                p21 = int( self.command[2:] )
 
             # phase cycle
             k = 0
@@ -1244,9 +1365,17 @@ class Worker(QWidget):
                 data_x, data_y = pb.pulser_acquisition_cycle(cycle_data_x, cycle_data_y , acq_cycle = p6[3])
                 process = general.plot_1d('Digitizer Live', x_axis, ( data_x, data_y ), label = 'ch', xscale = 's', yscale = 'V', \
                                     vline = (p4 * 10**-9, p5 * 10**-9), pr = process )
-
-                freq_axis, abs_values = fft.fft(x_axis, data_x, data_y, 2)
-                process = general.plot_1d('FFT Analyzer', freq_axis, abs_values, label = 'FFT', xscale = 'MHz', yscale = 'Arb. U.', pr = process)
+                if p17 == 0:
+                    freq_axis, abs_values = fft.fft(x_axis, data_x, data_y, 2)
+                    process = general.plot_1d('FFT Analyzer', freq_axis, abs_values, xname = 'Freq Offset', label = 'FFT', xscale = 'MHz', yscale = 'Arb. U.', pr = process)
+                else:
+                    if p21 > len( data_x ) - 2:
+                        p21 = len( data_x ) - 4
+                        general.message('Maximum length of the data achieved. A number of drop points was corrected.')
+                    # fixed resolution of digitizer; 2 ns
+                    freq, fft_x, fft_y = fft.fft( x_axis[p21:], data_x[p21:], data_y[p21:], 2, re = 'True' )
+                    data = fft.ph_correction( freq, fft_x, fft_y, p18, p19, p20 )
+                    process = general.plot_1d('FFT Analyzer', freq, ( data[0], data[1] ), xname = 'Freq Offset', xscale = 'MHz', yscale = 'Arb. U.', label = 'FFT', pr = process)
 
             self.command = 'start'
             pb.pulser_pulse_reset()

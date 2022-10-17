@@ -84,6 +84,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.opened_file_1d = ''
         self.op_1d = 0
         self.op_2d = 0
+        self.echo_det_spectrum = 0
+        self.st_field = 0
 
     def open_file_dialog(self):
         """
@@ -165,7 +167,15 @@ class MainWindow(QtWidgets.QMainWindow):
         filename_param = filename.split(".csv")[0] + ".param"
         self.points = int( open(filename_param).read().split("Points: ")[1].split("\n")[0] )
         self.h_res = int( open(filename_param).read().split("Horizontal Resolution: ")[1].split(" ns")[0] )
-        self.v_res = int( open(filename_param).read().split("Vertical Resolution: ")[1].split(" ns")[0] )
+        try:
+            self.v_res = int( open(filename_param).read().split("Vertical Resolution: ")[1].split(" ns")[0] )
+            self.echo_det_spectrum = 0
+        except ValueError:
+            # Echo Detected Spectrum
+            self.v_res = round( float(open(filename_param).read().split("Vertical Resolution: ")[1].split(" G")[0]), 3 )
+            # Start Field: 3394.7 G
+            self.st_field = round( float(open(filename_param).read().split("Start Field: ")[1].split(" G")[0]), 3 )
+            self.echo_det_spectrum = 1
         self.wind = int( open(filename_param).read().split("Window: ")[1].split(" ns")[0] )
 
         filename2 = filename.split(".csv")[0] + "_1.csv"
@@ -180,8 +190,12 @@ class MainWindow(QtWidgets.QMainWindow):
         freq, fft_x, fft_y = self.fft.fft( self.data_i[0][self.drop:], self.data_i[:,self.drop:], self.data_q[:,self.drop:], self.h_res, re = 'True' )
         data = self.fft.ph_correction( freq, fft_x, fft_y, self.zero_cor, self.first_cor, self.second_cor )
 
-        general.plot_2d('FT Data', data, start_step = ( (round( freq[0], 0 ), freq[1] - freq[0]), (0, self.v_res) ), xname = 'Frequency Offset',\
-            xscale = 'MHz', yname = 'Delay', yscale = 'ns', zname = 'Intensity', zscale = 'V')
+        if self.echo_det_spectrum == 0:
+            general.plot_2d('FT Data', data, start_step = ( (round( freq[0], 0 ), freq[1] - freq[0]), (0, self.v_res) ), xname = 'Frequency Offset',\
+                xscale = 'MHz', yname = 'Delay', yscale = 'ns', zname = 'Intensity', zscale = 'V')
+        elif self.echo_det_spectrum == 1:
+            general.plot_2d('FT Data', data, start_step = ( (round( freq[0], 0 ), freq[1] - freq[0]), (self.st_field, self.v_res) ), xname = 'Frequency Offset',\
+                xscale = 'MHz', yname = 'MF', yscale = 'G', zname = 'Intensity', zscale = 'V')
 
         self.op_1d = 0
         self.op_2d = 1
@@ -259,8 +273,12 @@ class MainWindow(QtWidgets.QMainWindow):
             freq, fft_x, fft_y = self.fft.fft( self.data_i[0][self.drop:], self.data_i[:,self.drop:], self.data_q[:,self.drop:], self.h_res, re = 'True' )
             data = self.fft.ph_correction( freq, fft_x, fft_y, self.zero_cor, self.first_cor, self.second_cor )
 
-            general.plot_2d('FT Data', data, start_step = ( (round( freq[0], 0 ), freq[1] - freq[0]), (0, self.v_res) ), xname = 'Frequency Offset',\
-                xscale = 'MHz', yname = 'Delay', yscale = 'ns', zname = 'Intensity', zscale = 'V')
+            if self.echo_det_spectrum == 0:
+                general.plot_2d('FT Data', data, start_step = ( (round( freq[0], 0 ), freq[1] - freq[0]), (0, self.v_res) ), xname = 'Frequency Offset',\
+                    xscale = 'MHz', yname = 'Delay', yscale = 'ns', zname = 'Intensity', zscale = 'V')
+            elif self.echo_det_spectrum == 1:
+                general.plot_2d('FT Data', data, start_step = ( (round( freq[0], 0 ), freq[1] - freq[0]), (self.st_field, self.v_res) ), xname = 'Frequency Offset',\
+                    xscale = 'MHz', yname = 'MF', yscale = 'G', zname = 'Intensity', zscale = 'V')
 
         elif self.op_1d == 1:
             if self.drop > len( self.data_1d[0] ) - 2:
@@ -308,8 +326,12 @@ class MainWindow(QtWidgets.QMainWindow):
             freq, fft_x, fft_y = self.fft.fft( self.data_i[0][self.drop:], self.data_i[:,self.drop:], self.data_q[:,self.drop:], self.h_res, re = 'True' )
             data = self.fft.ph_correction( freq, fft_x, fft_y, self.zero_cor, self.first_cor, self.second_cor )
 
-            general.plot_2d('FT Data', data, start_step = ( (round( freq[0], 0 ), freq[1] - freq[0]), (0, self.v_res) ), xname = 'Frequency Offset',\
-                xscale = 'MHz', yname = 'Delay', yscale = 'ns', zname = 'Intensity', zscale = 'V')
+            if self.echo_det_spectrum == 0:
+                general.plot_2d('FT Data', data, start_step = ( (round( freq[0], 0 ), freq[1] - freq[0]), (0, self.v_res) ), xname = 'Frequency Offset',\
+                    xscale = 'MHz', yname = 'Delay', yscale = 'ns', zname = 'Intensity', zscale = 'V')
+            elif self.echo_det_spectrum == 1:
+                general.plot_2d('FT Data', data, start_step = ( (round( freq[0], 0 ), freq[1] - freq[0]), (self.st_field, self.v_res) ), xname = 'Frequency Offset',\
+                    xscale = 'MHz', yname = 'MF', yscale = 'G', zname = 'Intensity', zscale = 'V')
 
         elif self.op_1d == 1:
             if len( self.data_1d ) == 4:

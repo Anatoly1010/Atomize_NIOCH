@@ -8,26 +8,26 @@ import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
 import atomize.device_modules.Mikran_X_band_MW_bridge as mwBridge
 import atomize.device_modules.SR_PTC_10 as sr
 import atomize.device_modules.BH_15 as bh
-import atomize.general_modules.csv_opener_saver as openfile
+import atomize.general_modules.csv_opener_saver_tk_kinter as openfile
 
 ### Experimental parameters
-POINTS = 11
-STEP = 20                  # in NS;
-FIELD = 3435.5
-AVERAGES = 2
+POINTS = 1001
+STEP = 16                  # in NS;
+FIELD = 3447
+AVERAGES = 20
 SCANS = 1
 process = 'None'
 
 # PULSES
-REP_RATE = '5000 Hz'
-PULSE_1_LENGTH = '16 ns'
-PULSE_2_LENGTH = '32 ns'
+REP_RATE = '500 Hz'
+PULSE_1_LENGTH = '50 ns'
+PULSE_2_LENGTH = '100 ns'
 PULSE_1_START = '0 ns'
 PULSE_2_START = '400 ns'
 PULSE_SIGNAL_START = '800 ns'
 
 # NAMES
-EXP_NAME = 'T2 Echo Shape'
+EXP_NAME = 'T2 Shape'
 CURVE_NAME = 'exp1'
 
 # initialization of the devices

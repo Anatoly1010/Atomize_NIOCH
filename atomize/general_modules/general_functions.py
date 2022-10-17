@@ -182,6 +182,13 @@ def numpy_round(x, base):
     """
     return base * np.round(x / base)
 
+def const_shift(x, shift):
+    """
+    A function to add a specified shift to x
+    """
+    #'800 ns' -> '1294 ns'
+    return str( int(x.split(' ')[0]) + shift ) + ' ns'
+
 def bot_message(*text):
     import telebot
     # configuration data

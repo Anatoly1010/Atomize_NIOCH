@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1286</width>
-    <height>566</height>
+    <height>595</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,13 +19,13 @@
   <property name="minimumSize">
    <size>
     <width>1286</width>
-    <height>566</height>
+    <height>595</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>1286</width>
-    <height>566</height>
+    <height>595</height>
    </size>
   </property>
   <property name="sizeIncrement">
@@ -56,13 +56,13 @@
    <property name="minimumSize">
     <size>
      <width>1286</width>
-     <height>544</height>
+     <height>574</height>
     </size>
    </property>
    <property name="maximumSize">
     <size>
      <width>1286</width>
-     <height>544</height>
+     <height>574</height>
     </size>
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout">
@@ -92,25 +92,31 @@
       <property name="verticalSpacing">
        <number>4</number>
       </property>
-      <item row="1" column="1">
-       <widget class="QSpinBox" name="P1_st">
+      <item row="10" column="5" rowspan="2">
+       <widget class="QPlainTextEdit" name="Phase_5">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>140</width>
+          <height>80</height>
+         </size>
+        </property>
         <property name="contextMenuPolicy">
          <enum>Qt::NoContextMenu</enum>
         </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
+        <property name="verticalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
         </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
+        <property name="horizontalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
         </property>
-        <property name="maximum">
-         <number>500000</number>
-        </property>
-        <property name="singleStep">
-         <number>2</number>
-        </property>
-        <property name="value">
-         <number>600</number>
+        <property name="plainText">
+         <string>[+x]</string>
         </property>
        </widget>
       </item>
@@ -130,6 +136,28 @@
         </property>
         <property name="maximum">
          <number>5000</number>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QSpinBox" name="P1_st">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="maximum">
+         <number>500000</number>
+        </property>
+        <property name="singleStep">
+         <number>2</number>
+        </property>
+        <property name="value">
+         <number>600</number>
         </property>
        </widget>
       </item>
@@ -177,16 +205,6 @@
         </property>
        </widget>
       </item>
-      <item row="16" column="0" colspan="8">
-       <widget class="Line" name="line_4">
-        <property name="lineWidth">
-         <number>2</number>
-        </property>
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-       </widget>
-      </item>
       <item row="9" column="6">
        <widget class="QSpinBox" name="coef_6">
         <property name="contextMenuPolicy">
@@ -206,6 +224,16 @@
         </property>
         <property name="value">
          <number>100</number>
+        </property>
+       </widget>
+      </item>
+      <item row="16" column="0" colspan="8">
+       <widget class="Line" name="line_4">
+        <property name="lineWidth">
+         <number>2</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
         </property>
        </widget>
       </item>
@@ -240,6 +268,75 @@
         </property>
         <property name="tabStopDistance">
          <double>10.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="6">
+       <widget class="QSpinBox" name="freq_6">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>-250</number>
+        </property>
+        <property name="maximum">
+         <number>250</number>
+        </property>
+        <property name="singleStep">
+         <number>5</number>
+        </property>
+        <property name="value">
+         <number>50</number>
+        </property>
+       </widget>
+      </item>
+      <item row="18" column="4">
+       <widget class="QLabel" name="label_17">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="text">
+         <string>Horizontal Offset</string>
+        </property>
+       </widget>
+      </item>
+      <item row="18" column="1">
+       <widget class="QDoubleSpinBox" name="Field">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="minimum">
+         <double>100.000000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>9000.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>0.500000000000000</double>
+        </property>
+        <property name="value">
+         <double>3445.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -284,8 +381,14 @@
         </property>
        </widget>
       </item>
-      <item row="18" column="4">
-       <widget class="QLabel" name="label_17">
+      <item row="17" column="2">
+       <widget class="QLabel" name="label_7">
+        <property name="minimumSize">
+         <size>
+          <width>120</width>
+          <height>0</height>
+         </size>
+        </property>
         <property name="font">
          <font>
           <weight>75</weight>
@@ -296,76 +399,7 @@
          <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
-         <string>Horizontal Offset</string>
-        </property>
-       </widget>
-      </item>
-      <item row="7" column="6">
-       <widget class="QSpinBox" name="freq_6">
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="minimum">
-         <number>-250</number>
-        </property>
-        <property name="maximum">
-         <number>250</number>
-        </property>
-        <property name="singleStep">
-         <number>5</number>
-        </property>
-        <property name="value">
-         <number>50</number>
-        </property>
-       </widget>
-      </item>
-      <item row="18" column="1">
-       <widget class="QDoubleSpinBox" name="Field">
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="decimals">
-         <number>1</number>
-        </property>
-        <property name="minimum">
-         <double>100.000000000000000</double>
-        </property>
-        <property name="maximum">
-         <double>9000.000000000000000</double>
-        </property>
-        <property name="singleStep">
-         <double>0.500000000000000</double>
-        </property>
-        <property name="value">
-         <double>3445.000000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="15" column="0">
-       <widget class="QLabel" name="label_3">
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="text">
-         <string>Pulse Type</string>
+         <string>Amplitude 1 (mV)</string>
         </property>
        </widget>
       </item>
@@ -385,53 +419,19 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="2">
-       <widget class="QDoubleSpinBox" name="P2_sig">
+      <item row="15" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
         <property name="contextMenuPolicy">
          <enum>Qt::NoContextMenu</enum>
         </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="decimals">
-         <number>1</number>
-        </property>
-        <property name="maximum">
-         <double>1900.000000000000000</double>
-        </property>
-        <property name="singleStep">
-         <double>1.000000000000000</double>
-        </property>
-        <property name="value">
-         <double>0.000000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QSpinBox" name="P1_sig">
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="inputMethodHints">
-         <set>Qt::ImhDigitsOnly</set>
-        </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="maximum">
-         <number>1900</number>
-        </property>
-        <property name="singleStep">
-         <number>2</number>
-        </property>
-        <property name="value">
-         <number>0</number>
+        <property name="text">
+         <string>Pulse Type</string>
         </property>
        </widget>
       </item>
@@ -484,6 +484,56 @@
         </item>
        </widget>
       </item>
+      <item row="2" column="2">
+       <widget class="QDoubleSpinBox" name="P2_sig">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <double>1900.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>1.000000000000000</double>
+        </property>
+        <property name="value">
+         <double>0.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QSpinBox" name="P1_sig">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="inputMethodHints">
+         <set>Qt::ImhDigitsOnly</set>
+        </property>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="maximum">
+         <number>1900</number>
+        </property>
+        <property name="singleStep">
+         <number>2</number>
+        </property>
+        <property name="value">
+         <number>0</number>
+        </property>
+       </widget>
+      </item>
       <item row="9" column="1">
        <widget class="QSpinBox" name="coef_1">
         <property name="contextMenuPolicy">
@@ -506,14 +556,8 @@
         </property>
        </widget>
       </item>
-      <item row="17" column="2">
-       <widget class="QLabel" name="label_7">
-        <property name="minimumSize">
-         <size>
-          <width>120</width>
-          <height>0</height>
-         </size>
-        </property>
+      <item row="19" column="4">
+       <widget class="QLabel" name="label_18">
         <property name="font">
          <font>
           <weight>75</weight>
@@ -524,37 +568,101 @@
          <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
-         <string>Amplitude 1 (mV)</string>
+         <string>Shift Togheter</string>
         </property>
        </widget>
       </item>
-      <item row="10" column="5" rowspan="2">
-       <widget class="QPlainTextEdit" name="Phase_5">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>140</width>
-          <height>80</height>
-         </size>
-        </property>
+      <item row="7" column="5">
+       <widget class="QSpinBox" name="freq_5">
         <property name="contextMenuPolicy">
          <enum>Qt::NoContextMenu</enum>
         </property>
-        <property name="verticalScrollBarPolicy">
-         <enum>Qt::ScrollBarAlwaysOff</enum>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
         </property>
-        <property name="horizontalScrollBarPolicy">
-         <enum>Qt::ScrollBarAlwaysOff</enum>
+        <property name="keyboardTracking">
+         <bool>false</bool>
         </property>
-        <property name="plainText">
-         <string>[+x]</string>
+        <property name="minimum">
+         <number>-250</number>
+        </property>
+        <property name="maximum">
+         <number>250</number>
+        </property>
+        <property name="singleStep">
+         <number>5</number>
+        </property>
+        <property name="value">
+         <number>50</number>
         </property>
        </widget>
+      </item>
+      <item row="17" column="5">
+       <widget class="QSpinBox" name="Timescale">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>32</number>
+        </property>
+        <property name="maximum">
+         <number>6400</number>
+        </property>
+        <property name="singleStep">
+         <number>16</number>
+        </property>
+        <property name="value">
+         <number>320</number>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0" colspan="8">
+       <widget class="Line" name="line_2">
+        <property name="lineWidth">
+         <number>2</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="17" column="7">
+       <widget class="QSpinBox" name="Win_left">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="maximum">
+         <number>6400</number>
+        </property>
+       </widget>
+      </item>
+      <item row="11" column="0">
+       <spacer name="verticalSpacer">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>60</height>
+         </size>
+        </property>
+       </spacer>
       </item>
       <item row="1" column="4">
        <widget class="QDoubleSpinBox" name="P4_st">
@@ -616,114 +724,6 @@
         </property>
        </widget>
       </item>
-      <item row="7" column="5">
-       <widget class="QSpinBox" name="freq_5">
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="minimum">
-         <number>-250</number>
-        </property>
-        <property name="maximum">
-         <number>250</number>
-        </property>
-        <property name="singleStep">
-         <number>5</number>
-        </property>
-        <property name="value">
-         <number>50</number>
-        </property>
-       </widget>
-      </item>
-      <item row="19" column="4">
-       <widget class="QLabel" name="label_18">
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="text">
-         <string>Shift Togheter</string>
-        </property>
-       </widget>
-      </item>
-      <item row="17" column="7">
-       <widget class="QSpinBox" name="Win_left">
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="maximum">
-         <number>6400</number>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0" colspan="8">
-       <widget class="Line" name="line_2">
-        <property name="lineWidth">
-         <number>2</number>
-        </property>
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-       </widget>
-      </item>
-      <item row="17" column="5">
-       <widget class="QSpinBox" name="Timescale">
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="minimum">
-         <number>32</number>
-        </property>
-        <property name="maximum">
-         <number>6400</number>
-        </property>
-        <property name="singleStep">
-         <number>16</number>
-        </property>
-        <property name="value">
-         <number>320</number>
-        </property>
-       </widget>
-      </item>
-      <item row="11" column="0">
-       <spacer name="verticalSpacer">
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
-        </property>
-        <property name="sizeType">
-         <enum>QSizePolicy::Fixed</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>20</width>
-          <height>60</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
       <item row="8" column="5">
        <widget class="QSpinBox" name="Wurst_sweep_5">
         <property name="contextMenuPolicy">
@@ -771,31 +771,6 @@
         </property>
        </widget>
       </item>
-      <item row="8" column="2">
-       <widget class="QSpinBox" name="Wurst_sweep_2">
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="minimum">
-         <number>-400</number>
-        </property>
-        <property name="maximum">
-         <number>400</number>
-        </property>
-        <property name="singleStep">
-         <number>5</number>
-        </property>
-        <property name="value">
-         <number>368</number>
-        </property>
-       </widget>
-      </item>
       <item row="2" column="7">
        <widget class="QDoubleSpinBox" name="P7_sig">
         <property name="contextMenuPolicy">
@@ -828,6 +803,31 @@
         </property>
         <property name="text">
          <string>Repetition Rate (Hz)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="2">
+       <widget class="QSpinBox" name="Wurst_sweep_2">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>-400</number>
+        </property>
+        <property name="maximum">
+         <number>400</number>
+        </property>
+        <property name="singleStep">
+         <number>5</number>
+        </property>
+        <property name="value">
+         <number>368</number>
         </property>
        </widget>
       </item>
@@ -895,8 +895,30 @@
         </property>
        </widget>
       </item>
-      <item row="9" column="0">
-       <widget class="QLabel" name="label_13">
+      <item row="26" column="1" rowspan="3" colspan="7">
+       <widget class="QPlainTextEdit" name="errors">
+        <property name="font">
+         <font>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="undoRedoEnabled">
+         <bool>false</bool>
+        </property>
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+        <property name="textInteractionFlags">
+         <set>Qt::NoTextInteraction</set>
+        </property>
+       </widget>
+      </item>
+      <item row="20" column="4">
+       <widget class="QLabel" name="label_21">
         <property name="font">
          <font>
           <weight>75</weight>
@@ -907,7 +929,29 @@
          <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
-         <string>Amplitude (%)</string>
+         <string>Online FFT</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="5">
+       <widget class="QDoubleSpinBox" name="P5_len">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <double>1900.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>1.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -949,8 +993,8 @@
         </property>
        </widget>
       </item>
-      <item row="17" column="6">
-       <widget class="QLabel" name="label_19">
+      <item row="9" column="0">
+       <widget class="QLabel" name="label_13">
         <property name="font">
          <font>
           <weight>75</weight>
@@ -961,7 +1005,7 @@
          <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
-         <string>Integration Left</string>
+         <string>Amplitude (%)</string>
         </property>
        </widget>
       </item>
@@ -990,52 +1034,8 @@
         </property>
        </widget>
       </item>
-      <item row="25" column="1" rowspan="3" colspan="7">
-       <widget class="QPlainTextEdit" name="errors">
-        <property name="font">
-         <font>
-          <weight>50</weight>
-          <bold>false</bold>
-         </font>
-        </property>
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="undoRedoEnabled">
-         <bool>false</bool>
-        </property>
-        <property name="readOnly">
-         <bool>true</bool>
-        </property>
-        <property name="textInteractionFlags">
-         <set>Qt::NoTextInteraction</set>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="5">
-       <widget class="QDoubleSpinBox" name="P5_len">
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="decimals">
-         <number>1</number>
-        </property>
-        <property name="maximum">
-         <double>1900.000000000000000</double>
-        </property>
-        <property name="singleStep">
-         <double>1.000000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="20" column="4">
-       <widget class="QLabel" name="label_21">
+      <item row="17" column="6">
+       <widget class="QLabel" name="label_19">
         <property name="font">
          <font>
           <weight>75</weight>
@@ -1046,199 +1046,7 @@
          <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
-         <string>Online FFT</string>
-        </property>
-       </widget>
-      </item>
-      <item row="17" column="3">
-       <widget class="QSpinBox" name="Ampl_1">
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="minimum">
-         <number>80</number>
-        </property>
-        <property name="maximum">
-         <number>2000</number>
-        </property>
-        <property name="singleStep">
-         <number>5</number>
-        </property>
-        <property name="value">
-         <number>600</number>
-        </property>
-       </widget>
-      </item>
-      <item row="7" column="4">
-       <widget class="QSpinBox" name="freq_4">
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="minimum">
-         <number>-250</number>
-        </property>
-        <property name="maximum">
-         <number>250</number>
-        </property>
-        <property name="singleStep">
-         <number>5</number>
-        </property>
-        <property name="value">
-         <number>50</number>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="5">
-       <widget class="QDoubleSpinBox" name="P5_sig">
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="decimals">
-         <number>1</number>
-        </property>
-        <property name="maximum">
-         <double>1900.000000000000000</double>
-        </property>
-        <property name="singleStep">
-         <double>1.000000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="18" column="3">
-       <widget class="QSpinBox" name="Ampl_2">
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="minimum">
-         <number>80</number>
-        </property>
-        <property name="maximum">
-         <number>2000</number>
-        </property>
-        <property name="singleStep">
-         <number>5</number>
-        </property>
-        <property name="value">
-         <number>610</number>
-        </property>
-       </widget>
-      </item>
-      <item row="9" column="5">
-       <widget class="QSpinBox" name="coef_5">
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="minimum">
-         <number>1</number>
-        </property>
-        <property name="maximum">
-         <number>100</number>
-        </property>
-        <property name="value">
-         <number>100</number>
-        </property>
-       </widget>
-      </item>
-      <item row="19" column="2">
-       <widget class="QLabel" name="label_9">
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="text">
-         <string>Phase (deg)</string>
-        </property>
-       </widget>
-      </item>
-      <item row="18" column="2">
-       <widget class="QLabel" name="label_8">
-        <property name="minimumSize">
-         <size>
-          <width>120</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="text">
-         <string>Amplitude 2 (mV)</string>
-        </property>
-       </widget>
-      </item>
-      <item row="19" column="5">
-       <widget class="QCheckBox" name="shift_box">
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-       </widget>
-      </item>
-      <item row="17" column="1">
-       <widget class="QSpinBox" name="Rep_rate">
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="minimum">
-         <number>1</number>
-        </property>
-        <property name="maximum">
-         <number>10000</number>
-        </property>
-        <property name="singleStep">
-         <number>10</number>
-        </property>
-        <property name="value">
-         <number>500</number>
+         <string>Integration Left</string>
         </property>
        </widget>
       </item>
@@ -1298,53 +1106,29 @@
         </property>
        </widget>
       </item>
-      <item row="15" column="5">
-       <widget class="QComboBox" name="P5_type">
-        <property name="minimumSize">
-         <size>
-          <width>110</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>140</width>
-          <height>16777215</height>
-         </size>
-        </property>
+      <item row="3" column="6">
+       <widget class="QDoubleSpinBox" name="P6_len">
         <property name="contextMenuPolicy">
          <enum>Qt::NoContextMenu</enum>
         </property>
-        <item>
-         <property name="text">
-          <string>SINE</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>GAUSS</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>SINC</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>WURST</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>BLANK</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>TRIGGER</string>
-         </property>
-        </item>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="suffix">
+         <string/>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <double>1900.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>1.000000000000000</double>
+        </property>
        </widget>
       </item>
       <item row="15" column="6">
@@ -1396,29 +1180,53 @@
         </item>
        </widget>
       </item>
-      <item row="3" column="6">
-       <widget class="QDoubleSpinBox" name="P6_len">
+      <item row="15" column="5">
+       <widget class="QComboBox" name="P5_type">
+        <property name="minimumSize">
+         <size>
+          <width>110</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>140</width>
+          <height>16777215</height>
+         </size>
+        </property>
         <property name="contextMenuPolicy">
          <enum>Qt::NoContextMenu</enum>
         </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="suffix">
-         <string/>
-        </property>
-        <property name="decimals">
-         <number>1</number>
-        </property>
-        <property name="maximum">
-         <double>1900.000000000000000</double>
-        </property>
-        <property name="singleStep">
-         <double>1.000000000000000</double>
-        </property>
+        <item>
+         <property name="text">
+          <string>SINE</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>GAUSS</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>SINC</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>WURST</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>BLANK</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>TRIGGER</string>
+         </property>
+        </item>
        </widget>
       </item>
       <item row="15" column="2">
@@ -1514,24 +1322,55 @@
         </property>
        </widget>
       </item>
-      <item row="8" column="0">
-       <widget class="QLabel" name="label_6">
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
+      <item row="17" column="3">
+       <widget class="QSpinBox" name="Ampl_1">
         <property name="contextMenuPolicy">
          <enum>Qt::NoContextMenu</enum>
         </property>
-        <property name="text">
-         <string>Wurst Sweep (MHz)</string>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>80</number>
+        </property>
+        <property name="maximum">
+         <number>2000</number>
+        </property>
+        <property name="singleStep">
+         <number>5</number>
+        </property>
+        <property name="value">
+         <number>600</number>
         </property>
        </widget>
       </item>
-      <item row="7" column="2">
-       <widget class="QSpinBox" name="freq_2">
+      <item row="2" column="5">
+       <widget class="QDoubleSpinBox" name="P5_sig">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <double>1900.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>1.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="4">
+       <widget class="QSpinBox" name="freq_4">
         <property name="contextMenuPolicy">
          <enum>Qt::NoContextMenu</enum>
         </property>
@@ -1555,33 +1394,8 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="3">
-       <widget class="QDoubleSpinBox" name="P3_st">
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="decimals">
-         <number>1</number>
-        </property>
-        <property name="maximum">
-         <double>500000.000000000000000</double>
-        </property>
-        <property name="singleStep">
-         <double>2.000000000000000</double>
-        </property>
-        <property name="value">
-         <double>300.000000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="9" column="4">
-       <widget class="QSpinBox" name="coef_4">
+      <item row="9" column="5">
+       <widget class="QSpinBox" name="coef_5">
         <property name="contextMenuPolicy">
          <enum>Qt::NoContextMenu</enum>
         </property>
@@ -1602,67 +1416,8 @@
         </property>
        </widget>
       </item>
-      <item row="10" column="6" rowspan="2">
-       <widget class="QPlainTextEdit" name="Phase_6">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>140</width>
-          <height>80</height>
-         </size>
-        </property>
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="verticalScrollBarPolicy">
-         <enum>Qt::ScrollBarAlwaysOff</enum>
-        </property>
-        <property name="horizontalScrollBarPolicy">
-         <enum>Qt::ScrollBarAlwaysOff</enum>
-        </property>
-        <property name="plainText">
-         <string>[+x]</string>
-        </property>
-        <property name="tabStopWidth">
-         <number>10</number>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="2">
-       <widget class="QDoubleSpinBox" name="P2_st">
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="readOnly">
-         <bool>false</bool>
-        </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="specialValueText">
-         <string notr="true"/>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="decimals">
-         <number>1</number>
-        </property>
-        <property name="maximum">
-         <double>500000.000000000000000</double>
-        </property>
-        <property name="singleStep">
-         <double>2.000000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="8" column="3">
-       <widget class="QSpinBox" name="Wurst_sweep_3">
+      <item row="18" column="3">
+       <widget class="QSpinBox" name="Ampl_2">
         <property name="contextMenuPolicy">
          <enum>Qt::NoContextMenu</enum>
         </property>
@@ -1673,16 +1428,121 @@
          <bool>false</bool>
         </property>
         <property name="minimum">
-         <number>-400</number>
+         <number>80</number>
         </property>
         <property name="maximum">
-         <number>400</number>
+         <number>2000</number>
         </property>
         <property name="singleStep">
          <number>5</number>
         </property>
         <property name="value">
-         <number>368</number>
+         <number>610</number>
+        </property>
+       </widget>
+      </item>
+      <item row="18" column="2">
+       <widget class="QLabel" name="label_8">
+        <property name="minimumSize">
+         <size>
+          <width>120</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="text">
+         <string>Amplitude 2 (mV)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="19" column="2">
+       <widget class="QLabel" name="label_9">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="text">
+         <string>Phase (deg)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="19" column="5">
+       <widget class="QCheckBox" name="shift_box">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="17" column="1">
+       <widget class="QSpinBox" name="Rep_rate">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <number>10000</number>
+        </property>
+        <property name="singleStep">
+         <number>10</number>
+        </property>
+        <property name="value">
+         <number>500</number>
+        </property>
+       </widget>
+      </item>
+      <item row="14" column="0" colspan="8">
+       <widget class="Line" name="line">
+        <property name="lineWidth">
+         <number>2</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="28" column="0">
+       <widget class="QPushButton" name="button_off">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>40</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="text">
+         <string>Exit</string>
         </property>
        </widget>
       </item>
@@ -1714,35 +1574,22 @@
         </property>
        </widget>
       </item>
-      <item row="14" column="0" colspan="8">
-       <widget class="Line" name="line">
-        <property name="lineWidth">
-         <number>2</number>
-        </property>
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-       </widget>
-      </item>
-      <item row="27" column="0">
-       <widget class="QPushButton" name="button_off">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>40</height>
-         </size>
-        </property>
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
+      <item row="18" column="7">
+       <widget class="QSpinBox" name="Win_right">
         <property name="contextMenuPolicy">
          <enum>Qt::NoContextMenu</enum>
         </property>
-        <property name="text">
-         <string>Exit</string>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="maximum">
+         <number>6400</number>
+        </property>
+        <property name="value">
+         <number>320</number>
         </property>
        </widget>
       </item>
@@ -1798,69 +1645,6 @@
         </item>
        </widget>
       </item>
-      <item row="18" column="7">
-       <widget class="QSpinBox" name="Win_right">
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="maximum">
-         <number>6400</number>
-        </property>
-        <property name="value">
-         <number>320</number>
-        </property>
-       </widget>
-      </item>
-      <item row="8" column="7">
-       <widget class="QSpinBox" name="Wurst_sweep_7">
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="minimum">
-         <number>-400</number>
-        </property>
-        <property name="maximum">
-         <number>400</number>
-        </property>
-        <property name="singleStep">
-         <number>5</number>
-        </property>
-        <property name="value">
-         <number>368</number>
-        </property>
-       </widget>
-      </item>
-      <item row="20" column="1">
-       <widget class="QSpinBox" name="N_wurst">
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="minimum">
-         <number>1</number>
-        </property>
-        <property name="maximum">
-         <number>100</number>
-        </property>
-        <property name="value">
-         <number>10</number>
-        </property>
-       </widget>
-      </item>
       <item row="7" column="1">
        <widget class="QSpinBox" name="freq_1">
         <property name="contextMenuPolicy">
@@ -1886,31 +1670,315 @@
         </property>
        </widget>
       </item>
-      <item row="15" column="1">
-       <widget class="QComboBox" name="P1_type">
-        <property name="minimumSize">
-         <size>
-          <width>130</width>
-          <height>0</height>
-         </size>
+      <item row="20" column="1">
+       <widget class="QSpinBox" name="N_wurst">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+        <property name="value">
+         <number>10</number>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="7">
+       <widget class="QSpinBox" name="Wurst_sweep_7">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="minimum">
+         <number>-400</number>
+        </property>
+        <property name="maximum">
+         <number>400</number>
+        </property>
+        <property name="singleStep">
+         <number>5</number>
+        </property>
+        <property name="value">
+         <number>368</number>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="0">
+       <widget class="QLabel" name="label_6">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="text">
+         <string>Wurst Sweep (MHz)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="2">
+       <widget class="QSpinBox" name="freq_2">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>-250</number>
+        </property>
+        <property name="maximum">
+         <number>250</number>
+        </property>
+        <property name="singleStep">
+         <number>5</number>
+        </property>
+        <property name="value">
+         <number>50</number>
+        </property>
+       </widget>
+      </item>
+      <item row="9" column="4">
+       <widget class="QSpinBox" name="coef_4">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+        <property name="value">
+         <number>100</number>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="3">
+       <widget class="QDoubleSpinBox" name="P3_st">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <double>500000.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>2.000000000000000</double>
+        </property>
+        <property name="value">
+         <double>300.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="QDoubleSpinBox" name="P2_st">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="readOnly">
+         <bool>false</bool>
+        </property>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="specialValueText">
+         <string notr="true"/>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <double>500000.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>2.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="10" column="6" rowspan="2">
+       <widget class="QPlainTextEdit" name="Phase_6">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
         </property>
         <property name="maximumSize">
          <size>
           <width>140</width>
-          <height>16777215</height>
+          <height>80</height>
          </size>
         </property>
         <property name="contextMenuPolicy">
          <enum>Qt::NoContextMenu</enum>
         </property>
-        <property name="currentIndex">
-         <number>0</number>
+        <property name="verticalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
         </property>
-        <item>
-         <property name="text">
-          <string>TRIGGER</string>
-         </property>
-        </item>
+        <property name="horizontalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+        <property name="plainText">
+         <string>[+x]</string>
+        </property>
+        <property name="tabStopWidth">
+         <number>10</number>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="3">
+       <widget class="QSpinBox" name="Wurst_sweep_3">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>-400</number>
+        </property>
+        <property name="maximum">
+         <number>400</number>
+        </property>
+        <property name="singleStep">
+         <number>5</number>
+        </property>
+        <property name="value">
+         <number>368</number>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="6">
+       <widget class="QDoubleSpinBox" name="P6_st">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <double>500000.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>2.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="10" column="4" rowspan="2">
+       <widget class="QPlainTextEdit" name="Phase_4">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>140</width>
+          <height>80</height>
+         </size>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="verticalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+        <property name="horizontalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+        <property name="plainText">
+         <string>[+x]</string>
+        </property>
+        <property name="tabStopWidth">
+         <number>10</number>
+        </property>
+       </widget>
+      </item>
+      <item row="18" column="0">
+       <widget class="QLabel" name="label_5">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="text">
+         <string>Field (G)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="20" column="5">
+       <widget class="QCheckBox" name="fft_box">
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="19" column="6">
+       <widget class="QLabel" name="label_22">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="text">
+         <string>Acquisitions</string>
+        </property>
        </widget>
       </item>
       <item row="19" column="0">
@@ -1954,7 +2022,34 @@
         </property>
        </widget>
       </item>
-      <item row="21" column="0" colspan="8">
+      <item row="15" column="1">
+       <widget class="QComboBox" name="P1_type">
+        <property name="minimumSize">
+         <size>
+          <width>130</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>140</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="currentIndex">
+         <number>0</number>
+        </property>
+        <item>
+         <property name="text">
+          <string>TRIGGER</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="22" column="0" colspan="8">
        <widget class="Line" name="line_3">
         <property name="lineWidth">
          <number>2</number>
@@ -2011,7 +2106,7 @@
         </property>
        </widget>
       </item>
-      <item row="25" column="0">
+      <item row="26" column="0">
        <widget class="QPushButton" name="button_update">
         <property name="minimumSize">
          <size>
@@ -2071,23 +2166,7 @@
         </property>
        </widget>
       </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="label_11">
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="text">
-         <string>Pulse Length (ns)</string>
-        </property>
-       </widget>
-      </item>
-      <item row="26" column="0">
+      <item row="27" column="0">
        <widget class="QPushButton" name="button_stop">
         <property name="minimumSize">
          <size>
@@ -2106,6 +2185,22 @@
         </property>
         <property name="text">
          <string>Stop</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_11">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::NoContextMenu</enum>
+        </property>
+        <property name="text">
+         <string>Pulse Length (ns)</string>
         </property>
        </widget>
       </item>
@@ -2134,39 +2229,8 @@
         </property>
        </widget>
       </item>
-      <item row="10" column="4" rowspan="2">
-       <widget class="QPlainTextEdit" name="Phase_4">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>140</width>
-          <height>80</height>
-         </size>
-        </property>
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="verticalScrollBarPolicy">
-         <enum>Qt::ScrollBarAlwaysOff</enum>
-        </property>
-        <property name="horizontalScrollBarPolicy">
-         <enum>Qt::ScrollBarAlwaysOff</enum>
-        </property>
-        <property name="plainText">
-         <string>[+x]</string>
-        </property>
-        <property name="tabStopWidth">
-         <number>10</number>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="6">
-       <widget class="QDoubleSpinBox" name="P6_st">
+      <item row="7" column="3">
+       <widget class="QSpinBox" name="freq_3">
         <property name="contextMenuPolicy">
          <enum>Qt::NoContextMenu</enum>
         </property>
@@ -2176,56 +2240,17 @@
         <property name="keyboardTracking">
          <bool>false</bool>
         </property>
-        <property name="decimals">
-         <number>1</number>
+        <property name="minimum">
+         <number>-250</number>
         </property>
         <property name="maximum">
-         <double>500000.000000000000000</double>
+         <number>250</number>
         </property>
         <property name="singleStep">
-         <double>2.000000000000000</double>
+         <number>5</number>
         </property>
-       </widget>
-      </item>
-      <item row="18" column="0">
-       <widget class="QLabel" name="label_5">
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="text">
-         <string>Field (G)</string>
-        </property>
-       </widget>
-      </item>
-      <item row="20" column="5">
-       <widget class="QCheckBox" name="fft_box">
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-       </widget>
-      </item>
-      <item row="19" column="6">
-       <widget class="QLabel" name="label_22">
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="text">
-         <string>Acquisitions</string>
+        <property name="value">
+         <number>50</number>
         </property>
        </widget>
       </item>
@@ -2260,28 +2285,19 @@
         </property>
        </widget>
       </item>
-      <item row="7" column="3">
-       <widget class="QSpinBox" name="freq_3">
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
         <property name="contextMenuPolicy">
          <enum>Qt::NoContextMenu</enum>
         </property>
-        <property name="buttonSymbols">
-         <enum>QAbstractSpinBox::PlusMinus</enum>
-        </property>
-        <property name="keyboardTracking">
-         <bool>false</bool>
-        </property>
-        <property name="minimum">
-         <number>-250</number>
-        </property>
-        <property name="maximum">
-         <number>250</number>
-        </property>
-        <property name="singleStep">
-         <number>5</number>
-        </property>
-        <property name="value">
-         <number>50</number>
+        <property name="text">
+         <string>Pulse Sigma (ns)</string>
         </property>
        </widget>
       </item>
@@ -2317,22 +2333,6 @@
         </property>
         <property name="singleStep">
          <double>2.000000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_2">
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="contextMenuPolicy">
-         <enum>Qt::NoContextMenu</enum>
-        </property>
-        <property name="text">
-         <string>Pulse Sigma (ns)</string>
         </property>
        </widget>
       </item>
@@ -2404,6 +2404,157 @@
         </property>
         <property name="singleStep">
          <double>1.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="21" column="0">
+       <widget class="QLabel" name="label_23">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Points to Drop</string>
+        </property>
+       </widget>
+      </item>
+      <item row="21" column="1">
+       <widget class="QSpinBox" name="P_to_drop">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="maximum">
+         <number>10000</number>
+        </property>
+       </widget>
+      </item>
+      <item row="21" column="2">
+       <widget class="QLabel" name="label_24">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Zero Order (deg)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="21" column="4">
+       <widget class="QLabel" name="label_25">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>First Order</string>
+        </property>
+       </widget>
+      </item>
+      <item row="21" column="6">
+       <widget class="QLabel" name="label_26">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Second Order (MHz/ns)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="21" column="3">
+       <widget class="QDoubleSpinBox" name="Zero_order">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="decimals">
+         <number>4</number>
+        </property>
+        <property name="minimum">
+         <double>-0.100000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>360.100000000000023</double>
+        </property>
+        <property name="singleStep">
+         <double>0.100000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="21" column="5">
+       <widget class="QDoubleSpinBox" name="First_order">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="decimals">
+         <number>4</number>
+        </property>
+        <property name="minimum">
+         <double>-10.000000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>10.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>0.001000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="21" column="7">
+       <widget class="QDoubleSpinBox" name="Second_order">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="decimals">
+         <number>4</number>
+        </property>
+        <property name="minimum">
+         <double>-100.000000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>100.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>0.001000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="20" column="6">
+       <widget class="QLabel" name="label_27">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Quadrature Correction</string>
+        </property>
+       </widget>
+      </item>
+      <item row="20" column="7">
+       <widget class="QCheckBox" name="Quad_cor">
+        <property name="text">
+         <string/>
         </property>
        </widget>
       </item>
