@@ -2468,7 +2468,7 @@
          </font>
         </property>
         <property name="text">
-         <string>Second Order (MHz/ns)</string>
+         <string>Sec. Order (MHz/ns)</string>
         </property>
        </widget>
       </item>
@@ -2547,7 +2547,7 @@
          </font>
         </property>
         <property name="text">
-         <string>Quadrature Correction</string>
+         <string>Quad. Correction</string>
         </property>
        </widget>
       </item>
@@ -2568,7 +2568,7 @@
      <x>0</x>
      <y>0</y>
      <width>1286</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <property name="font">
@@ -2582,8 +2582,8 @@
      <rect>
       <x>0</x>
       <y>0</y>
-      <width>135</width>
-      <height>94</height>
+      <width>156</width>
+      <height>100</height>
      </rect>
     </property>
     <property name="font">

@@ -5,6 +5,7 @@ import os
 import sys
 import time
 import socket
+import numpy as np
 from multiprocessing import Process, Pipe
 #from PyQt5.QtWidgets import QListView, QAction, QWidget
 from PyQt5.QtWidgets import QWidget, QFileDialog
@@ -206,6 +207,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.Phase_7.textChanged.connect(self.phase_7)
         self.ph_7 = self.Phase_7.toPlainText()[1:(len(self.Phase_7.toPlainText())-1)].split(',')
 
+        self.menu_bar_file()
+
         # Quadrature Phase Correction
         self.P_to_drop.valueChanged.connect(self.p_to_drop_func)
         self.p_to_drop = int( self.P_to_drop.value() )
@@ -221,7 +224,6 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.second_order != 0.0:
             self.second_order = self.sec_order_coef / ( float( self.Second_order.value() ) * 1000 )
 
-        self.menu_bar_file()
         self.dig_part()
 
     def dig_part(self):

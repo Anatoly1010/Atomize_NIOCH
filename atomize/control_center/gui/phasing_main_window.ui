@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1286</width>
-    <height>452</height>
+    <height>458</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,13 +19,13 @@
   <property name="minimumSize">
    <size>
     <width>1286</width>
-    <height>452</height>
+    <height>458</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>1286</width>
-    <height>452</height>
+    <height>458</height>
    </size>
   </property>
   <property name="sizeIncrement">
@@ -56,13 +56,13 @@
    <property name="minimumSize">
     <size>
      <width>1286</width>
-     <height>430</height>
+     <height>436</height>
     </size>
    </property>
    <property name="maximumSize">
     <size>
      <width>1286</width>
-     <height>430</height>
+     <height>436</height>
     </size>
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout">
@@ -1302,7 +1302,7 @@
          </font>
         </property>
         <property name="text">
-         <string>Second Order (MHz/ns)</string>
+         <string>Sec. Order (MHz/ns)</string>
         </property>
        </widget>
       </item>
@@ -1315,7 +1315,7 @@
          </font>
         </property>
         <property name="text">
-         <string>Quadrature Correction</string>
+         <string>Quad. Correction</string>
         </property>
        </widget>
       </item>
@@ -1415,7 +1415,7 @@
      <x>0</x>
      <y>0</y>
      <width>1286</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <property name="maximumSize">
@@ -1436,7 +1436,7 @@
       <x>271</x>
       <y>219</y>
       <width>135</width>
-      <height>94</height>
+      <height>100</height>
      </rect>
     </property>
     <property name="sizePolicy">
