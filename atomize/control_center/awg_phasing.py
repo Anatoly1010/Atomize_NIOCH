@@ -711,15 +711,25 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.shift_box.setCheckState(0)
         self.fft_box.setCheckState(0)
+        self.Quad_cor.setCheckState(0)
         self.Timescale.setValue( int( lines[14].split(':  ')[1] ) )
         self.Hor_offset.setValue( int( lines[15].split(':  ')[1] ) )
         self.Win_left.setValue( int( lines[16].split(':  ')[1] ) )
         self.Win_right.setValue( int( lines[17].split(':  ')[1] ) )
         self.Acq_number.setValue( int( lines[18].split(':  ')[1] ) )
+        
+        try:
+            self.P_to_drop.setValue( int( lines[19].split(':  ')[1] ) )
+            self.Zero_order.setValue( float( lines[20].split(':  ')[1] ) )
+            self.First_order.setValue( float( lines[21].split(':  ')[1] ) )
+            self.Second_order.setValue( float( lines[22].split(':  ')[1] ) )
+        except IndexError:
+            pass
 
         self.dig_stop()
 
         self.fft = 0
+        self.quad = 0
         self.opened = 0
 
     def setter(self, text, index, typ, st, leng, sig, freq, w_sweep, coef, phase):
@@ -785,6 +795,10 @@ class MainWindow(QtWidgets.QMainWindow):
             file.write( 'Window left:  ' + str(self.Win_left.value()) + '\n' )
             file.write( 'Window right:  ' + str(self.Win_right.value()) + '\n' )
             file.write( 'Acquisitions:  ' + str(self.Acq_number.value()) + '\n' )
+            file.write( 'Points to Drop:  ' + str(self.P_to_drop.value()) + '\n' )
+            file.write( 'Zero order:  ' + str(self.Zero_order.value()) + '\n' )
+            file.write( 'First order:  ' + str(self.First_order.value()) + '\n' )
+            file.write( 'Second order:  ' + str(self.Second_order.value()) + '\n' )
 
     def add_ns(self, string1):
         """
