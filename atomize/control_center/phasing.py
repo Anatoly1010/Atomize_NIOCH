@@ -1284,7 +1284,8 @@ class Worker(QWidget):
             pb.pulser_repetition_rate( '10 Hz' )
 
             # add q_switch_delay 165000 ns
-            p7[1] = str( int( p7[1].split(' ')[0] ) + 165000 ) + ' ns'
+            p6[1] = str( int( p6[1].split(' ')[0] ) + 165000 ) + ' ns'
+            # p7 is a laser pulser
             p8[1] = str( int( p8[1].split(' ')[0] ) + 165000 ) + ' ns'
             p9[1] = str( int( p9[1].split(' ')[0] ) + 165000 ) + ' ns'
             p10[1] = str( int( p10[1].split(' ')[0] ) + 165000 ) + ' ns'
@@ -1294,7 +1295,8 @@ class Worker(QWidget):
             if int( p6[2].split(' ')[0] ) != 0:
                 pb.pulser_pulse( name = 'P0', channel = p6[0], start = p6[1], length = p6[2] )
             if int( p7[2].split(' ')[0] ) != 0:
-                pb.pulser_pulse( name = 'P1', channel = p7[0], start = p7[1], length = p7[2], phase_list = p7[3] )
+                # p7 is a laser pulser
+                pb.pulser_pulse( name = 'P1', channel = p7[0], start = p7[1], length = p7[2] ) #, phase_list = p7[3]
             if int( p8[2].split(' ')[0] ) != 0:
                 pb.pulser_pulse( name = 'P2', channel = p8[0], start = p8[1], length = p8[2], phase_list = p8[3] )
             if int( p9[2].split(' ')[0] ) != 0:
@@ -1373,17 +1375,19 @@ class Worker(QWidget):
             if p16 == 0:
                 # acquisition cycle
                 data_x, data_y = pb.pulser_acquisition_cycle(cycle_data_x, cycle_data_y , acq_cycle = p6[3])
-                process = general.plot_1d('Digitizer Live', x_axis, ( data_x, data_y ), label = 'ch', xscale = 's', yscale = 'V', \
+                process = general.plot_1d('Digitizer', x_axis, ( data_x, data_y ), label = 'ch', xscale = 's', yscale = 'V', \
                                             vline = (p4 * 10**-9, p5 * 10**-9), pr = process )
 
             else:
                 # acquisition cycle
                 data_x, data_y = pb.pulser_acquisition_cycle(cycle_data_x, cycle_data_y , acq_cycle = p6[3])
-                process = general.plot_1d('Digitizer Live', x_axis, ( data_x, data_y ), label = 'ch', xscale = 's', yscale = 'V', \
+                process = general.plot_1d('Digitizer', x_axis, ( data_x, data_y ), label = 'ch', xscale = 's', yscale = 'V', \
                                     vline = (p4 * 10**-9, p5 * 10**-9), pr = process )
                 if p17 == 0:
                     freq_axis, abs_values = fft.fft(x_axis, data_x, data_y, 2)
-                    process = general.plot_1d('FFT Analyzer', freq_axis, abs_values, xname = 'Freq Offset', label = 'FFT', xscale = 'MHz', yscale = 'Arb. U.', pr = process)
+                    m_val = round( np.amax( abs_values ), 2 )
+                    process = general.plot_1d('FFT', freq_axis, abs_values, xname = 'Freq Offset', label = 'FFT', xscale = 'MHz', \
+                                              yscale = 'Arb. U.', text = 'Max ' + str(m_val), pr = process)
                 else:
                     if p21 > len( data_x ) - 2:
                         p21 = len( data_x ) - 4
@@ -1391,7 +1395,8 @@ class Worker(QWidget):
                     # fixed resolution of digitizer; 2 ns
                     freq, fft_x, fft_y = fft.fft( x_axis[p21:], data_x[p21:], data_y[p21:], 2, re = 'True' )
                     data = fft.ph_correction( freq, fft_x, fft_y, p18, p19, p20 )
-                    process = general.plot_1d('FFT Analyzer', freq, ( data[0], data[1] ), xname = 'Freq Offset', xscale = 'MHz', yscale = 'Arb. U.', label = 'FFT', pr = process)
+                    process = general.plot_1d('FFT', freq, ( data[0], data[1] ), xname = 'Freq Offset', xscale = 'MHz', \
+                                              yscale = 'Arb. U.', label = 'FFT', pr = process)
 
             self.command = 'start'
             pb.pulser_pulse_reset()

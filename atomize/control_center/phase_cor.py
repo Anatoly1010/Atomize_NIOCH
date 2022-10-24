@@ -209,9 +209,9 @@ class MainWindow(QtWidgets.QMainWindow):
             data = self.fft.ph_correction( freq, fft_x, fft_y, self.zero_cor, self.first_cor, self.second_cor )
             header = 'Date: ' + str(datetime.datetime.now().strftime("%d-%m-%Y %H-%M-%S")) + '\n' + \
                      'Corrected File: ' + str( self.opened_file ) + '\n' + \
-                     'Zero Order: ' + str( self.zero_cor * self.deg_rad ) + '\n' + \
-                     'First Order: ' + str( self.first_cor ) + '\n' + \
-                     'Second Order: ' + str( self.second_cor ) + '\n' + \
+                     'Zero Order: ' + str( round( self.zero_cor * self.deg_rad, 3 ) ) + '\n' + \
+                     'First Order: ' + str( round( self.first_cor, 3 ) ) + '\n' + \
+                     'Second Order: ' + str( round( self.second_cor, 3 ) ) + '\n' + \
                      'Points to Drop: ' + str( self.drop ) + '\n' + \
                      '2D Data'
 
@@ -234,9 +234,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
             header = 'Date: ' + str(datetime.datetime.now().strftime("%d-%m-%Y %H-%M-%S")) + '\n' + \
                      'Corrected File: ' + str( self.opened_file_1d ) + '\n' + \
-                     'Zero Order: ' + str( self.zero_cor * self.deg_rad ) + '\n' + \
-                     'First Order: ' + str( self.first_cor ) + '\n' + \
-                     'Second Order: ' + str( self.second_cor ) + '\n' + \
+                     'Zero Order: ' + str( round( self.zero_cor * self.deg_rad, 3 ) ) + '\n' + \
+                     'First Order: ' + str( round( self.first_cor, 3 ) ) + '\n' + \
+                     'Second Order: ' + str( round( self.second_cor, 3 ) ) + '\n' + \
                      'Points to Drop: ' + str( self.drop ) + '\n' + \
                      'Frequency Offset (MHz), X (Arb. U.), Y (Arb. U.) '
 
