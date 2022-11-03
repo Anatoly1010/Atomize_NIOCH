@@ -1919,17 +1919,17 @@ class Worker(QWidget):
             if p16 == 0:
                 # acquisition cycle
                 data_x, data_y = pb.pulser_acquisition_cycle(cycle_data_x, cycle_data_y, acq_cycle = p6[3])
-                process = general.plot_1d('Digitizer Live', x_axis, ( data_x, data_y ), label = 'ch', xscale = 's', yscale = 'V', \
+                process = general.plot_1d('Digitizer', x_axis, ( data_x, data_y ), label = 'ch', xscale = 's', yscale = 'V', \
                                             vline = (p4 * 10**-9, p5 * 10**-9), pr = process )
             else:
                 # acquisition cycle
                 data_x, data_y = pb.pulser_acquisition_cycle(cycle_data_x, cycle_data_y, acq_cycle = p6[3])
-                process = general.plot_1d('Digitizer Live', x_axis, ( data_x, data_y ), label = 'ch', xscale = 's', yscale = 'V', \
+                process = general.plot_1d('Digitizer', x_axis, ( data_x, data_y ), label = 'ch', xscale = 's', yscale = 'V', \
                                     vline = (p4 * 10**-9, p5 * 10**-9), pr = process )
                 if p27 == 0:
                     freq_axis, abs_values = fft.fft(x_axis, data_x, data_y, 2)
                     m_val = round( np.amax( abs_values ), 2 )
-                    process = general.plot_1d('FFT Analyzer', freq_axis, abs_values, xname = 'Freq Offset', label = 'FFT', \
+                    process = general.plot_1d('FFT', freq_axis, abs_values, xname = 'Freq Offset', label = 'FFT', \
                                               xscale = 'MHz', yscale = 'Arb. U.', text = 'Max ' + str(m_val), pr = process)
                 else:
                     if p31 > len( data_x ) - 2:
@@ -1938,7 +1938,7 @@ class Worker(QWidget):
                     # fixed resolution of digitizer; 2 ns
                     freq, fft_x, fft_y = fft.fft( x_axis[p31:], data_x[p31:], data_y[p31:], 2, re = 'True' )
                     data = fft.ph_correction( freq, fft_x, fft_y, p28, p29, p30 )
-                    process = general.plot_1d('FFT Analyzer', freq, ( data[0], data[1] ), xname = 'Freq Offset', xscale = 'MHz', \
+                    process = general.plot_1d('FFT', freq, ( data[0], data[1] ), xname = 'Freq Offset', xscale = 'MHz', \
                                                yscale = 'Arb. U.', label = 'FFT', pr = process)
 
             self.command = 'start'
