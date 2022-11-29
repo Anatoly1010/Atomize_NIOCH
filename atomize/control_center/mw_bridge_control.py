@@ -393,6 +393,22 @@ class MainWindow(QtWidgets.QMainWindow):
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
         data_raw, addr = self.sock.recvfrom(3)
 
+        # 300 MHz BW
+        MESSAGE = b'\x1b' + b'\x01' + b'\x02'
+        self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
+        data_raw, addr = self.sock.recvfrom(3)
+
+        # 15 and 20 dB
+        temp = 2*self.Att1_prd.value()
+        MESSAGE = b'\x15' + b'\x01' + struct.pack(">B", int(temp))
+        self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
+        data_raw, addr = self.sock.recvfrom(3)
+
+        temp = 2*self.Att2_prd.value()
+        MESSAGE = b'\x16' + b'\x01' + struct.pack(">B", int(temp))
+        self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
+        data_raw, addr = self.sock.recvfrom(3)
+
         self.telemetry_text.appendPlainText( 'Initialization done' )
 
     def turn_off(self):

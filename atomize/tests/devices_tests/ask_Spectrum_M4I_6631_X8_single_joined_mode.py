@@ -30,12 +30,13 @@ signal.signal(signal.SIGTERM, cleanup)
 
 # EXP2; Linear Frequency Sweep
 # frequency = ('Center', 'Sweep')
-#awg.awg_pulse(name = 'P0', channel = 'CH0', func = 'SINE', frequency = '0 MHz', phase = 0, length = '2032 ns', sigma = '2032 ns', start = '0 ns')
-#awg.awg_pulse(name = 'P1', channel = 'CH0', func = 'TEST2', frequency = ('15 MHz', '30 MHz'), phase = 0, length = '2000 ns', sigma = '2000 ns', start = '2032 ns')
+#awg.awg_pulse(name = 'P0', channel = 'CH0', func = 'SINE', frequency = '10 MHz', phase = 0, length = '200 ns', sigma = '0 ns', start = '0 ns')
+awg.awg_pulse(name = 'P0', channel = 'CH0', func = 'WURST', frequency = ('100 MHz', '300 MHz'), phase = 0, length = '400 ns', start = '0 ns', n = 30, d_coef = 3.33)
+awg.awg_pulse(name = 'P1', channel = 'CH0', func = 'WURST', frequency = ('100 MHz', '300 MHz'), phase = 0, length = '400 ns', start = '600 ns', n = 30)
 # start + length for the second pulse should be divisible by 32
 
 # EXP3; Amplitude Drop; A Pulse should be at least 416 ns long
-awg.awg_pulse(name = 'P0', channel = 'CH0', func = 'TEST3', frequency = '0 MHz', phase = 0, length = '2016 ns', sigma = '2016 ns', start = '0 ns')
+#awg.awg_pulse(name = 'P0', channel = 'CH0', func = 'TEST3', frequency = '0 MHz', phase = 0, length = '2016 ns', sigma = '2016 ns', start = '0 ns')
 # pulse length should be divisible by 32
 
 ####################################################
@@ -48,12 +49,14 @@ awg.awg_trigger_channel('External')
 #awg.awg_reference_clock(100)
 #awg.awg_setup()
 
-for i in general.to_infinity():
-    awg.awg_visualize()
+awg.awg_visualize()
+
+#for i in general.to_infinity():
+#    awg.awg_visualize()
     #awg.awg_update()
-    general.wait('100 ms')
-    if i > 10:
-        break
+#    general.wait('100 ms')
+#    if i > 10:
+#        break
 
 #awg.awg_stop()
 #awg.awg_close()

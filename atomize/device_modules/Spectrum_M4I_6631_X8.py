@@ -4101,10 +4101,25 @@ class Spectrum_M4I_6631_X8:
 
                     # resonator profile correction test
                     if pulse_frequency[index][1] > 0:
-                        c = 1
-                        #c = 0.5 * ( 1 + np.arange(0, 0 + pulse_length_smp[index] ) * 1.005 - np.arange(0, 0 + pulse_length_smp[index] ) )
+                        #c = 1
+                        m_p = ( mid_point - pulse_start_smp[index] )
+                        
+                        #LO - RF; high frequency first; flip order
+                        t_axis = np.flip( np.arange(0, 0 + pulse_length_smp[index] ) - m_p )
+                        
+                        #c = 1 / ( -( 1 / (m_p**2 + 5000) )*( np.arange(0, 0 + pulse_length_smp[index] ) - m_p )**2 + 1 )
+
+                        #c = 1 / self.double_gauss(t_axis * 304 / pulse_length_smp[index], 0.636685, 0.355832, 0.858056, 1155.26, 0.128, -52.0319, 910.959)
+                        c = 1 / self.triple_gauss(t_axis * 300 / pulse_length_smp[index], 0.570786, 0.383363, 12.2448, 1241.89, \
+                                                                                                    0.191815, -43.478, 1913.96, \
+                                                                                                    0.06655,  77.3173, 614.985)
+                        c = c / c[0]
+                        
+                        general.plot_1d( 'C', np.arange(0, 0 + pulse_length_smp[index] ), c )
                     else:
                         c = 1
+                        # No flip here;
+
                         #c = 0.5 * np.flip(1 + np.arange(0, 0 + pulse_length_smp[index] ) * 1.005 - np.arange(0, 0 + pulse_length_smp[index] ) )
 
                     if pulse_phase_np[index] != 1000:
@@ -4240,6 +4255,12 @@ class Spectrum_M4I_6631_X8:
 
             return self.pvBuffer, self.pnBuffer.ctypes.data_as(ptr16) #STANDARD: return self.pvBuffer, self.pnBuffer
     
+    def double_gauss(self, x, bl, a1, x1, w1, a2, x2, w2):
+        return bl + a1 * np.exp( -(x - x1)**2 / w1  ) + a2 * np.exp( -(x - x2)**2 / w2  )
+
+    def triple_gauss(self, x, bl, a1, x1, w1, a2, x2, w2, a3, x3, w3):
+        return bl + a1 * np.exp( -(x - x1)**2 / w1  ) + a2 * np.exp( -(x - x2)**2 / w2  ) + a3 * np.exp( -(x - x3)**2 / w3  )
+
     def round_to_closest(self, x, y):
         """
         A function to round x to divisible by y
