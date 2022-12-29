@@ -4101,21 +4101,45 @@ class Spectrum_M4I_6631_X8:
 
                     # resonator profile correction test
                     if pulse_frequency[index][1] > 0:
-                        #c = 1
-                        m_p = ( mid_point - pulse_start_smp[index] )
+                        ###m_p = ( mid_point - pulse_start_smp[index] )
                         
-                        #LO - RF; high frequency first; flip order
-                        t_axis = np.flip( np.arange(0, 0 + pulse_length_smp[index] ) - m_p )
+                        ###LO - RF; high frequency first; flip order
+                        ###t_axis = np.flip( np.arange(0, 0 + pulse_length_smp[index] ) - m_p )
                         
-                        #c = 1 / ( -( 1 / (m_p**2 + 5000) )*( np.arange(0, 0 + pulse_length_smp[index] ) - m_p )**2 + 1 )
+                        ###c = 1 / self.triple_gauss(t_axis * 300 / pulse_length_smp[index], 0.570786, 0.383363, 12.2448, 1241.89, \
+                        ###                                                                            0.191815, -43.478, 1913.96, \
+                        ###                                                                            0.06655,  77.3173, 614.985)
+                        ###c = c / c[0]
+                        
+                        ###general.plot_1d( 'C', np.arange(0, 0 + pulse_length_smp[index] ), c )
+                        
 
-                        #c = 1 / self.double_gauss(t_axis * 304 / pulse_length_smp[index], 0.636685, 0.355832, 0.858056, 1155.26, 0.128, -52.0319, 910.959)
-                        c = 1 / self.triple_gauss(t_axis * 300 / pulse_length_smp[index], 0.570786, 0.383363, 12.2448, 1241.89, \
-                                                                                                    0.191815, -43.478, 1913.96, \
-                                                                                                    0.06655,  77.3173, 614.985)
-                        c = c / c[0]
-                        
-                        general.plot_1d( 'C', np.arange(0, 0 + pulse_length_smp[index] ), c )
+                        #phase and amplitude from ideal resonator with f0 and Q
+                        Q = 78
+                        f0 = 9700
+
+                        length = pulse_length_smp[index]
+                        end_freq = pulse_frequency[index][1]
+                        st_freq = pulse_frequency[index][0]
+                        sweep = end_freq - st_freq
+
+                        #LO - RF; high frequency first; flip order
+                        t_axis = np.flip( np.arange( st_freq + f0, end_freq + f0, sweep / length ) )
+
+                        ideal_res = 1 / ( 1 + 1j * Q * ( t_axis / f0 - f0 / t_axis ) )
+                        ph_cor = np.arctan2( ideal_res.imag, ideal_res.real ) 
+                        # only pi/2 correction
+                        if int( pulse_amp[index] ) > 1:
+                            amp_cor = 1 / np.abs( ideal_res )
+                            c = amp_cor / amp_cor[0]
+                        else:
+                            c = 1
+
+                        #general.plot_1d( 'C', np.arange(0, 0 + pulse_length_smp[index] ), ph_cor * 180 / np.pi )
+                        #general.plot_1d( 'C', np.arange(0, 0 + pulse_length_smp[index] ), c )
+                        #ph_cor = 0
+                        #c = 1
+
                     else:
                         c = 1
                         # No flip here;
@@ -4129,7 +4153,7 @@ class Spectrum_M4I_6631_X8:
                                             np.sin(2*np.pi*( np.arange(0, 0 + \
                                             pulse_length_smp[index] )*( pulse_frequency[index][0] / self.sample_rate ) + 0.5 * ( pulse_frequency[index][1] - pulse_frequency[index][0])\
                                              / self.sample_rate * np.arange(0, 0 + pulse_length_smp[index] )**2 / pulse_length_smp[index] ) \
-                                             + pulse_phase_np[index] )).astype(int64)
+                                             + pulse_phase_np[index] + ph_cor )).astype(int64)
 
                         self.pnBuffer[2*pulse_start_smp[index]:2*(pulse_start_smp[index] + pulse_length_smp[index])][1::2] = \
                                         (self.maxCAD * c / pulse_amp[index] * ( 1 - np.abs( np.sin( np.pi * ( np.arange(pulse_start_smp[index], pulse_start_smp[index] + \
@@ -4137,7 +4161,7 @@ class Spectrum_M4I_6631_X8:
                                             np.sin(2*np.pi*( np.arange(0, 0 + \
                                             pulse_length_smp[index] )*( pulse_frequency[index][0] / self.sample_rate ) + 0.5 * ( pulse_frequency[index][1] - pulse_frequency[index][0])\
                                              / self.sample_rate * np.arange(0, 0 + pulse_length_smp[index] )**2 / pulse_length_smp[index] ) \
-                                              + pulse_phase_np[index] + self.phase_shift_ch1_seq_mode)).astype(int64) 
+                                              + pulse_phase_np[index] + self.phase_shift_ch1_seq_mode + ph_cor )).astype(int64) 
 
                     else:
                         # DEER pulse

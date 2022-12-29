@@ -31,8 +31,8 @@ signal.signal(signal.SIGTERM, cleanup)
 # EXP2; Linear Frequency Sweep
 # frequency = ('Center', 'Sweep')
 #awg.awg_pulse(name = 'P0', channel = 'CH0', func = 'SINE', frequency = '10 MHz', phase = 0, length = '200 ns', sigma = '0 ns', start = '0 ns')
-awg.awg_pulse(name = 'P0', channel = 'CH0', func = 'WURST', frequency = ('100 MHz', '300 MHz'), phase = 0, length = '400 ns', start = '0 ns', n = 30, d_coef = 3.33)
-awg.awg_pulse(name = 'P1', channel = 'CH0', func = 'WURST', frequency = ('100 MHz', '300 MHz'), phase = 0, length = '400 ns', start = '600 ns', n = 30)
+awg.awg_pulse(name = 'P0', channel = 'CH0', func = 'WURST', frequency = ('0 MHz', '300 MHz'), phase = 0, length = '200 ns', start = '0 ns', n = 30, d_coef = 3.)
+#awg.awg_pulse(name = 'P1', channel = 'CH0', func = 'WURST', frequency = ('0 MHz', '300 MHz'), phase = 0, length = '200 ns', start = '600 ns', n = 30)
 # start + length for the second pulse should be divisible by 32
 
 # EXP3; Amplitude Drop; A Pulse should be at least 416 ns long
