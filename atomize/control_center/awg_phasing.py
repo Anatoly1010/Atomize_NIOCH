@@ -100,6 +100,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.label_25.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_26.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_27.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.label_28.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
 
         # Spinboxes
         self.P1_st.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
@@ -137,6 +138,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.Zero_order.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
         self.First_order.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
         self.Second_order.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
+        self.B_sech.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
 
         self.Phase_1.setStyleSheet("QPlainTextEdit { color: rgb(211, 194, 78); }")
         self.Phase_2.setStyleSheet("QPlainTextEdit { color: rgb(211, 194, 78); }")
@@ -386,6 +388,9 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.second_order != 0.0:
             self.second_order = self.sec_order_coef / ( float( self.Second_order.value() ) * 1000 )
 
+        self.B_sech.valueChanged.connect(self.b_sech_func)
+        self.b_sech_cur = float( self.B_sech.value() )
+
         self.dig_part()
 
     def dig_part(self):
@@ -434,6 +439,12 @@ class MainWindow(QtWidgets.QMainWindow):
         the application
         """
         self.worker = Worker()
+
+    def b_sech_func(self):
+        """
+        A function to set b_sech parameter for the SECH/TANH pulse
+        """
+        self.b_sech_cur = int( self.B_sech.value() )
 
     def quad_online(self):
         """
@@ -708,21 +719,22 @@ class MainWindow(QtWidgets.QMainWindow):
         self.Ampl_2.setValue( int( lines[11].split(':  ')[1] ) )
         self.Phase.setValue( float( lines[12].split(':  ')[1] ) )
         self.N_wurst.setValue( int( lines[13].split(':  ')[1] ) )
+        self.B_sech.setValue( int( lines[14].split(':  ')[1] ) )
 
         self.shift_box.setCheckState(0)
         self.fft_box.setCheckState(0)
         self.Quad_cor.setCheckState(0)
-        self.Timescale.setValue( int( lines[14].split(':  ')[1] ) )
-        self.Hor_offset.setValue( int( lines[15].split(':  ')[1] ) )
-        self.Win_left.setValue( int( lines[16].split(':  ')[1] ) )
-        self.Win_right.setValue( int( lines[17].split(':  ')[1] ) )
-        self.Acq_number.setValue( int( lines[18].split(':  ')[1] ) )
+        self.Timescale.setValue( int( lines[15].split(':  ')[1] ) )
+        self.Hor_offset.setValue( int( lines[16].split(':  ')[1] ) )
+        self.Win_left.setValue( int( lines[17].split(':  ')[1] ) )
+        self.Win_right.setValue( int( lines[18].split(':  ')[1] ) )
+        self.Acq_number.setValue( int( lines[19].split(':  ')[1] ) )
         
         try:
-            self.P_to_drop.setValue( int( lines[19].split(':  ')[1] ) )
-            self.Zero_order.setValue( float( lines[20].split(':  ')[1] ) )
-            self.First_order.setValue( float( lines[21].split(':  ')[1] ) )
-            self.Second_order.setValue( float( lines[22].split(':  ')[1] ) )
+            self.P_to_drop.setValue( int( lines[20].split(':  ')[1] ) )
+            self.Zero_order.setValue( float( lines[21].split(':  ')[1] ) )
+            self.First_order.setValue( float( lines[22].split(':  ')[1] ) )
+            self.Second_order.setValue( float( lines[23].split(':  ')[1] ) )
         except IndexError:
             pass
 
@@ -789,7 +801,8 @@ class MainWindow(QtWidgets.QMainWindow):
             file.write( 'Ampl 1:  ' + str(self.Ampl_1.value()) + '\n' )
             file.write( 'Ampl 2:  ' + str(self.Ampl_2.value()) + '\n' )
             file.write( 'Phase:  ' + str(self.Phase.value()) + '\n' )
-            file.write( 'N WURST:  ' + str(self.N_wurst.value()) + '\n' )
+            file.write( 'N WURST; SECH/TANH:  ' + str(self.N_wurst.value()) + '\n' )
+            file.write( 'B SECH/TANH:  ' + str(self.B_sech.value()) + '\n' )
             file.write( 'Points:  ' + str(self.Timescale.value()) + '\n' )
             file.write( 'Horizontal offset:  ' + str(self.Hor_offset.value()) + '\n' )
             file.write( 'Window left:  ' + str(self.Win_left.value()) + '\n' )
@@ -868,7 +881,7 @@ class MainWindow(QtWidgets.QMainWindow):
     
     def n_wurst(self):
         """
-        A function to set n_wurst parameter for the WURST pulse
+        A function to set n_wurst parameter for the WURST and SECH/TANH pulses
         """
         self.n_wurst_cur = int( self.N_wurst.value() )
 
@@ -1446,67 +1459,67 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if float( self.p2_length.split(' ')[0] ) != 0.:
             # self.p2_length ROUND TO CLOSEST 2
-            if self.p2_typ != 'WURST':
+            if self.p2_typ != 'WURST' or 'SECH/TANH':
                 self.awg.awg_pulse(name = 'P2', channel = 'CH0', func = self.p2_typ, frequency = self.p2_freq, \
                         length = self.p2_length, sigma = self.p2_sigma, start = self.p2_start, d_coef = self.p2_coef, phase_list = self.ph_2 )
             else:
                 self.awg.awg_pulse(name = 'P2', channel = 'CH0', func = self.p2_typ, frequency = ( self.p2_freq, self.wurst_sweep_cur_2 ), \
-                    length = self.p2_length, sigma = self.p2_sigma, start = self.p2_start, d_coef = self.p2_coef, n = self.n_wurst_cur, phase_list = self.ph_2 )
+                    length = self.p2_length, sigma = self.p2_sigma, start = self.p2_start, d_coef = self.p2_coef, n = self.n_wurst_cur, phase_list = self.ph_2, b = self.b_sech_cur )
 
             if self.p2_typ != 'BLANK':
                 self.pb.pulser_pulse(name = 'P3', channel = 'AWG', start = self.p2_start_rect, length = self.round_length( self.P2_len.value() ) ) 
 
         if float( self.p3_length.split(' ')[0] ) != 0.:
-            if self.p3_typ != 'WURST':
+            if self.p3_typ != 'WURST' or 'SECH/TANH':
                 self.awg.awg_pulse(name = 'P4', channel = 'CH0', func = self.p3_typ, frequency = self.p3_freq, \
                         length = self.p3_length, sigma = self.p3_sigma, start = self.p3_start, d_coef = self.p3_coef, phase_list = self.ph_3 )
             else:
                 self.awg.awg_pulse(name = 'P4', channel = 'CH0', func = self.p3_typ, frequency = ( self.p3_freq, self.wurst_sweep_cur_3 ), \
-                    length = self.p3_length, sigma = self.p3_sigma, start = self.p3_start, d_coef = self.p3_coef, n = self.n_wurst_cur, phase_list = self.ph_3 )
+                    length = self.p3_length, sigma = self.p3_sigma, start = self.p3_start, d_coef = self.p3_coef, n = self.n_wurst_cur, phase_list = self.ph_3, b = self.b_sech_cur )
 
             if self.p3_typ != 'BLANK':
                 self.pb.pulser_pulse(name = 'P5', channel = 'AWG', start = self.p3_start_rect, length = self.round_length( self.P3_len.value() ) )
 
         if float( self.p4_length.split(' ')[0] ) != 0.:
-            if self.p4_typ != 'WURST':
+            if self.p4_typ != 'WURST' or 'SECH/TANH':
                 self.awg.awg_pulse(name = 'P6', channel = 'CH0', func = self.p4_typ, frequency = self.p4_freq, \
                         length = self.p4_length, sigma = self.p4_sigma, start = self.p4_start, d_coef = self.p4_coef, phase_list = self.ph_4 )
             else:
                 self.awg.awg_pulse(name = 'P6', channel = 'CH0', func = self.p4_typ, frequency = ( self.p4_freq, self.wurst_sweep_cur_4 ), \
-                    length = self.p4_length, sigma = self.p4_sigma, start = self.p4_start, d_coef = self.p4_coef, n = self.n_wurst_cur, phase_list = self.ph_4 )
+                    length = self.p4_length, sigma = self.p4_sigma, start = self.p4_start, d_coef = self.p4_coef, n = self.n_wurst_cur, phase_list = self.ph_4, b = self.b_sech_cur )
 
             if self.p4_typ != 'BLANK':
                 self.pb.pulser_pulse(name = 'P7', channel = 'AWG', start = self.p4_start_rect, length = self.round_length( self.P4_len.value() ) )
 
         if float( self.p5_length.split(' ')[0] ) != 0.:
-            if self.p5_typ != 'WURST':
+            if self.p5_typ != 'WURST' or 'SECH/TANH':
                 self.awg.awg_pulse(name = 'P8', channel = 'CH0', func = self.p5_typ, frequency = self.p5_freq, \
                         length = self.p5_length, sigma = self.p5_sigma, start = self.p5_start, d_coef = self.p5_coef, phase_list = self.ph_5 )
             else:
                 self.awg.awg_pulse(name = 'P8', channel = 'CH0', func = self.p5_typ, frequency = ( self.p5_freq, self.wurst_sweep_cur_5 ), \
-                    length = self.p5_length, sigma = self.p5_sigma, start = self.p5_start, d_coef = self.p5_coef, n = self.n_wurst_cur, phase_list = self.ph_5 )
+                    length = self.p5_length, sigma = self.p5_sigma, start = self.p5_start, d_coef = self.p5_coef, n = self.n_wurst_cur, phase_list = self.ph_5, b = self.b_sech_cur )
 
             if self.p5_typ != 'BLANK':
                 self.pb.pulser_pulse(name = 'P9', channel = 'AWG', start = self.p5_start_rect, length = self.round_length( self.P5_len.value() ) )
 
         if float( self.p6_length.split(' ')[0] ) != 0.:
-            if self.p6_typ != 'WURST':
+            if self.p6_typ != 'WURST' or 'SECH/TANH':
                 self.awg.awg_pulse(name = 'P10', channel = 'CH0', func = self.p6_typ, frequency = self.p6_freq, \
                         length = self.p6_length, sigma = self.p6_sigma, start = self.p6_start, d_coef = self.p6_coef, phase_list = self.ph_6 )
             else:
                 self.awg.awg_pulse(name = 'P10', channel = 'CH0', func = self.p6_typ, frequency = ( self.p6_freq, self.wurst_sweep_cur_6 ), \
-                    length = self.p6_length, sigma = self.p6_sigma, start = self.p6_start, d_coef = self.p6_coef, n = self.n_wurst_cur, phase_list = self.ph_6 )
+                    length = self.p6_length, sigma = self.p6_sigma, start = self.p6_start, d_coef = self.p6_coef, n = self.n_wurst_cur, phase_list = self.ph_6, b = self.b_sech_cur )
 
             if self.p6_typ != 'BLANK':
                 self.pb.pulser_pulse(name = 'P11', channel = 'AWG', start = self.p6_start_rect, length = self.round_length( self.P6_len.value() ) )
 
         if float( self.p7_length.split(' ')[0] ) != 0.:
-            if self.p7_typ != 'WURST':
+            if self.p7_typ != 'WURST' or 'SECH/TANH':
                 self.awg.awg_pulse(name = 'P12', channel = 'CH0', func = self.p7_typ, frequency = self.p7_freq, \
                         length = self.p7_length, sigma = self.p7_sigma, start = self.p7_start, d_coef = self.p7_coef, phase_list = self.ph_7 )
             else:
                 self.awg.awg_pulse(name = 'P12', channel = 'CH0', func = self.p7_typ, frequency = ( self.p7_freq, self.wurst_sweep_cur_7 ), \
-                    length = self.p7_length, sigma = self.p7_sigma, start = self.p7_start, d_coef = self.p7_coef, n = self.n_wurst_cur, phase_list = self.ph_7 )
+                    length = self.p7_length, sigma = self.p7_sigma, start = self.p7_start, d_coef = self.p7_coef, n = self.n_wurst_cur, phase_list = self.ph_7, b = self.b_sech_cur )
 
             if self.p7_typ != 'BLANK':
                 self.pb.pulser_pulse(name = 'P13', channel = 'AWG', start = self.p7_start_rect, length = self.round_length( self.P7_len.value() ) )
@@ -1687,7 +1700,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                             self.cur_win_left, self.cur_win_right, p1_list, p2_list, p3_list, p4_list, p5_list, p6_list, p7_list, \
                                             self.n_wurst_cur, self.repetition_rate.split(' ')[0], self.mag_field, self.fft, self.cur_phase, \
                                             self.ch0_ampl, self.ch1_ampl, self.cur_delay, p2_awg_list, p3_awg_list, p4_awg_list, p5_awg_list, \
-                                            p6_awg_list, p7_awg_list, self.quad, self.zero_order, self.first_order, self.second_order, self.p_to_drop, ) )
+                                            p6_awg_list, p7_awg_list, self.quad, self.zero_order, self.first_order, self.second_order, self.p_to_drop, self.b_sech_cur, ) )
                
         self.digitizer_process.start()
         # send a command in a different thread about the current state
@@ -1727,7 +1740,7 @@ class Worker(QWidget):
         self.command = 'start'
         
     def dig_on(self, conn, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, \
-                           p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30, p31):
+                           p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30, p31, p32):
         """
         function that contains updating of the digitizer
         """
@@ -1780,67 +1793,67 @@ class Worker(QWidget):
             pb.pulser_pulse(name = 'P1', channel = p6[0], start = p6[1], length = p6[2] )
         
         if float( p7[1].split(' ')[0] ) != 0.:
-            if p21[0] != 'WURST':
+            if p21[0] != 'WURST' or 'SECH/TANH':
                 awg.awg_pulse(name = 'P2', channel = 'CH0', func = p21[0], frequency = p21[1], \
                         length = p21[3], sigma = p21[4], start = p21[5], d_coef = p21[6], phase_list = p21[7] )
             else:
                 awg.awg_pulse(name = 'P2', channel = 'CH0', func = p21[0], frequency = ( p21[1], p21[2] ), \
-                    length = p21[3], sigma = p21[4], start = p21[5], d_coef = p21[6], n = p13, phase_list = p21[7] )
+                    length = p21[3], sigma = p21[4], start = p21[5], d_coef = p21[6], n = p13, phase_list = p21[7], b = p32 )
 
             if p21[0] != 'BLANK':
                 pb.pulser_pulse(name = 'P3', channel = 'AWG', start = p7[0], length = p7[1] ) 
 
         if float( p8[1].split(' ')[0] ) != 0.:
-            if p22[0] != 'WURST':
+            if p22[0] != 'WURST' or 'SECH/TANH':
                 awg.awg_pulse(name = 'P4', channel = 'CH0', func = p22[0], frequency = p22[1], \
                         length = p22[3], sigma = p22[4], start = p22[5], d_coef = p22[6], phase_list = p22[7] )
             else:
                 awg.awg_pulse(name = 'P4', channel = 'CH0', func = p22[0], frequency = ( p22[1], p22[2] ), \
-                    length = p22[3], sigma = p22[4], start = p22[5], d_coef = p22[6], n = p13, phase_list = p22[7] )
+                    length = p22[3], sigma = p22[4], start = p22[5], d_coef = p22[6], n = p13, phase_list = p22[7], b = p32)
 
             if p22[0] != 'BLANK':
                 pb.pulser_pulse(name = 'P5', channel = 'AWG', start = p8[0], length = p8[1] ) 
 
         if float( p9[1].split(' ')[0] ) != 0.:
-            if p23[0] != 'WURST':
+            if p23[0] != 'WURST' or 'SECH/TANH':
                 awg.awg_pulse(name = 'P6', channel = 'CH0', func = p23[0], frequency = p23[1], \
                         length = p23[3], sigma = p23[4], start = p23[5], d_coef = p23[6], phase_list = p23[7] )
             else:
                 awg.awg_pulse(name = 'P6', channel = 'CH0', func = p23[0], frequency = ( p23[1], p23[2] ), \
-                    length = p23[3], sigma = p23[4], start = p23[5], d_coef = p23[6], n = p13, phase_list = p23[7] )
+                    length = p23[3], sigma = p23[4], start = p23[5], d_coef = p23[6], n = p13, phase_list = p23[7], b = p32 )
 
             if p23[0] != 'BLANK':
                 pb.pulser_pulse(name = 'P7', channel = 'AWG', start = p9[0], length = p9[1] ) 
 
         if float( p10[1].split(' ')[0] ) != 0.:
-            if p24[0] != 'WURST':
+            if p24[0] != 'WURST' or 'SECH/TANH':
                 awg.awg_pulse(name = 'P8', channel = 'CH0', func = p24[0], frequency = p24[1], \
                         length = p24[3], sigma = p24[4], start = p24[5], d_coef = p24[6], phase_list = p24[7] )
             else:
                 awg.awg_pulse(name = 'P8', channel = 'CH0', func = p24[0], frequency = ( p24[1], p24[2] ), \
-                    length = p24[3], sigma = p24[4], start = p24[5], d_coef = p24[6], n = p13, phase_list = p24[7] )
+                    length = p24[3], sigma = p24[4], start = p24[5], d_coef = p24[6], n = p13, phase_list = p24[7], b = p32 )
 
             if p24[0] != 'BLANK':
                 pb.pulser_pulse(name = 'P9', channel = 'AWG', start = p10[0], length = p10[1] ) 
 
         if float( p11[1].split(' ')[0] ) != 0.:
-            if p25[0] != 'WURST':
+            if p25[0] != 'WURST' or 'SECH/TANH':
                 awg.awg_pulse(name = 'P10', channel = 'CH0', func = p25[0], frequency = p25[1], \
                         length = p25[3], sigma = p25[4], start = p25[5], d_coef = p25[6], phase_list = p25[7] )
             else:
                 awg.awg_pulse(name = 'P10', channel = 'CH0', func = p25[0], frequency = ( p25[1], p25[2] ), \
-                    length = p25[3], sigma = p25[4], start = p25[5], d_coef = p25[6], n = p13, phase_list = p25[7] )
+                    length = p25[3], sigma = p25[4], start = p25[5], d_coef = p25[6], n = p13, phase_list = p25[7], b = p32 )
 
             if p25[0] != 'BLANK':
                 pb.pulser_pulse(name = 'P11', channel = 'AWG', start = p11[0], length = p11[1] ) 
 
         if float( p12[1].split(' ')[0] ) != 0.:
-            if p26[0] != 'WURST':
+            if p26[0] != 'WURST' or 'SECH/TANH':
                 awg.awg_pulse(name = 'P12', channel = 'CH0', func = p26[0], frequency = p26[1], \
                         length = p26[3], sigma = p26[4], start = p26[5], d_coef = p26[6], phase_list = p26[7] )
             else:
                 awg.awg_pulse(name = 'P12', channel = 'CH0', func = p26[0], frequency = ( p26[1], p26[2] ), \
-                    length = p26[3], sigma = p26[4], start = p26[5], d_coef = p26[6], n = p13, phase_list = p26[7] )
+                    length = p26[3], sigma = p26[4], start = p26[5], d_coef = p26[6], n = p13, phase_list = p26[7], b = p32 )
 
             if p26[0] != 'BLANK':
                 pb.pulser_pulse(name = 'P13', channel = 'AWG', start = p12[0], length = p12[1] )

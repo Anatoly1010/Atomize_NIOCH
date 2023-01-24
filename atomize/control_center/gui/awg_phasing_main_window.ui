@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1286</width>
+    <width>1300</width>
     <height>595</height>
    </rect>
   </property>
@@ -18,13 +18,13 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>1286</width>
+    <width>1300</width>
     <height>595</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>1286</width>
+    <width>1300</width>
     <height>595</height>
    </size>
   </property>
@@ -55,13 +55,13 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>1286</width>
+     <width>1300</width>
      <height>574</height>
     </size>
    </property>
    <property name="maximumSize">
     <size>
-     <width>1286</width>
+     <width>1300</width>
      <height>574</height>
     </size>
    </property>
@@ -470,6 +470,11 @@
         <item>
          <property name="text">
           <string>WURST</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>SECH/TANH</string>
          </property>
         </item>
         <item>
@@ -989,7 +994,7 @@
          <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
-         <string>N WURST</string>
+         <string>N WURST; SECH/TANH</string>
         </property>
        </widget>
       </item>
@@ -1170,6 +1175,11 @@
         </item>
         <item>
          <property name="text">
+          <string>SECH/TANH</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
           <string>BLANK</string>
          </property>
         </item>
@@ -1219,6 +1229,11 @@
         </item>
         <item>
          <property name="text">
+          <string>SECH/TANH</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
           <string>BLANK</string>
          </property>
         </item>
@@ -1264,6 +1279,11 @@
         <item>
          <property name="text">
           <string>WURST</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>SECH/TANH</string>
          </property>
         </item>
         <item>
@@ -1631,6 +1651,11 @@
         <item>
          <property name="text">
           <string>WURST</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>SECH/TANH</string>
          </property>
         </item>
         <item>
@@ -2375,6 +2400,11 @@
         </item>
         <item>
          <property name="text">
+          <string>SECH/TANH</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
           <string>BLANK</string>
          </property>
         </item>
@@ -2558,6 +2588,41 @@
         </property>
        </widget>
       </item>
+      <item row="20" column="2">
+       <widget class="QLabel" name="label_28">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>b SECH/TANH (1/ns)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="20" column="3">
+       <widget class="QDoubleSpinBox" name="B_sech">
+        <property name="buttonSymbols">
+         <enum>QAbstractSpinBox::PlusMinus</enum>
+        </property>
+        <property name="decimals">
+         <number>3</number>
+        </property>
+        <property name="minimum">
+         <double>0.005000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>10.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>0.001000000000000</double>
+        </property>
+        <property name="value">
+         <double>0.020000000000000</double>
+        </property>
+       </widget>
+      </item>
      </layout>
     </item>
    </layout>
@@ -2567,8 +2632,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1286</width>
-     <height>20</height>
+     <width>1300</width>
+     <height>21</height>
     </rect>
    </property>
    <property name="font">
@@ -2582,8 +2647,8 @@
      <rect>
       <x>0</x>
       <y>0</y>
-      <width>140</width>
-      <height>92</height>
+      <width>135</width>
+      <height>94</height>
      </rect>
     </property>
     <property name="font">
