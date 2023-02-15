@@ -101,6 +101,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.label_26.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_27.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
         self.label_28.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.label_29.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
 
         # Spinboxes
         self.P1_st.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
@@ -391,6 +392,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.B_sech.valueChanged.connect(self.b_sech_func)
         self.b_sech_cur = float( self.B_sech.value() )
 
+        self.Combo_cor.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
+        self.Combo_cor.currentIndexChanged.connect(self.combo_cor_fun)
+        self.combo_cor = self.combo_cor_fun()
+
         self.dig_part()
 
     def dig_part(self):
@@ -439,6 +444,18 @@ class MainWindow(QtWidgets.QMainWindow):
         the application
         """
         self.worker = Worker()
+
+    def combo_cor_fun(self):
+        """
+        A function to set a correction mode for awg pulses
+        """
+        txt = str( self.Combo_cor.currentText() )
+        if txt == 'No':
+            self.combo_cor = 0
+        elif txt == 'Only Pi/2':
+            self.combo_cor = 1
+        elif txt == 'All':
+            self.combo_cor = 2
 
     def b_sech_func(self):
         """
@@ -1700,7 +1717,8 @@ class MainWindow(QtWidgets.QMainWindow):
                                             self.cur_win_left, self.cur_win_right, p1_list, p2_list, p3_list, p4_list, p5_list, p6_list, p7_list, \
                                             self.n_wurst_cur, self.repetition_rate.split(' ')[0], self.mag_field, self.fft, self.cur_phase, \
                                             self.ch0_ampl, self.ch1_ampl, self.cur_delay, p2_awg_list, p3_awg_list, p4_awg_list, p5_awg_list, \
-                                            p6_awg_list, p7_awg_list, self.quad, self.zero_order, self.first_order, self.second_order, self.p_to_drop, self.b_sech_cur, ) )
+                                            p6_awg_list, p7_awg_list, self.quad, self.zero_order, self.first_order, self.second_order, self.p_to_drop, \
+                                            self.b_sech_cur, self.combo_cor, ) )
                
         self.digitizer_process.start()
         # send a command in a different thread about the current state
@@ -1740,7 +1758,7 @@ class Worker(QWidget):
         self.command = 'start'
         
     def dig_on(self, conn, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, \
-                           p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30, p31, p32):
+                           p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30, p31, p32, p33):
         """
         function that contains updating of the digitizer
         """
@@ -1778,6 +1796,44 @@ class Worker(QWidget):
         ###awg.phase_x = p17
         ###
 
+        # correction from file
+        if p33 == 0:
+            pass
+        elif p33 == 1:
+            path_to_main = os.path.abspath( os.getcwd() )
+            path_file = os.path.join(path_to_main, 'atomize/control_center/correction.param')
+            file_to_read = open(path_file, 'r')
+
+            text_from_file = file_to_read.read().split('\n')
+            # ['BL: 5.92087', 'A1: 412.868', 'X1: -124.647', 'W1: 62.0069', 'A2: 420.717', 'X2: -35.8879', 
+            # 'W2: 34.4214', A3: 9893.97', 'X3: 12.4056', 'W3: 150.304', 'LOW: 16', 'LIMIT: 23', '']
+
+            coef = [float( text_from_file[0].split(' ')[1] ), float( text_from_file[1].split(' ')[1] ), \
+                    float( text_from_file[2].split(' ')[1] ), float( text_from_file[3].split(' ')[1] ), \
+                    float( text_from_file[4].split(' ')[1] ), float( text_from_file[5].split(' ')[1] ), \
+                    float( text_from_file[6].split(' ')[1] ), float( text_from_file[7].split(' ')[1] ),  \
+                    float( text_from_file[8].split(' ')[1] ), float( text_from_file[9].split(' ')[1] )]
+
+            awg.awg_correction(only_pi_half = 'True', coef_array = coef, \
+                               low_level = float( text_from_file[10].split(' ')[1] ), limit = float( text_from_file[11].split(' ')[1] ))
+        elif p33 == 2:
+            path_to_main = os.path.abspath( os.getcwd() )
+            path_file = os.path.join(path_to_main, 'atomize/control_center/correction.param')
+            file_to_read = open(path_file, 'r')
+
+            text_from_file = file_to_read.read().split('\n')
+            # ['BL: 5.92087', 'A1: 412.868', 'X1: -124.647', 'W1: 62.0069', 'A2: 420.717', 'X2: -35.8879', 
+            # 'W2: 34.4214', A3: 9893.97', 'X3: 12.4056', 'W3: 150.304', 'LOW: 16', 'LIMIT: 23', '']
+            
+            coef = [float( text_from_file[0].split(' ')[1] ), float( text_from_file[1].split(' ')[1] ), \
+                    float( text_from_file[2].split(' ')[1] ), float( text_from_file[3].split(' ')[1] ), \
+                    float( text_from_file[4].split(' ')[1] ), float( text_from_file[5].split(' ')[1] ), \
+                    float( text_from_file[6].split(' ')[1] ), float( text_from_file[7].split(' ')[1] ),  \
+                    float( text_from_file[8].split(' ')[1] ), float( text_from_file[9].split(' ')[1] )]
+
+            awg.awg_correction(only_pi_half = 'False', coef_array = coef, \
+                               low_level = float( text_from_file[10].split(' ')[1] ), limit = float( text_from_file[11].split(' ')[1] ))
+        
         awg.awg_channel('CH0', 'CH1')
         awg.awg_card_mode('Single Joined')
         awg.awg_clock_mode('External')
