@@ -919,7 +919,7 @@ class MainWindow(QMainWindow):
         self.tab_pulse.tabBar().setTabTextColor(1, QColor(193, 202, 227))
 
         # ---- Labels & Inputs ----
-        labels = [("Acquisitions", "label_17"), ("Integration Left", "label_18"), ("Integration Right", "label_19"), ("Decimation", "label_20"), ("Points", "label_e1"), ("Scans", "label_e2"), ("Experiment Name", "label_e3"), ("Curve Name", "label_e4"), ("Start Field", "label_f1"), ("End Field", "label_f2"), ("Field Step", "label_f3"), ("Sweep Type", "label_c1"), ("Start Log Time", "label_e5"), ("End Log Time", "label_e6"),
+        labels = [("Acquisitions", "label_17"), ("Integration Left", "label_18"), ("Integration Right", "label_19"), ("Det. Points", "label_20"), ("Points", "label_e1"), ("Scans", "label_e2"), ("Experiment Name", "label_e3"), ("Curve Name", "label_e4"), ("Start Field", "label_f1"), ("End Field", "label_f2"), ("Field Step", "label_f3"), ("Sweep Type", "label_c1"), ("Start Log Time", "label_e5"), ("End Log Time", "label_e6"),
             ('X<sub style="font-size: 12pt;">0</sub>', "label_e7"), ("ΔX ", "label_e8"),
             ("Amplitude Step", "label_f4"), ("Cycles", "label_cyc"), ("Save Each Cycle", "label_save_cyc")]
 
@@ -931,7 +931,7 @@ class MainWindow(QMainWindow):
 
         # ---- Boxes ----
         double_boxes = [(QSpinBox, "Acq_number", "number_averages", self.acq_number, 1, 1e4, 1, 1, 0, ""),
-                      (QSpinBox, "Dec", "decimation", self.decimat, 1, 4, 1, 1, 0, ""),
+                      (QSpinBox, "Dec", "dig_points", self.decimat, 100, 20000, 500, 10, 0, ""),
                       (QDoubleSpinBox, "Win_left", "cur_win_left", self.win_left, 0, 6400, 0, 0.4, 1, " ns"),
                       (QDoubleSpinBox, "Win_right", "cur_win_right", self.win_right, 0, 6400, 320, 0.4, 1, " ns"),
                       (QSpinBox, "box_points", "cur_points", self.points, 1, 20000, 500, 10, 0, ""),
@@ -969,7 +969,7 @@ class MainWindow(QMainWindow):
             if isinstance(spin_box, QSpinBox):
                 if attr_name == 'Dec':
                     setattr(self, par_name, int(spin_box.value()))
-                    self.time_per_point = 0.4 * self.decimation
+                    self.time_per_point = 2  # NIOCH: fixed 2 ns / digitizer point
                 else:
                     setattr(self, par_name, int(spin_box.value()))
             else:
@@ -977,7 +977,10 @@ class MainWindow(QMainWindow):
                     setattr(self, par_name, int( float( spin_box.value() ) / self.time_per_point ))
                 else:
                     setattr(self, par_name, float(spin_box.value()))
-        
+
+        # NIOCH digitizer posttrigger (half the detection window by default)
+        self.posttrigger = int( self.dig_points / 2 )
+
         self.X0.setToolTip('X<sub style="font-size: 12pt;">0</sub> value for the custom X-axis.')
         self.XDelta.setToolTip('ΔX value for the custom X-axis. Applied if not equal to 0.')
         self.box_step_ampl.setToolTip('A pulse with a variable amplitude can be specified using the Start Increment parameter in the Pulses tab.')
@@ -1801,16 +1804,16 @@ class MainWindow(QMainWindow):
         """Loaded Q for the ideal-RLC correction."""
         self.q_cur = float( self.Q_res.value() )
 
-    def _apply_awg_correction(self, pb, mode):
-        """Read correction.param and push resonator-correction settings to pb.
+    def _apply_awg_correction(self, awg, mode):
+        """Read correction.param and push resonator-correction settings to the AWG.
 
-        mode 0 = off, 1 = only Pi/2 (high-amplitude pulses), 2 = all swept pulses.
-        The measured triple-Lorentzian magnitude fit (+ LOW/LIMIT clamp) comes
-        from correction.param; the model (measured / ideal RLC), f0, Q and the
-        phase-correction flag come from the AWG-tab controls.
+        mode 0 = off (no correction applied), 1 = only Pi/2 (high-amplitude
+        pulses), 2 = all swept pulses. The measured triple-Lorentzian magnitude
+        fit (+ LOW/LIMIT clamp) comes from correction.param. NIOCH's
+        Spectrum_M4I_6631 awg_correction(only_pi_half, coef_array, low_level,
+        limit) has no model/f0/Q/phase arguments, so those are not passed.
         """
         if mode == 0:
-            pb.awg_correction_off()
             return
 
         path_file = os.path.join( os.path.abspath( os.getcwd() ),
@@ -1819,12 +1822,10 @@ class MainWindow(QMainWindow):
             text_from_file = file_to_read.read().split('\n')
         coef = [ float( text_from_file[i].split(' ')[1] ) for i in range(10) ]
 
-        pb.awg_correction(only_pi_half = ('True' if mode == 1 else 'False'),
+        awg.awg_correction(only_pi_half = ('True' if mode == 1 else 'False'),
             coef_array = coef,
             low_level = float( text_from_file[10].split(' ')[1] ),
-            limit = float( text_from_file[11].split(' ')[1] ),
-            model = self.cor_model_cur, f0 = self.f0_cur, q_factor = self.q_cur,
-            phase_correction = self.phase_cor_cur )
+            limit = float( text_from_file[11].split(' ')[1] ) )
 
     def b_sech_func(self):
         """
@@ -2740,20 +2741,18 @@ class MainWindow(QMainWindow):
 
     def decimat(self):
         """
-        A function to set decimation coefficient
+        A function to set the digitizer record length (DETECTION window in points,
+        NIOCH digitizer fixed at 2 ns / point). Posttrigger is derived as half the
+        window. Pushes PO/HO live if a run is in progress.
         """
-        current = self.Dec.value()
-        
-        if current == 3:
-            new_val = 4 if self.decimation == 2 else 2
-            self.Dec.blockSignals(True)
-            self.Dec.setValue(new_val)
-            self.Dec.blockSignals(False)
-            self.decimation = new_val
-        else:
-            self.decimation = current
-
-        self.time_per_point = 0.4 * self.decimation
+        self.dig_points = int( self.Dec.value() )
+        self.posttrigger = int( self.dig_points / 2 )
+        self.time_per_point = 2  # NIOCH: fixed 2 ns / digitizer point
+        try:
+            self.parent_conn_dig.send( 'PO' + str(self.dig_points) )
+            self.parent_conn_dig.send( 'HO' + str(self.posttrigger) )
+        except (AttributeError, BrokenPipeError, OSError):
+            pass
         self.win_left()
         self.win_right()
 
@@ -3097,7 +3096,7 @@ class MainWindow(QMainWindow):
         # a process for running function script 
         # sending parameters for initial initialization
         self.digitizer_process = Process( target = worker.dig_on, args = ( self.child_conn_dig,
-            self.decimation, self.l_mode, self.number_averages,  self.cur_win_left,
+            self.dig_points, self.posttrigger, self.number_averages,  self.cur_win_left,
             self.cur_win_right, self.p1_list, self.p2_list, self.p3_list,
             self.p4_list, self.p5_list, self.p6_list, self.p7_list,
             self.n_wurst_cur, self.repetition_rate.split(' ')[0], self.mag_field, self.fft,
@@ -3292,7 +3291,7 @@ class MainWindow(QMainWindow):
         self.parent_conn_dig, self.child_conn_dig = Pipe()
 
         self.digitizer_process = Process( target = worker.dig_on, args = ( self.child_conn_dig, 
-            self.decimation, self.l_mode, self.number_averages,  self.cur_win_left, 
+            self.dig_points, self.posttrigger, self.number_averages,  self.cur_win_left, 
             self.cur_win_right, self.p1_list, self.p2_list, self.p3_list, 
             self.p4_list, self.p5_list, self.p6_list, self.p7_list, 
             self.n_wurst_cur, self.repetition_rate.split(' ')[0], self.mag_field, self.fft, 
@@ -3519,11 +3518,15 @@ class Worker():
             import atomize.general_modules.general_functions as general
             if script_test:
                 general.test_flag = 'test'
-            import atomize.device_modules.Insys_FPGA as pb_pro
+            import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
+            import atomize.device_modules.Spectrum_M4I_6631_X8 as spectrum_awg
+            import atomize.device_modules.PB_ESR_500_pro as pb_pro
             import atomize.math_modules.fft as fft_module
             import atomize.device_modules.BH_15 as itc
 
-            pb = pb_pro.Insys_FPGA()
+            pb = pb_pro.PB_ESR_500_Pro()
+            dig = spectrum.Spectrum_M4I_4450_X8()
+            awg = spectrum_awg.Spectrum_M4I_6631_X8()
             fft = fft_module.Fast_Fourier()
             bh15 = itc.BH_15()
             #bh15.magnet_setup( p15, 0.5 )
@@ -3533,15 +3536,24 @@ class Worker():
             num_ave = p3
             iq_cor = iq_corr
 
-            ###
-            pb.phase_shift_ch1_seq_mode_awg = p17
-            ###
+            # AWG channel + clock configuration (NIOCH Spectrum M4I-6631)
+            awg.awg_channel('CH0', 'CH1')
+            awg.awg_card_mode('Single Joined')
+            awg.awg_clock_mode('External')
+            awg.awg_reference_clock(100)
+            awg.awg_sample_rate(1000)
+            awg.awg_trigger_delay( p20 )
+            awg.phase_shift_ch1_seq_mode = p17
 
             # correction from file (measured profile from correction.param;
             # model / f0 / Q / phase from the AWG-tab controls)
-            self._apply_awg_correction(pb, p33)
+            self._apply_awg_correction(awg, p33)
 
-            pb.awg_amplitude('CH0', str(p18), 'CH1', str(p19) )
+            awg.awg_amplitude('CH0', str(p18), 'CH1', str(p19) )
+
+            # Master AWG-card trigger (NIOCH: TRIGGER_AWG triggers the AWG card;
+            # each AWG pulse is gated by an 'AWG' channel marker pulse)
+            pb.pulser_pulse(name='P0', channel='TRIGGER_AWG', start='0 ns', length='30 ns')
 
             # DETECTION pulse
             iq_freq = -int( p6[4].split(" MHz")[0] )
@@ -3568,20 +3580,22 @@ class Worker():
                             'length': ap[3],
                             'sigma': ap[4],
                             'start': ap[5],
-                            'amplitude': ap[6],
+                            'd_coef': ap[6],
                             'phase_list': ap[7]
                         }
-                        
+
                         if is_complex:
                             awg_kwargs.update({'n': p13, 'b': p32})
-                            
-                        pb.awg_pulse(**awg_kwargs)
 
+                        awg.awg_pulse(**awg_kwargs)
+
+                        # per-pulse 'AWG' amp-gate marker (RECT_AWG/AMP_ON); NOT a
+                        # trigger. The single sequence trigger is P0 (TRIGGER_AWG).
                         if ap[0] != 'BLANK':
                             pb.pulser_pulse(
                                 name=f'P{2*i + 3}',
-                                channel='TRIGGER_AWG', 
-                                start=tp[0], 
+                                channel='AWG',
+                                start=tp[0],
                                 length=tp[1]
                             )
                 pb.pulser_repetition_rate( str(p14) + ' Hz' )
@@ -3606,9 +3620,9 @@ class Worker():
                     if int(float(tp[1].split(' ')[0])) != 0:
                         # add q_delay
                         start_val = float(tp[0].split(' ')[0]) + p42
-                        tp[0] = f"{self.round_to_closest(start_val, 3.2)} ns"
+                        tp[0] = f"{self.round_to_closest(start_val, 2)} ns"
                         start_val_awg = float(ap[5].split(' ')[0]) + p42
-                        ap[5] = f"{self.round_to_closest(start_val_awg, 3.2)} ns"
+                        ap[5] = f"{self.round_to_closest(start_val_awg, 2)} ns"
 
                         is_complex = ap[0] in ['WURST', 'SECH/TANH']
                         freq = (ap[1], ap[2]) if is_complex else ap[1]
@@ -3621,19 +3635,19 @@ class Worker():
                             'length': ap[3],
                             'sigma': ap[4],
                             'start': ap[5],
-                            'amplitude': ap[6],
+                            'd_coef': ap[6],
                             'phase_list': ap[7]
                         }
 
                         if is_complex:
                             awg_kwargs.update({'n': p13, 'b': p32})
 
-                        pb.awg_pulse(**awg_kwargs)
+                        awg.awg_pulse(**awg_kwargs)
 
                         if ap[0] != 'BLANK':
                             pb.pulser_pulse(
                                 name=f'P{2*i + 3}',
-                                channel='TRIGGER_AWG',
+                                channel='AWG',
                                 start=tp[0],
                                 length=tp[1]
                             )
@@ -3648,39 +3662,30 @@ class Worker():
                     pb.pulser_repetition_rate( str(p14) + ' Hz' )
 
 
-            pb.pulser_default_synt(p34)
+            # NIOCH: compile the AWG buffer (zero-filled waveform) after all pulses
+            awg.awg_setup()
 
+            # NIOCH Spectrum digitizer: point/posttrigger based, fixed 2 ns/point.
+            # p1 = record length (DETECTION window in points); p2 = posttrigger.
+            WIN_ADC = int( p1 )
+            t_res = 2.0
 
-            POINTS = 1
-            pb.digitizer_decimation(p1)
-            DETECTION_WINDOW = round( pb.adc_window * 3.2, 1 )
-            TR_ADC = round( 3.2 / 8, 1 )
-            WIN_ADC = int( pb.adc_window * 8 / p1 )
+            dig.digitizer_card_mode('Average')
+            dig.digitizer_clock_mode('External')
+            dig.digitizer_reference_clock(100)
+            dig.digitizer_number_of_points( p1 )
+            dig.digitizer_posttrigger( p2 )
+            dig.digitizer_number_of_averages( p3 )
+            dig.digitizer_setup()
 
-            #31/03/2026
-            if DETECTION_WINDOW <= 1200:
-                ms_per_point = 1e-3
-            else:
-                ms_per_point = 1e-2
-
-            data = np.zeros( ( 2, WIN_ADC, 1 ) )
-            ##data = np.random.random( ( 2, WIN_ADC, 1 ) )
-            x_axis = np.linspace(0, ( DETECTION_WINDOW - TR_ADC), num = WIN_ADC)
-
-            t_res = 0.4 * p1
-
-            #31/03/2026
             p14 = float(p14)
-            if (p3 / p14 ) < ms_per_point:
-                p3 = int( ms_per_point * p14)
-                #conn.send( ('Average', p3) )
-
-            if not script_test:
-                pb.digitizer_number_of_averages(p3)
             PHASES = len( p6[3] )
 
-            #pb.pulser_visualize()
-            pb.pulser_open()
+            x_axis = np.arange( WIN_ADC ) * t_res * 1e-9
+            cycle_data_x = np.zeros( ( PHASES, WIN_ADC ) )
+            cycle_data_y = np.zeros( ( PHASES, WIN_ADC ) )
+            data_x = np.zeros( WIN_ADC )
+            data_y = np.zeros( WIN_ADC )
 
             # the idea of automatic and dynamic changing is
             # sending a new value of repetition rate via self.command
@@ -3690,30 +3695,26 @@ class Worker():
                 # always test our self.command attribute for stopping the script when neccessary
 
                 if self.command[0:2] == 'PO':
-                    #points_value = int( self.command[2:] )
-                    #a2012.oscilloscope_stop()
-                    #a2012.oscilloscope_timebase( str(points_value) + ' ns' )
-                    #a2012.oscilloscope_run_stop()
-                    pass
+                    points_value = int( self.command[2:] )
+                    dig.digitizer_stop()
+                    dig.digitizer_number_of_points( points_value )
+                    dig.digitizer_setup()
+                    WIN_ADC = points_value
+                    x_axis = np.arange( WIN_ADC ) * t_res * 1e-9
+                    cycle_data_x = np.zeros( ( PHASES, WIN_ADC ) )
+                    cycle_data_y = np.zeros( ( PHASES, WIN_ADC ) )
 
                 elif self.command[0:2] == 'HO':
-                    #posstrigger_value = int( self.command[2:] )
-                    #a2012.oscilloscope_stop()
-                    #a2012.oscilloscope_horizontal_offset( str(posstrigger_value) + ' ns' )
-                    #a2012.oscilloscope_run_stop()
-                    pass
-                    
+                    posttrigger_value = int( self.command[2:] )
+                    dig.digitizer_stop()
+                    dig.digitizer_posttrigger( posttrigger_value )
+                    dig.digitizer_setup()
+
                 elif self.command[0:2] == 'NA':
                     p3 = int( self.command[2:] )
-
-                    #31/03/2026
-                    if (p3 / p14 ) < ms_per_point:
-                        p3 = int( ms_per_point * p14)
-                        if not script_test:
-                            conn.send( ('Average', p3) )
-
-                    if not script_test:
-                        pb.digitizer_number_of_averages( p3 )
+                    dig.digitizer_stop()
+                    dig.digitizer_number_of_averages( p3 )
+                    dig.digitizer_setup()
 
                 elif self.command[0:2] == 'WL':
                     p4 = int( self.command[2:] )
@@ -3721,18 +3722,7 @@ class Worker():
                     p5 = int( self.command[2:] )
                 elif self.command[0:2] == 'RR':
                     p14 = float( self.command[2:] )
-
-                    #31/03/2026
-                    if (p3 / p14 ) < ms_per_point:
-                        p3 = int( ms_per_point * p14)
-                        pb.digitizer_number_of_averages( p3 )
-                        if not script_test:
-                            conn.send( ('Average', p3) )
-
-                    if p14 > 49:
-                        pb.pulser_repetition_rate( str(p14) + ' Hz' )
-                    elif not script_test:
-                        conn.send( ('Message', 'For REPETITION RATE lower then 50 Hz, please, press RUN PULSES') )
+                    pb.pulser_repetition_rate( str(p14) + ' Hz' )
 
                 elif self.command[0:2] == 'FI':
                     p15 = float( self.command[2:] )
@@ -3765,109 +3755,78 @@ class Worker():
                 # phase cycle
                 PHASES = len( p6[3] )
 
-                for i in range( PHASES ):
+                # phase cycle: AWG advances phase, one digitizer curve per phase,
+                # then the pulser combines the cycle (NIOCH AWG idiom, see
+                # tests/pulse_epr/awg/digitizer/01_t2_digitizer_baseline.py)
+                pb.pulser_update()
+                k = 0
+                while k < PHASES:
+                    awg.awg_next_phase()
+                    x_axis, cycle_data_x[k], cycle_data_y[k] = dig.digitizer_get_curve()
+                    awg.awg_stop()
+                    k += 1
 
-                    pb.awg_next_phase()
-                    pb.pulser_update()
-                    
-                    if p2 == 0:
-                        data[0], data[1] = pb.digitizer_get_curve(POINTS, PHASES, live_mode = 1)
-                    elif p2 == 1:
-                        data[0], data[1] = pb.digitizer_get_curve(POINTS, PHASES, live_mode = 0)
-                    ##general.wait('100 ms')
-                    ##data = np.random.random( ( 2, WIN_ADC, 1 ) )
+                data_x, data_y = pb.pulser_acquisition_cycle( cycle_data_x, cycle_data_y, acq_cycle = p6[3] )
 
-                    data_x = data[0].ravel()
-                    data_y = data[1].ravel()
+                if script_test:
+                    general.plot_1d('Dig', x_axis, ( data_x, data_y ),
+                        xscale = 's', yscale = 'V', label = 'ch',
+                        vline = (p4 * t_res * 1e-9, p5 * t_res * 1e-9)
+                        )
+                else:
+                    int_x = round( np.sum( data_x[p4:p5] ) * t_res , 1 )
+                    int_y = round( np.sum( data_y[p4:p5] ) * t_res , 1 )
+                    general.plot_1d('Dig', x_axis, ( data_x, data_y ),
+                        xscale = 's', yscale = 'V', label = 'ch',
+                        vline = (p4 * t_res * 1e-9, p5 * t_res * 1e-9),
+                        text = 'I/Q ' + str(int_x) + '/' + str(int_y)
+                        )
 
-                    if iq_cor == 1:
-                        data_x, data_y = pb.digitizer_iq(data_x, data_y, iq_freq, p28, p29, p30)
-                    else:
-                        pass
+                if p16 == 1:
 
-                    if script_test:
-                        general.plot_1d('Dig', x_axis / 1e9, ( data_x, data_y ),
-                            xscale = 's', yscale = 'mV', label = 'ch',
-                            vline = (p4 * t_res / 1e9, p5 * t_res / 1e9)
+                    if p27 == 0:
+                        freq_axis, abs_values = fft.fft(x_axis, data_x, data_y, t_res)
+                        m_val = round( np.amax( abs_values ), 2 )
+                        general.plot_1d('FFT', freq_axis, abs_values,
+                            xname = 'Freq Offset', label = 'FFT', xscale = 'MHz',
+                            yscale = 'Arb. U.', text = 'Max ' + str(m_val)
                             )
                     else:
-                        int_x = round( np.sum( data_x[p4:p5] ) * 1 * t_res , 1 )
-                        int_y = round( np.sum( data_y[p4:p5] ) * 1 * t_res , 1 )
-                        general.plot_1d('Dig', x_axis / 1e9, ( data_x, data_y ),
-                            xscale = 's', yscale = 'mV', label = 'ch',
-                            vline = (p4 * t_res / 1e9, p5 * t_res / 1e9),
-                            text = 'I/Q ' + str(int_x) + '/' + str(int_y)
+                        if p31 > len( data_x ) - 2:
+                            p31 = len( data_x ) - 4
+                            general.message('Maximum length of the data achieved. A number of drop points was corrected.')
+                        # fixed resolution of digitizer; 2 ns
+                        freq, fft_x, fft_y = fft.fft( x_axis[p31:], data_x[p31:], data_y[p31:], t_res, re = 'True' )
+                        data_fft = fft.ph_correction( freq, fft_x, fft_y, p28, p29, p30 )
+                        general.plot_1d('FFT', freq, ( data_fft[0], data_fft[1] ),
+                            xname = 'Freq Offset', xscale = 'MHz',
+                            yscale = 'Arb. U.', label = 'FFT'
                             )
-
-                    if p16 == 1:
-
-                        if p27 == 0:
-                            freq_axis, abs_values = fft.fft(x_axis, data_x, data_y, t_res * 1)
-                            m_val = round( np.amax( abs_values ), 2 )
-                            general.plot_1d('FFT', freq_axis * 1e6, abs_values,
-                                xname = 'Offset', label = 'FFT', xscale = 'Hz',
-                                yscale = 'A.U.', text = 'Max ' + str(m_val)
-                                )
-                        else:
-                            if p31 > len( data_x ) - 0.4 * p1:
-                                p31 = len( data_x ) - 0.8 * p1
-                                general.message('Maximum length of the data achieved. A number of drop points was corrected.')
-                            # fixed resolution of digitizer; 2 ns
-                            freq, fft_x, fft_y = fft.fft( x_axis[p31:], data_x[p31:], data_y[p31:], t_res * 1, re = 'True' )
-                            data_fft = fft.ph_correction( freq * 1e6, fft_x, fft_y, 0, 0, 0)
-                            #, p28, p29, p30 )
-                            general.plot_1d('FFT', freq, ( data_fft[0], data_fft[1] ),
-                                xname = 'Offset', xscale = 'Hz',
-                                yscale = 'A.U.', label = 'FFT'
-                                )
 
                 if not script_test:
                     self.command = 'start'
-                    # Live count_nip readout: send the per-nid packet-count array
-                    # so the GUI can show acquisition progress dynamically. Sent
-                    # as its own message type so the parent updates only this line
-                    # and leaves the rest of the log intact. An all-zero array
-                    # carries no information (often the case intentionally), so
-                    # skip it rather than cluttering the log.
-                    try:
-                        if pb.count_nip is not None and np.any(pb.count_nip):
-                            conn.send( ('Count', np.array2string(pb.count_nip, max_line_width = np.inf, threshold = np.inf)) )
-                    except Exception:
-                        pass
-                if PHASES != 1:
-                    pb.awg_pulse_reset()
-                    pb.pulser_pulse_reset()
-                else:
-                    pass
+
+                awg.awg_pulse_reset()
+                pb.pulser_pulse_reset()
+
                 if script_test:
                     self.command = 'exit'
 
                 # poll() checks whether there is data in the Pipe to read
                 # we use it to stop the script if the exit command was sent from the main window
-                # we read data by conn.recv() only when there is the data to read
                 if conn.poll() == True:
                     self.command = conn.recv()
 
             if self.command == 'exit':
-                ##print('exit')
-                pb.pulser_close()
+                dig.digitizer_stop()
+                dig.digitizer_close()
+                awg.awg_stop()
+                awg.awg_close()
+                pb.pulser_stop()
                 if not script_test:
                     conn.send( ('', f'Pulses are stopped') )
                 else:
-                    pulse_list_mod = ''
-                    for element in pb.pulse_array_awg:
-                        if isinstance(element, dict):
-                            if 'amp' in element:
-                                element['amp'] = round(float(element['amp']), 3)
-                        element.pop('phase', None)
-                        element.pop('channel', None)
-                        element.pop('delta_phase', None)
-                        pulse_list_mod = pulse_list_mod + str(element) + '\n'
-                    conn.send( ('test', f'{pulse_list_mod}') )
-                    if PHASES >= pb.number_adc_window_in_buffer():
-                        str1 = '!!!TOO MANY PHASES FOR LIVE MODE!!!\n'
-                        str2 = 'ADC WINDOWS IN BUFFER: '
-                        conn.send( ('test', f'{str1}{str2}{pb.number_adc_window_in_buffer()}') )
+                    conn.send( ('test', f'{awg.awg_pulse_list()}') )
 
         except BaseException as e:
             exc_info = f"{type(e)} \n{str(e)} \n{traceback.format_exc()}"
