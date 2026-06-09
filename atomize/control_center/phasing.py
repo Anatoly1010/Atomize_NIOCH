@@ -2261,28 +2261,13 @@ class MainWindow(QMainWindow):
         """
         A function to stop digitizer
         """
-        path_to_main = os.path.abspath( os.getcwd() )
-        path_file = os.path.join(path_to_main, '../atomize/control_center/digitizer_insys.param')
-        #path_file = os.path.join(path_to_main, 'digitizer_insys.param')
-
-        file_to_read = open(path_file, 'w')
-        file_to_read.write('Points: ' + str( self.p1_length ) +'\n')
-        file_to_read.write('Sample Rate: ' + str( 2500 ) +'\n')
-        file_to_read.write('Posstriger: ' + str( 1024 ) +'\n')
-        file_to_read.write('Range: ' + str( 200 ) +'\n')
-        file_to_read.write('CH0 Offset: ' + str( 0 ) +'\n')
-        file_to_read.write('CH1 Offset: ' + str( 0 ) +'\n')
-
+        # NIOCH drives the digitizer directly over the Worker Pipe (PO/HO),
+        # so the legacy Insys 'digitizer_insys.param' hand-off file is not used.
+        # Keep only the integration-window sanitization.
         if self.cur_win_right < self.cur_win_left:
             self.cur_win_left, self.cur_win_right = self.cur_win_right, self.cur_win_left
         if self.cur_win_right == self.cur_win_left:
             self.cur_win_right += 1 #self.time_per_point
-
-        file_to_read.write('Window Left: ' + str( int(self.cur_win_left) ) +'\n') #/ self.time_per_point
-        file_to_read.write('Window Right: ' + str( int(self.cur_win_right ) ) +'\n') #/ self.time_per_point
-        file_to_read.write('Decimation: ' + str( self.decimation ) +'\n')
-
-        file_to_read.close()
 
         if self.opened == 0:
             try:
