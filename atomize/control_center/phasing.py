@@ -820,7 +820,7 @@ class MainWindow(QMainWindow):
         self.tab_pulse.tabBar().setTabTextColor(1, QColor(193, 202, 227))
 
         # ---- Labels & Inputs ----
-        labels = [("Acquisitions", "label_17"), ("Integration Left", "label_18"), ("Integration Right", "label_19"), ("Decimation", "label_20"), ("Points", "label_e1"), ("Scans", "label_e2"), ("Experiment Name", "label_e3"), ("Curve Name", "label_e4"), ("Start Field", "label_f1"), ("End Field", "label_f2"), ("Field Step", "label_f3"), ("Sweep Type", "label_c1"), ("Start Log Time", "label_e5"), ("End Log Time", "label_e6"),
+        labels = [("Acquisitions", "label_17"), ("Integration Left", "label_18"), ("Integration Right", "label_19"), ("Det. Points", "label_20"), ("Points", "label_e1"), ("Scans", "label_e2"), ("Experiment Name", "label_e3"), ("Curve Name", "label_e4"), ("Start Field", "label_f1"), ("End Field", "label_f2"), ("Field Step", "label_f3"), ("Sweep Type", "label_c1"), ("Start Log Time", "label_e5"), ("End Log Time", "label_e6"),
             ('X<sub style="font-size: 12pt;">0</sub>', "label_e7"), ("ΔX ", "label_e8")]
 
         for name, attr_name in labels:
@@ -831,7 +831,7 @@ class MainWindow(QMainWindow):
 
         # ---- Boxes ----
         double_boxes = [(QSpinBox, "Acq_number", "number_averages", self.acq_number, 1, 1e4, 1, 1, 0, ""),
-                      (QSpinBox, "Dec", "decimation", self.decimat, 1, 4, 1, 1, 0, ""),
+                      (QSpinBox, "Dec", "dig_points", self.decimat, 100, 20000, 500, 10, 0, ""),
                       (QDoubleSpinBox, "Win_left", "cur_win_left", self.win_left, 0, 6400, 0, 0.4, 1, " ns"),
                       (QDoubleSpinBox, "Win_right", "cur_win_right", self.win_right, 0, 6400, 320, 0.4, 1, " ns"),
                       (QSpinBox, "box_points", "cur_points", self.points, 1, 20000, 500, 10, 0, ""),
@@ -2165,20 +2165,18 @@ class MainWindow(QMainWindow):
 
     def decimat(self):
         """
-        A function to set decimation coefficient
+        A function to set the digitizer record length, i.e. the DETECTION window
+        in points (NIOCH digitizer is fixed at 2 ns / point). Posttrigger is
+        derived as half the window. Pushes PO/HO live if a run is in progress.
         """
-        current = self.Dec.value()
-        
-        if current == 3:
-            new_val = 4 if self.decimation == 2 else 2
-            self.Dec.blockSignals(True)
-            self.Dec.setValue(new_val)
-            self.Dec.blockSignals(False)
-            self.decimation = new_val
-        else:
-            self.decimation = current
-
+        self.dig_points = int( self.Dec.value() )
+        self.posttrigger = int( self.dig_points / 2 )
         self.time_per_point = 2  # NIOCH: fixed 2 ns / digitizer point
+        try:
+            self.parent_conn_dig.send( 'PO' + str(self.dig_points) )
+            self.parent_conn_dig.send( 'HO' + str(self.posttrigger) )
+        except (AttributeError, BrokenPipeError, OSError):
+            pass
 
     ###
     def update_pulse_param(self, index, attr_suffix, val_suffix):
