@@ -7,6 +7,7 @@ import sys
 import serial
 import minimalmodbus
 import numpy as np
+import atomize.main.local_config as lconf
 import atomize.device_modules.config.config_utils as cutil
 import atomize.general_modules.general_functions as general
 
@@ -17,7 +18,7 @@ class Cryomech_CPA1110:
         #### Inizialization
         # setting path to *.ini file
         self.path_current_directory = os.path.dirname(__file__)
-        self.path_config_file = os.path.join(self.path_current_directory, 'config','Cryomech_CPA1110_config.ini')
+        self.path_config_file = os.path.join(self.path_current_directory, 'config', 'Cryomech_CPA1110_config.ini')
 
         # configuration data
         self.config = cutil.read_conf_util(self.path_config_file)
@@ -70,16 +71,16 @@ class Cryomech_CPA1110:
                         #self.device_write('*CLS')
 
                     except serial.serialutil.SerialException:
-                        general.message("No connection")
+                        general.message(f"No connection {self.__class__.__name__}")
                         self.status_flag = 0
                         sys.exit()
                 except serial.serialutil.SerialException:
-                    general.message("No connection")
+                    general.message(f"No connection {self.__class__.__name__}")
                     self.status_flag = 0
                     sys.exit()
 
             else:
-                general.message("Incorrect interface setting")
+                general.message(f"Incorrect interface setting {self.__class__.__name__}")
                 self.status_flag = 0
                 sys.exit()
 
@@ -102,7 +103,7 @@ class Cryomech_CPA1110:
             # functioncode = 6 for writing to holding registers
             self.device.write_register(register, value, decimals, functioncode = 6, signed = False)
         else:
-            general.message("No Connection")
+            general.message(f"No connection {self.__class__.__name__}")
             self.status_flag = 0
             sys.exit()
 
@@ -112,7 +113,7 @@ class Cryomech_CPA1110:
             answer = self.device.read_register(register, decimals, functioncode = 4, signed = False)
             return answer
         else:
-            general.message("No Connection")
+            general.message(f"No connection {self.__class__.__name__}")
             self.status_flag = 0
             sys.exit()
     
@@ -123,7 +124,7 @@ class Cryomech_CPA1110:
             answer = self.device.read_float(register, functioncode = 4, byteorder = 3)
             return answer
         else:
-            general.message("No Connection")
+            general.message(f"No connection {self.__class__.__name__}")
             self.status_flag = 0
             sys.exit()
 
@@ -148,19 +149,15 @@ class Cryomech_CPA1110:
                     self.device_write_unsigned(1, 1, 0)
                 elif st[0] == 'Off':
                     self.device_write_unsigned(1, 255, 0)
-                else:
-                    general.message("Incorrect state")
-                    sys.exit()
-            else:
-                general.message("Invalid argument")
-                sys.exit()
         
         elif self.test_flag == 'test':
             if len( st ) == 0:
                 answer = self.test_state
                 return answer
             elif len( st ) == 1:
-                assert(st[0] == 'On' or st[0] == 'Off'), "Incorrect state"
+                assert(st[0] == 'On' or st[0] == 'Off'), "Incorrect state; state: ['On', 'Off']"
+            else:
+                assert(1 == 2), "Invalid argument; state: ['On', 'Off']"
 
     def cryogenic_refrigerator_status_data(self):
         if self.test_flag != 'test':

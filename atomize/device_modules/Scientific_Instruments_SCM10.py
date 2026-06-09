@@ -6,6 +6,7 @@ import gc
 import sys
 import pyvisa
 from pyvisa.constants import StopBits, Parity
+import atomize.main.local_config as lconf
 import atomize.device_modules.config.config_utils as cutil
 import atomize.general_modules.general_functions as general
 
@@ -16,7 +17,7 @@ class Scientific_Instruments_SCM10:
         #### Inizialization
         # setting path to *.ini file
         self.path_current_directory = os.path.dirname(__file__)
-        self.path_config_file = os.path.join(self.path_current_directory, 'config','Scientific_Instruments_SCM10_config.ini')
+        self.path_config_file = os.path.join(self.path_current_directory, 'config', 'Scientific_Instruments_SCM10_config.ini')
 
         # configuration data
         self.config = cutil.read_conf_util(self.path_config_file)
@@ -45,22 +46,16 @@ class Scientific_Instruments_SCM10:
                     try:
                         # test should be here
                         answer = self.device_query('*IDN?')
-                    except pyvisa.VisaIOError:
+                    except (pyvisa.VisaIOError, BrokenPipeError):
                         self.status_flag = 0
-                        general.message("No connection")
+                        general.message(f"No connection {self.__class__.__name__}")
                         sys.exit()
-                    except BrokenPipeError:
-                        general.message("No connection")
-                        self.status_flag = 0
-                        sys.exit()
-                except pyvisa.VisaIOError:
-                    general.message("No connection")
+
+                except (pyvisa.VisaIOError, BrokenPipeError):
+                    general.message(f"No connection {self.__class__.__name__}")
                     self.status_flag = 0
                     sys.exit()
-                except BrokenPipeError:
-                    general.message("No connection")
-                    self.status_flag = 0
-                    sys.exit()
+
             elif self.config['interface'] == 'ethernet':
                 try:
                     self.status_flag = 1
@@ -71,24 +66,18 @@ class Scientific_Instruments_SCM10:
                     try:
                         # test should be here
                         answer = self.device_query('*IDN?')
-                    except pyvisa.VisaIOError:
-                        general.message("No connection")
+                    except (pyvisa.VisaIOError, BrokenPipeError):
+                        general.message(f"No connection {self.__class__.__name__}")
                         self.status_flag = 0
                         sys.exit()
-                    except BrokenPipeError:
-                        general.message("No connection")
-                        self.status_flag = 0
-                        sys.exit()
-                except pyvisa.VisaIOError:
-                    general.message("No connection")
+
+                except (pyvisa.VisaIOError, BrokenPipeError):
+                    general.message(f"No connection {self.__class__.__name__}")
                     self.status_flag = 0
                     sys.exit()
-                except BrokenPipeError:
-                    general.message("No connection")
-                    self.status_flag = 0
-                    sys.exit()
+
             else:
-                general.message("Incorrect interface setting")
+                general.message(f"Incorrect interface setting {self.__class__.__name__}")
                 self.status_flag = 0
                 sys.exit()
             
@@ -107,7 +96,7 @@ class Scientific_Instruments_SCM10:
             command = str(command)
             self.device.write(command)
         else:
-            general.message("No Connection")
+            general.message(f"No connection {self.__class__.__name__}")
             self.status_flag = 0
             sys.exit()
 
@@ -116,7 +105,7 @@ class Scientific_Instruments_SCM10:
             answer = self.device.query(command)
             return answer
         else:
-            general.message("No Connection")
+            general.message(f"No connection {self.__class__.__name__}")
             self.status_flag = 0
             sys.exit()
 
@@ -134,12 +123,9 @@ class Scientific_Instruments_SCM10:
             if channel == '1':
                 answer = float(self.device_query('T?').split(' ')[1])
                 return answer
-            else:
-                general.message("Invalid argument")
-                sys.exit()
         
         elif self.test_flag == 'test':
-            assert(channel == '1'), "Incorrect channel"
+            assert(channel == '1'), "Incorrect channel; channel: ['1']"
             answer = self.test_temperature
             return answer
 

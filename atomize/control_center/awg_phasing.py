@@ -919,7 +919,7 @@ class MainWindow(QMainWindow):
         self.tab_pulse.tabBar().setTabTextColor(1, QColor(193, 202, 227))
 
         # ---- Labels & Inputs ----
-        labels = [("Acquisitions", "label_17"), ("Integration Left", "label_18"), ("Integration Right", "label_19"), ("Det. Points", "label_20"), ("Points", "label_e1"), ("Scans", "label_e2"), ("Experiment Name", "label_e3"), ("Curve Name", "label_e4"), ("Start Field", "label_f1"), ("End Field", "label_f2"), ("Field Step", "label_f3"), ("Sweep Type", "label_c1"), ("Start Log Time", "label_e5"), ("End Log Time", "label_e6"),
+        labels = [("Acquisitions", "label_17"), ("Integration Left", "label_18"), ("Integration Right", "label_19"), ("Det. Points", "label_20"), ("Hor. offset", "label_21"), ("Points", "label_e1"), ("Scans", "label_e2"), ("Experiment Name", "label_e3"), ("Curve Name", "label_e4"), ("Start Field", "label_f1"), ("End Field", "label_f2"), ("Field Step", "label_f3"), ("Sweep Type", "label_c1"), ("Start Log Time", "label_e5"), ("End Log Time", "label_e6"),
             ('X<sub style="font-size: 12pt;">0</sub>', "label_e7"), ("ΔX ", "label_e8"),
             ("Amplitude Step", "label_f4"), ("Cycles", "label_cyc"), ("Save Each Cycle", "label_save_cyc")]
 
@@ -932,6 +932,7 @@ class MainWindow(QMainWindow):
         # ---- Boxes ----
         double_boxes = [(QSpinBox, "Acq_number", "number_averages", self.acq_number, 1, 1e4, 1, 1, 0, ""),
                       (QSpinBox, "Dec", "dig_points", self.decimat, 100, 20000, 500, 10, 0, ""),
+                      (QSpinBox, "Hor_offset", "posttrigger", self.hor_offset, 0, 20000, 250, 10, 0, ""),
                       (QDoubleSpinBox, "Win_left", "cur_win_left", self.win_left, 0, 6400, 0, 0.4, 1, " ns"),
                       (QDoubleSpinBox, "Win_right", "cur_win_right", self.win_right, 0, 6400, 320, 0.4, 1, " ns"),
                       (QSpinBox, "box_points", "cur_points", self.points, 1, 20000, 500, 10, 0, ""),
@@ -1139,8 +1140,10 @@ class MainWindow(QMainWindow):
         right_grid.addWidget(self.Win_right, 1, 1)
         right_grid.addWidget(self.label_20, 2, 0)
         right_grid.addWidget(self.Dec, 2, 1)
-        right_grid.addWidget(hline(), 3, 0, 1, 2)
-        right_grid.setRowStretch(4, 1)
+        right_grid.addWidget(self.label_21, 3, 0)
+        right_grid.addWidget(self.Hor_offset, 3, 1)
+        right_grid.addWidget(hline(), 4, 0, 1, 2)
+        right_grid.setRowStretch(5, 1)
         right_grid.setColumnStretch(4, 1)
 
         third_grid = QGridLayout()
@@ -2742,12 +2745,17 @@ class MainWindow(QMainWindow):
     def decimat(self):
         """
         A function to set the digitizer record length (DETECTION window in points,
-        NIOCH digitizer fixed at 2 ns / point). Posttrigger is derived as half the
-        window. Pushes PO/HO live if a run is in progress.
+        NIOCH digitizer fixed at 2 ns / point). The posttrigger (horizontal offset)
+        is set independently via the Hor. offset control; it is only re-clamped here
+        if it would no longer fit inside the record. Pushes PO/HO live if a run is
+        in progress.
         """
         self.dig_points = int( self.Dec.value() )
-        self.posttrigger = int( self.dig_points / 2 )
         self.time_per_point = 2  # NIOCH: fixed 2 ns / digitizer point
+        # keep the posttrigger valid: it has to be smaller than the record length
+        if self.posttrigger >= self.dig_points:
+            self.posttrigger = int( self.dig_points / 2 )
+            self.Hor_offset.setValue( self.posttrigger )
         try:
             self.parent_conn_dig.send( 'PO' + str(self.dig_points) )
             self.parent_conn_dig.send( 'HO' + str(self.posttrigger) )
@@ -2755,6 +2763,21 @@ class MainWindow(QMainWindow):
             pass
         self.win_left()
         self.win_right()
+
+    def hor_offset(self):
+        """
+        A function to set the digitizer horizontal offset (posttrigger), in points.
+        It must stay smaller than the record length (Det. Points). Pushes HO live
+        if a run is in progress.
+        """
+        self.posttrigger = int( self.Hor_offset.value() )
+        if self.posttrigger >= self.dig_points:
+            self.posttrigger = self.dig_points - 2
+            self.Hor_offset.setValue( self.posttrigger )
+        try:
+            self.parent_conn_dig.send( 'HO' + str(self.posttrigger) )
+        except (AttributeError, BrokenPipeError, OSError):
+            pass
 
     def n_wurst(self):
         """

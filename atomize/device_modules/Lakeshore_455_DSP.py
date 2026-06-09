@@ -6,6 +6,7 @@ import gc
 import sys
 import pyvisa
 from pyvisa.constants import StopBits, Parity
+import atomize.main.local_config as lconf
 import atomize.device_modules.config.config_utils as cutil
 import atomize.general_modules.general_functions as general
 
@@ -16,7 +17,7 @@ class Lakeshore_455_DSP:
         #### Inizialization
         # setting path to *.ini file
         self.path_current_directory = os.path.dirname(__file__)
-        self.path_config_file = os.path.join(self.path_current_directory, 'config','Lakeshore_455_DSP_config.ini')
+        self.path_config_file = os.path.join(self.path_current_directory, 'config', 'Lakeshore_455_DSP_config.ini')
 
         # configuration data
         self.config = cutil.read_conf_util(self.path_config_file)
@@ -54,24 +55,17 @@ class Lakeshore_455_DSP:
                         if answer == 0:
                             self.status_flag = 1
                         else:
-                            general.message('During internal device test errors are found')
+                            general.message(f'During internal device test errors were found {self.__class__.__name__}')
                             self.status_flag = 0
                             sys.exit()
-                    except pyvisa.VisaIOError:
+                    except (pyvisa.VisaIOError, BrokenPipeError):
                         self.status_flag = 0
-                        general.message("No connection")
+                        general.message(f"No connection {self.__class__.__name__}")
                         sys.exit()
-                    except BrokenPipeError:
-                        general.message("No connection")
-                        self.status_flag = 0
+
+                except (pyvisa.VisaIOError, BrokenPipeError):
+                        general.message(f"No connection {self.__class__.__name__}")
                         sys.exit()
-                except pyvisa.VisaIOError:
-                        general.message("No connection")
-                        sys.exit()
-                except BrokenPipeError:
-                    general.message("No connection")
-                    self.status_flag = 0
-                    sys.exit()
 
             # measure field in Gauss
             self.device_write('UNIT 1')
@@ -94,14 +88,14 @@ class Lakeshore_455_DSP:
             command = str(command)
             self.device.write(command)
         else:
-            general.message("No Connection")
+            general.message(f"No connection {self.__class__.__name__}")
             self.status_flag = 0
             sys.exit()
 
     def device_query(self, command):
         if self.status_flag == 1:
             if self.config['interface'] == 'gpib':
-                general.message('Invalid interface')
+                general.message(f'Invalid interface {self.__class__.__name__}')
                 sys.exit()
                 #self.device.write(command)
                 #general.wait('50 ms')
@@ -110,7 +104,7 @@ class Lakeshore_455_DSP:
                 answer = self.device.query(command)
             return answer
         else:
-            general.message("No Connection")
+            general.message(f"No connection {self.__class__.__name__}")
             self.status_flag = 0
             sys.exit()
 
@@ -138,24 +132,20 @@ class Lakeshore_455_DSP:
                 if un in self.units_dict:
                     flag = self.units_dict[un]
                     self.device_write('UNIT ' + str(flag))
-                else:
-                    general.message('Incorrect unit')
-                    sys.exit()
             elif len(units) == 0:
                 raw_answer = int(self.device_query('UNIT?'))
                 answer = cutil.search_keys_dictionary(self.units_dict, raw_answer)
-                return answer
-            else:
-                general.message('Invalid argument')
-                sys.exit()                
+                return answer               
 
         elif self.test_flag == 'test':
             if len(units) == 1:
                 un = str(units[0])
-                assert(un in self.units_dict), 'Incorrect unit'
+                assert(un in self.units_dict), f'Incorrect unit; unit: {list( self.units_dict.keys() )}'
             elif len(units) == 0:
                 answer = self.test_unit
                 return answer
+            else:
+                assert( 1 == 2 ), f'Incorrect unit; unit: {list( self.units_dict.keys() )}'
 
     def gaussmeter_command(self, command):
         if self.test_flag != 'test':

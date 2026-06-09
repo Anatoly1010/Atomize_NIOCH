@@ -4,6 +4,7 @@
 import os
 import sys
 from socket import socket, AF_INET, SOCK_DGRAM
+import atomize.main.local_config as lconf
 import atomize.device_modules.config.config_utils as cutil
 import atomize.general_modules.general_functions as general
 

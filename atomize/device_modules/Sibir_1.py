@@ -10,6 +10,8 @@ from socket import *
 import numpy as np 
 import scipy as sp
 from scipy.fft  import rfft, rfftfreq
+import atomize.main.local_config as lconf
+import atomize.device_modules.config.config_utils as cutil
 import atomize.general_modules.general_functions as general
 
 def bytes_to_c_uint(a):
@@ -22,7 +24,7 @@ class Sibir_1():
         
         # setting path to *.ini file
         self.path_current_directory = os.path.dirname(__file__)
-        self.path_config_file = os.path.join(self.path_current_directory, 'config','Sibir_1_config.ini')
+        self.path_config_file = os.path.join(self.path_current_directory, 'config', 'Sibir_1_config.ini')
        
         # configuration data
         #config = cutil.read_conf_util(self.path_config_file)
@@ -33,7 +35,7 @@ class Sibir_1():
         # Ranges and limits
         self.ip_UDP = str(self.specific_parameters['udp_ip'])
         self.port_UDP = int(self.specific_parameters['udp_port'])
-        self.sensor_number = = int(self.specific_parameters['sensor'])
+        self.sensor_number = int(self.specific_parameters['sensor'])
 
         #self.gaussmeter_pulse_length =  self.gaussmeter_length_90_deg_pulse
         #self.gaussmeter_sensor = self.NMR_sensor_number
@@ -49,7 +51,7 @@ class Sibir_1():
             self.sock = socket( AF_INET, SOCK_DGRAM )
             self.sock.settimeout(10)
 
-            self.sock.connect( (self.ip_UDP,self.port_UDP ) )
+            self.sock.connect( (self.ip_UDP, self.port_UDP ) )
 
             #----------INSIDE---REGISTER-------
             self.set_reg = [self.set_0_reg , self.set_1_reg , self.set_2_reg , self.set_3_reg , self.set_4_reg , 
@@ -63,7 +65,7 @@ class Sibir_1():
             self.reg = (c_uint * 32)()
 
             self.gain_value = 0          # reg 0: dB           
-            self.mode_point = 3
+            self.mode_point = 0
             self.num_point  = 8192       # reg 1: 3 - 53248   2 - 32768  1 - 16384  0 - 8192  :  i*2**14 + 8192   
             self.time_90_deg_pulse = 0   # reg 2: micro second  
             self.mode_nav = 1            # reg 5: number of savings Na = 1,8,16,32,64,128 
@@ -79,12 +81,15 @@ class Sibir_1():
             for f in self.set_reg:f() # update
             #-----------SETTING----------------
             self.Fref = 32767.846
-            self.N    = 53248
+            self.N    = 8192
             self.T    = 1/2048 # хз 
             self.Fr   = 42.57637
             self.num_exp = 1
             #----------FIND---NOIZE-----------
-            self.NOIZE = 0
+            self.NOIZE = 1
+            
+            # problem with connection?!
+            # 2025-04-17
             self.NOIZE = self.NMR_find_noize(3000)
             #self.find_noize()
             #----------set pi/2 impulse--------
@@ -133,31 +138,39 @@ class Sibir_1():
                     if int(points[0])>=0 and int(points[0]) <= 8192:
                         self.num_point = int(points[0])
                         self.NMR_number_point(0)
+                        if int(points[0]) != 8192:
+                            general.message(f"The specified number of averages cannot be set. The following number was set instead: {8192}")
                     elif int(points[0])>=8193 and int(points[0]) <= 16384:
                         self.num_point = int(points[0])
                         self.NMR_number_point(1)
+                        if int(points[0]) != 16384:
+                            general.message(f"The specified number of averages cannot be set. The following number was set instead: {16384}")                        
                     elif int(points[0])>=16385 and int(points[0]) <= 32768:
                         self.num_point = int(points[0])
                         self.NMR_number_point(2)
+                        if int(points[0]) != 32768:
+                            general.message(f"The specified number of averages cannot be set. The following number was set instead: {32768}")                        
                     elif int(points[0])>=32769 and int(points[0]) <= 53248:
                         self.num_point = int(points[0])
                         self.NMR_number_point(3)
+                        if int(points[0]) != 53248:
+                            general.message(f"The specified number of averages cannot be set. The following number was set instead: {53248}")                        
 
             elif len(points) == 0:       
-                return self.num_point 
+                return self.num_point
+
         elif self.test_flag == 'test':
             if len(points) == 1:
                 if int(points[0])>=0 and int(points[0]) <= 53248:
                     pass
                 else:
-                    assert (1 == 2), 'Invalid values points, correct = [0..53248]'
+                    assert(1 == 2), 'Invalid number of points; points: [8192, 16384, 32768, 53248]'
             elif len(points) == 0:       
                 return self.num_point 
             else:
-                general.message("Invalid argument")
-                sys.exit()   
+                assert(1 == 2), 'Invalid number of points; points: [8192, 16384, 32768, 53248]'
 
-    def gaussmeter_number_of_averges(self, *nav):
+    def gaussmeter_number_of_averages(self, *nav):
         if self.test_flag != 'test':
             if len(nav) == 1:
                 _nav = int(nav[0])
@@ -165,56 +178,70 @@ class Sibir_1():
                     if _nav >=0 and _nav <= 1:
                         self.NMR_nav(0)
                         self.num_exp = 1
+                        if _nav != 1:
+                            general.message(f"The specified number of averages cannot be set. The following number was set instead: {1}")
                     elif _nav>=2 and _nav <= 8:
                         self.NMR_nav(1)
                         self.num_exp = 1
+                        if _nav != 8:
+                            general.message(f"The specified number of averages cannot be set. The following number was set instead: {8}")
                     elif _nav>=9 and _nav <= 16:
                         self.NMR_nav(2)
                         self.num_exp = 1
+                        if _nav != 16:
+                            general.message(f"The specified number of averages cannot be set. The following number was set instead: {16}")
                     elif _nav>=17 and _nav <= 32:
                         self.NMR_nav(3)
                         self.num_exp = 1
+                        if _nav != 32:
+                            general.message(f"The specified number of averages cannot be set. The following number was set instead: {32}")
                     elif _nav>=33 and _nav <= 64:
                         self.NMR_nav(4)
                         self.num_exp = 1
+                        if _nav != 64:
+                            general.message(f"The specified number of averages cannot be set. The following number was set instead: {64}")
                     elif _nav>=65 and _nav <= 128:
                         self.NMR_nav(5)
                         self.num_exp = 1
+                        if _nav != 128:
+                            general.message(f"The specified number of averages cannot be set. The following number was set instead: {128}")
                     elif _nav>=129 and _nav <= 256:
                         self.NMR_nav(5)
                         self.num_exp = 2
+                        if _nav != 256:
+                            general.message(f"The specified number of averages cannot be set. The following number was set instead: {256}")
                     elif _nav>=257 and _nav <= 512:
                         self.NMR_nav(5)
                         self.num_exp = 4
+                        if _nav != 512:
+                            general.message(f"The specified number of averages cannot be set. The following number was set instead: {512}")                        
                     elif _nav>=513 and _nav <= 1024:
                         self.NMR_nav(5)
                         self.num_exp = 8
+                        if _nav != 1024:
+                            general.message(f"The specified number of averages cannot be set. The following number was set instead: {1024}")                        
                     elif _nav>=1025 and _nav <= 2048:
                         self.NMR_nav(5)
                         self.num_exp = 16
-                else:
-                    assert (1 == 2), 'Invalid number of averages, correct = [0..512]'
+                        if _nav != 2048:
+                            general.message(f"The specified number of averages cannot be set. The following number was set instead: {2048}")                        
                     
             elif len(nav) == 0:   
                 return self.NMR_nav() * self.num_exp
-            else:
-                general.message("Invalid argument")
-                sys.exit()   
+
         elif self.test_flag == 'test':
             if len(nav) == 1:
                 _nav = int(nav[0])
                 if  _nav>=0 and _nav <= 2048:
-                    print()
                     pass 
                 else:
-                    assert (1 == 2), 'Invalid number of averages, correct = [0..512]'
+                    assert(1 == 2), 'Invalid number of averages, number: [1, 8, 16, 32, 64, 128, 256, 512, 1024, 2048]'
             elif len(nav) == 0:   
                 return self.mode_nav * self.num_exp
             else:
-                general.message("Invalid argument")
-                sys.exit()
+                assert(1 == 2), 'Invalid number of averages, number: [1, 8, 16, 32, 64, 128, 256, 512, 1024, 2048]'
 
-    def gaussmeter_search(self, B_lower, B_upper,step):
+    def gaussmeter_search(self, B_lower, B_upper, step):
         B1   = int(B_lower)
         B2   = int(B_upper)  
         st   = int(step)
@@ -231,9 +258,8 @@ class Sibir_1():
             self.B = float(B[0])
         elif len(B) == 0:
             return self.NMR_freq_synthesizer()/self.Fr*10
-        else:
-            general.message("Invalid argument")
-            sys.exit()   
+        if self.test_flag == 'test':
+            assert( (len(B) == 1)  or (len(B) == 0) ), 'Invalid argument, B: float'
 
     def gaussmeter_field(self):
         if self.test_flag != 'test':
@@ -249,12 +275,13 @@ class Sibir_1():
             arr=np.append(arr,np.zeros(53248 - arr.shape[0]))
             W,I = self.get_rfft_FID(arr)
             S_n = np.max(I[2:])/self.NOIZE
-            if S_n > 5:
+            if S_n > 0:
                 F_cl = self.z(W[2:], I[2:],Fref)
                 B_cl = (-F_cl+Fref+480)/self.Fr*10
-                return arr[2:] , I[2:] , round(B_cl,4) , S_n
+                return arr[2:] , I[2:] , round(B_cl, 4) , S_n
             else:
                 return arr[2:] , I[2:] , 0 , S_n
+
         elif self.test_flag == 'test':
             return np.zeros(500) , np.zeros(500) , self.B , 6
 
@@ -268,21 +295,17 @@ class Sibir_1():
             elif len(gain) == 0:
                 return self.read_reg_i(0)
 
-            else:
-                general.message("Invalid argument")
-                sys.exit()   
-
         elif self.test_flag == 'test':
             if len(gain) == 1:  
                 if gain[0]>=0 and gain[0] <= 31:
                     self.gain_value = gain[0]
                     self.reg[0] = c_uint(gain[0])
                 else:
-                    assert (1 == 2), 'Invalid value of the preamplifier gain, correct = [0..31]'
+                    assert(1 == 2), 'Invalid value of the preamplifier gain; gain: int [0 - 31]'
             elif len(gain) == 0:
                 return self.reg[0]
             else:
-                assert (1 == 2), 'Invalid value of the preamplifier gain'
+                assert(1 == 2), 'Invalid value of the preamplifier gain; gain: int [0 - 31]'
 
     def gaussmeter_pulse_length(self, *time_pulse):
         if self.test_flag != 'test':
@@ -294,21 +317,17 @@ class Sibir_1():
             elif len(time_pulse) == 0:
                 return self.read_reg_i(2)
 
-            else:
-                general.message("Invalid length of the pi/2 pulse")
-                sys.exit()   
-
         elif self.test_flag == 'test':
             if len(time_pulse) == 1:  
                 if time_pulse[0]>=0 and time_pulse[0] <= 40:
                     self.time_90_deg_pulse = time_pulse[0]
                     self.set_2_reg()
                 else:
-                    assert (1 == 2), 'Invalid length of the pi/2 pulse, correct = [0..2000]'
+                    assert(1 == 2), 'Invalid length of the pi/2 pulse, length: int [0 - 40]'
             elif len(time_pulse) == 0:
                 return  self.reg[2]
             else:
-                assert (1 == 2), 'Invalid length of the pi/2 pulse'
+                assert(1 == 2), 'Invalid length of the pi/2 pulse, length: int [0 - 40]'
 
     def gaussmeter_sensor_number(self, *sensor_number):
         if self.test_flag != 'test':
@@ -321,20 +340,16 @@ class Sibir_1():
             elif len(sensor_number) == 0:
                 return self.sensor_number
 
-            else:
-                general.message("Invalid argument")
-                sys.exit()   
-
         elif self.test_flag == 'test':
             if len(sensor_number) == 1:  
                 if sensor_number[0]>=1 and sensor_number[0] <= 4:
                     self.sensor_number = sensor_number[0]
                 else:
-                    assert (1 == 2), 'Invalid values nav, correct = [1..4]'
+                    assert(1 == 2), 'Invalid sensor number; number: [1, 2, 3, 4]'
             elif len(sensor_number) == 0:
                 return  self.sensor_number
             else:
-                assert (1 == 2), 'Invalid record length argument'
+                assert(1 == 2), 'Invalid sensor number; number: [1, 2, 3, 4]'
 
 ### Auxiliary functions
     def z(self, X, Y, F):
@@ -452,8 +467,10 @@ class Sibir_1():
                 self.NMR_freq_synthesizer(F)
                 self.NMR_start_experiment()
                 arr = self.NMR_FID_array().T
-                W,I = self.get_rfft_FID(arr)
+                W, I = self.get_rfft_FID(arr)
                 S_N.append(max(I[2:]) / self.NOIZE)
+                general.message('S/N: ' + str(round(S_N[-1], 2)) + '; Field: ' + str(round(F / self.Fr * 10, 4)) + ' G')
+
             L = S_N.index(max(S_N))
             Bref = all_F[L] / self.Fr * 10
             return Bref
@@ -473,12 +490,12 @@ class Sibir_1():
         F = int(self.Fr *  B / 10)
 
         if self.test_flag != 'test':
-            T0 = self.gaussmeter_length_90_deg_pulse()
-            self.gaussmeter_length_90_deg_pulse(0)
+            T0 = self.gaussmeter_pulse_length()
+            self.gaussmeter_pulse_length(0)
             self.NMR_freq_synthesizer(F)
             self.NMR_start_experiment()
             W,I = self.get_rfft_FID(self.NMR_FID_array().T)
-            self.gaussmeter_length_90_deg_pulse(T0)
+            self.gaussmeter_pulse_length(T0)
             self.NOIZE = max(I[2:])
             return max(I[2:])
         elif self.test_flag == 'test':
@@ -649,9 +666,7 @@ class Sibir_1():
         command = self.get_command_read_arr_all_signal(LIST)
         self.sock.sendto( command , (self.ip_UDP, self.port_UDP) )
         data_raw_answer, addr = self.sock.recvfrom( int(4) )
-        #general.message(LIST+1)
         for i in range(LIST + 1):
-                #general.message(i)
                 data_raw_data,addr = self.sock.recvfrom( int(512 * 2 + 10) )
                 data_arr           = self.check_out_read_arr_all_signal(data_raw_data)
                 FID = np.append(FID, data_arr)
@@ -807,7 +822,8 @@ class Sibir_1():
         
         return FID 
 
-    def get_rfft_FID(self,FID):
+    def get_rfft_FID(self, FID):
+        #FID = FID - np.sum(FID[len(FID) - 100:])/101
         #N , T = self.N , self.T 
         N, T = len(FID) , self.T 
         I = np.abs(rfft(FID))[:N // 2]

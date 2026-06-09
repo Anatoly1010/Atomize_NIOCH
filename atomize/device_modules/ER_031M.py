@@ -6,6 +6,7 @@ import gc
 import sys
 import pyvisa
 from pyvisa.constants import StopBits, Parity
+import atomize.main.local_config as lconf
 import atomize.device_modules.config.config_utils as cutil
 import atomize.general_modules.general_functions as general
 
@@ -16,7 +17,7 @@ class ER_031M:
         #### Inizialization
         # setting path to *.ini file
         self.path_current_directory = os.path.dirname(__file__)
-        self.path_config_file = os.path.join(self.path_current_directory, 'config','ER_031M_config.ini')
+        self.path_config_file = os.path.join(self.path_current_directory, 'config', 'ER_031M_config.ini')
 
         # configuration data
         self.config = cutil.read_conf_util(self.path_config_file)
@@ -49,21 +50,13 @@ class ER_031M:
                     try:
                         # test should be here
                         self.status_flag = 1
-                    except pyvisa.VisaIOError:
+                    except (pyvisa.VisaIOError, BrokenPipeError):
                         self.status_flag = 0
-                        general.message("No connection")
+                        general.message(f"No connection {self.__class__.__name__}")
                         sys.exit()
-                    except BrokenPipeError:
-                        general.message("No connection")
-                        self.status_flag = 0
+                except (pyvisa.VisaIOError, BrokenPipeError):
+                        general.message(f"No connection {self.__class__.__name__}")
                         sys.exit()
-                except pyvisa.VisaIOError:
-                        general.message("No connection")
-                        sys.exit()
-                except BrokenPipeError:
-                    general.message("No connection")
-                    self.status_flag = 0
-                    sys.exit()
 
         elif self.test_flag == 'test':
             self.test_field = 3500
@@ -82,7 +75,7 @@ class ER_031M:
             self.device.write(command()) #.encode
         else:
             self.status_flag = 0
-            general.message("No Connection")
+            general.message(f"No connection {self.__class__.__name__}")
             sys.exit()
 
     #### device specific functions
@@ -99,11 +92,10 @@ class ER_031M:
             if start_field <= self.max_field and start_field >= self.min_field:
                 self.field = start_field
                 self.field_step = field_step
-            else:
-                general.message('Incorrect field range')
-                sys.exit()
+
         elif self.test_flag == 'test':
-            assert(start_field <= self.max_field and start_field >= self.min_field), 'Incorrect field range'
+            assert(start_field <= self.max_field and start_field >= self.min_field), \
+                f'Incorrect field range. The available range is from {self.min_field} to {self.max_field}'
             self.field = start_field
             self.field_step = field_step
 
@@ -115,26 +107,22 @@ class ER_031M:
                     #field_controller_write('cf'+str(field)+'\r')
                     self.device_write('cf' + str(field))
                     self.field = field
-                else:
-                    general.message('Incorrect field range')
-                    sys.exit()
+
             elif len(field) == 0:
                 answer = self.field
                 return answer
-            else:
-                send.message("Invalid argument")
-                sys.exit()
 
         elif self.test_flag == 'test':
             if len(field) == 1:
                 field = field[0]
-                assert(field <= self.max_field and field >= self.min_field), 'Incorrect field range'
+                assert(field <= self.max_field and field >= self.min_field),\
+                    f'Incorrect field range. The available range is from {self.min_field} G to {self.max_field} G'
                 self.field = field
             elif len(field) == 0:
                 answer = self.test_field
                 return answer
             else:
-                assert(1 == 2), 'Invalid argument'
+                assert(1 == 2), 'Invalid argument; field: float'
 
     def magnet_command(self, command):
         if self.test_flag != 'test':

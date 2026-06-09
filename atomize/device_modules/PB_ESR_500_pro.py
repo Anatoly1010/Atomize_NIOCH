@@ -9,6 +9,7 @@ from operator import iconcat
 from functools import reduce
 from itertools import groupby, chain
 import numpy as np
+import atomize.main.local_config as lconf
 import atomize.device_modules.config.config_utils as cutil
 import atomize.general_modules.general_functions as general
 import atomize.general_modules.spinapi as spinapi
@@ -28,7 +29,7 @@ class PB_ESR_500_Pro:
         #### Inizialization
         # setting path to *.ini file
         self.path_current_directory = os.path.dirname(__file__)
-        self.path_config_file = os.path.join(self.path_current_directory, 'config','PB_ESR_500_pro_config.ini')
+        self.path_config_file = os.path.join(self.path_current_directory, 'config', 'PB_ESR_500_pro_config.ini')
 
         # configuration data
         #config = cutil.read_conf_util(self.path_config_file)
@@ -38,7 +39,7 @@ class PB_ESR_500_Pro:
         # only awg regime with automatic awg_trigger?
 
         # Channel assignments
-        self.ch0 = self.specific_parameters['ch0'] # TRIGGER
+        self.ch0 = self.specific_parameters['ch0'] # DETECTION
         self.ch1 = self.specific_parameters['ch1'] # AMP_ON
         self.ch2 = self.specific_parameters['ch2'] # LNA_PROTECT
         self.ch3 = self.specific_parameters['ch3'] # MW
@@ -141,7 +142,7 @@ class PB_ESR_500_Pro:
         elif self.test_flag == 'test':
             open('instructions.out', 'w').close()
             self.test_rep_rate = '2 Hz'
-
+            
             self.pulse_array = []
             self.phase_array_length = []
             self.detection_phase_list = []
@@ -162,7 +163,7 @@ class PB_ESR_500_Pro:
         answer = 'PB ESR 500 Pro'
         return answer
 
-    def pulser_pulse(self, name = 'P0', channel = 'TRIGGER', start = '0 ns', length = '100 ns', \
+    def pulser_pulse(self, name = 'P0', channel = 'DETECTION', start = '0 ns', length = '100 ns', \
         delta_start = '0 ns', length_increment = '0 ns', phase_list = []):
         """
         A function that added a new pulse at specified channel. The possible arguments:
@@ -189,7 +190,7 @@ class PB_ESR_500_Pro:
 
             pulse = {'name': name, 'channel': channel, 'start': start, \
                 'length': length, 'delta_start' : delta_start, 'length_increment': length_increment, 'phase_list': phase_list}
-
+            
             # phase_list's length
             if channel == 'MW':
                 self.phase_array_length.append(len(list(phase_list)))
@@ -198,8 +199,6 @@ class PB_ESR_500_Pro:
                 # length must match the MW phase cycle (checked in next_phase).
                 self.detection_phase_list = list(phase_list)
                 self.phase_array_length.append(len(self.detection_phase_list))
-            elif channel == 'TRIGGER':
-                assert( len(list(phase_list)) ) == 0, 'TRIGGER pulse should not have phase'
 
             # Checks
             # two equal names
@@ -218,7 +217,7 @@ class PB_ESR_500_Pro:
                 assert(p_length >= self.min_pulse_length), 'Pulse is shorter than minimum available length (' + str(self.min_pulse_length) +' ns)'
                 assert(p_length < self.max_pulse_length), 'Pulse is longer than maximum available length (' + str(self.max_pulse_length) +' ns)'
             else:
-                assert( 1 == 2 ), 'Incorrect time dimension (s, ms, us, ns)'
+                assert( 1 == 2 ), 'Incorrect time; time: int + [" ms", " us", " ns"]'
 
             temp_start = start.split(" ")
             if temp_start[1] in self.timebase_dict:
@@ -227,7 +226,7 @@ class PB_ESR_500_Pro:
                 assert(p_start % 2 == 0), 'Pulse start should be divisible by 2'
                 assert(p_start >= 0), 'Pulse start is a negative number'
             else:
-                assert( 1 == 2 ), 'Incorrect time dimension (s, ms, us, ns)'
+                assert( 1 == 2 ), 'Incorrect time; time: int + [" ms", " us", " ns"]'
 
             temp_delta_start = delta_start.split(" ")
             if temp_delta_start[1] in self.timebase_dict:
@@ -236,7 +235,7 @@ class PB_ESR_500_Pro:
                 assert(p_delta_start % 2 == 0), 'Pulse delta start should be divisible by 2'
                 assert(p_delta_start >= 0), 'Pulse delta start is a negative number'
             else:
-                assert( 1 == 2 ), 'Incorrect time dimension (s, ms, us, ns)'
+                assert( 1 == 2 ), 'Incorrect time; time: int + [" ms", " us", " ns"]'
 
             temp_length_increment = length_increment.split(" ")
             if temp_length_increment[1] in self.timebase_dict:
@@ -244,9 +243,9 @@ class PB_ESR_500_Pro:
                 p_length_increment = coef*float(temp_length_increment[0])
                 assert(p_length_increment % 2 == 0), 'Pulse length increment should be divisible by 2'
                 assert (p_length_increment >= 0 and p_length_increment < self.max_pulse_length), \
-                'Pulse length increment is longer than maximum available length or negative'
+                    'Pulse length increment is longer than maximum available length or negative'
             else:
-                assert( 1 == 2 ), 'Incorrect time dimension (s, ms, us, ns)'
+                assert( 1 == 2 ), 'Incorrect time; time: int + [" ms", " us", " ns"]'
 
             if channel in self.channel_dict:
                 if self.auto_defense == 'False':
@@ -263,9 +262,10 @@ class PB_ESR_500_Pro:
                         # deepcopy helps to create a TRULY NEW array and not a link to the object
                         self.pulse_array_init = deepcopy(self.pulse_array)
                 else:
-                    assert(1 == 2), 'Incorrect auto_defense setting'
+                    assert(1 == 2), 'Incorrect auto_defense setting; auto_defense: ["True", "False"]'
+
             else:
-                assert (1 == 2), 'Incorrect channel name'
+                assert (1 == 2), f'Incorrect channel; channel: {list(self.channel_dict.keys())}'
 
     def pulser_redefine_start(self, *, name, start):
         """
@@ -290,7 +290,7 @@ class PB_ESR_500_Pro:
 
         elif self.test_flag == 'test':
             i = 0
-            assert( name in self.pulse_name_array ), 'Pulse with the specified name is not defined'
+            assert( name in self.pulse_name_array ), f'Pulse with the specified name {self.pulse_name_array} is not defined'
 
             while i < len( self.pulse_array ):
                 if name == self.pulse_array[i]['name']:
@@ -303,7 +303,7 @@ class PB_ESR_500_Pro:
                         assert(p_start % 2 == 0), 'Pulse start should be divisible by 2'
                         assert(p_start >= 0), 'Pulse start is a negative number'
                     else:
-                        assert( 1 == 2 ), 'Incorrect time dimension (s, ms, us, ns)'
+                        assert( 1 == 2 ), 'Incorrect time; time: int + [" ms", " us", " ns"]'
 
                     self.pulse_array[i]['start'] = str(start)
                     self.shift_count = 1
@@ -335,7 +335,7 @@ class PB_ESR_500_Pro:
 
         elif self.test_flag == 'test':
             i = 0
-            assert( name in self.pulse_name_array ), 'Pulse with the specified name is not defined'
+            assert( name in self.pulse_name_array ), f'Pulse with the specified name {self.pulse_name_array} is not defined'
 
             while i < len( self.pulse_array ):
                 if name == self.pulse_array[i]['name']:
@@ -348,7 +348,7 @@ class PB_ESR_500_Pro:
                         assert(p_delta_start % 2 == 0), 'Pulse delta start should be divisible by 2'
                         assert(p_delta_start >= 0), 'Pulse delta start is a negative number'
                     else:
-                        assert( 1 == 2 ), 'Incorrect time dimension (s, ms, us, ns)'
+                        assert( 1 == 2 ), 'Incorrect time; time: int + [" ms", " us", " ns"]'
 
                     self.pulse_array[i]['delta_start'] = str(delta_start)
                     self.shift_count = 1
@@ -381,7 +381,7 @@ class PB_ESR_500_Pro:
         elif self.test_flag == 'test':
             i = 0
 
-            assert( name in self.pulse_name_array ), 'Pulse with the specified name is not defined'
+            assert( name in self.pulse_name_array ), f'Pulse with the specified name {self.pulse_name_array} is not defined'
 
             while i < len( self.pulse_array ):
                 if name == self.pulse_array[i]['name']:
@@ -392,9 +392,9 @@ class PB_ESR_500_Pro:
                         p_length_increment = coef*float(temp_length_increment[0])
                         assert(p_length_increment % 2 == 0), 'Pulse length increment should be divisible by 2'
                         assert (p_length_increment >= 0 and p_length_increment < self.max_pulse_length), \
-                        'Pulse length increment is longer than maximum available length or negative'
+                            'Pulse length increment is longer than maximum available length or negative'
                     else:
-                        assert( 1 == 2 ), 'Incorrect time dimension (s, ms, us, ns)'
+                        assert( 1 == 2 ), 'Incorrect time; time: int + [" ms", " us", " ns"]'
 
                     self.pulse_array[i]['length_increment'] = str(length_increment)
                     self.increment_count = 1
@@ -430,7 +430,7 @@ class PB_ESR_500_Pro:
             self.phase_pulses = 0
             # adding phase switch pulses
             for index, element in enumerate(self.pulse_array):
-                if len(list(element['phase_list'])) != 0 and element['channel'] != 'DETECTION':
+                if (len(list(element['phase_list'])) != 0) and (element['channel'] != 'DETECTION'):
                     if element['phase_list'][self.current_phase_index] == '+x':
                         #pass
                         # 21-08-2021; Correction of non updating case for ['-x', '+x']
@@ -505,7 +505,7 @@ class PB_ESR_500_Pro:
 
             self.phase_pulses = 0
             for index, element in enumerate(self.pulse_array):
-                if len(list(element['phase_list'])) != 0 and element['channel'] != 'DETECTION':
+                if (len(list(element['phase_list'])) != 0) and (element['channel'] != 'DETECTION'):
                     if element['phase_list'][self.current_phase_index] == '+x':
                         #pass
                         # 21-08-2021; Correction of non updating case for ['-x', '+x']
@@ -555,7 +555,7 @@ class PB_ESR_500_Pro:
                         self.phase_pulses += 2
 
                     else:
-                        assert( 1 == 2 ), 'Incorrect phase name (+x, -x, +y, -y)'
+                        assert( 1 == 2 ), 'Incorrect phase; phase: ["+x", "-x", "+y", "-y"]'
                 else:
                     pass
             
@@ -602,8 +602,6 @@ class PB_ESR_500_Pro:
                     raw_data = np.fromstring( self.raw_instructions[self.iterator_of_updates], dtype = int, sep = ',' )
                     to_spinapi = raw_data.reshape( ( int(len(raw_data)/3), 3 ) ).tolist()
 
-
-                """
                 ##for element in to_spinapi:
                 ##    if element[2] < 10: # it was 12; 06.10.2021
                 ##        general.message('Incorrect instruction are found')
@@ -670,8 +668,6 @@ class PB_ESR_500_Pro:
             else:
                 pass
 
-            """
-
         elif self.test_flag == 'test':
             # get repetition rate
             rep_rate = self.rep_rate[0]
@@ -682,7 +678,7 @@ class PB_ESR_500_Pro:
             elif rep_rate[-3:] == 'MHz':
                 rep_time = int(1000/float(rep_rate[:-4]))
             else:
-                assert(1 == 2), "Incorrect repetition rate dimension (Hz, kHz, MHz)"
+                assert(1 == 2), "Incorrect repetition rate; rep_rate: int + [' Hz', ' kHz', ' MHz']"
 
             if self.reset_count == 0 or self.shift_count == 1 or self.increment_count == 1:
                 # using a special functions for convertion to instructions
@@ -736,21 +732,21 @@ class PB_ESR_500_Pro:
             if len(pulses) == 0:
                 i = 0
                 while i < len( self.pulse_array ):
-                    if int( self.pulse_array[i]['delta_start'][:-3] ) == 0:
+                    if int( float( self.pulse_array[i]['delta_start'][:-3] ) ) == 0:
                         pass
                     else:
                         # convertion to ns
                         temp = self.pulse_array[i]['delta_start'].split(' ')
                         if temp[1] in self.timebase_dict:
                             flag = self.timebase_dict[temp[1]]
-                            d_start = int((temp[0]))*flag
+                            d_start = int(float(temp[0]))*flag
                         else:
                             pass
 
                         temp2 = self.pulse_array[i]['start'].split(' ')
                         if temp2[1] in self.timebase_dict:
                             flag2 = self.timebase_dict[temp2[1]]
-                            st = int((temp2[0]))*flag2
+                            st = int(float(temp2[0]))*flag2
                         else:
                             pass
                                 
@@ -767,21 +763,21 @@ class PB_ESR_500_Pro:
                     if element in self.pulse_name_array:
                         pulse_index = self.pulse_name_array.index(element)
 
-                        if int( self.pulse_array[pulse_index]['delta_start'][:-3] ) == 0:
+                        if int( float( self.pulse_array[pulse_index]['delta_start'][:-3] ) ) == 0:
                             pass
                         else:
                             # convertion to ns
                             temp = self.pulse_array[pulse_index]['delta_start'].split(' ')
                             if temp[1] in self.timebase_dict:
                                 flag = self.timebase_dict[temp[1]]
-                                d_start = int((temp[0]))*flag
+                                d_start = int(float(temp[0]))*flag
                             else:
                                 pass
 
                             temp2 = self.pulse_array[pulse_index]['start'].split(' ')
                             if temp2[1] in self.timebase_dict:
                                 flag2 = self.timebase_dict[temp2[1]]
-                                st = int((temp2[0]))*flag2
+                                st = int(float(temp2[0]))*flag2
                             else:
                                 pass
                                     
@@ -794,23 +790,23 @@ class PB_ESR_500_Pro:
             if len(pulses) == 0:
                 i = 0
                 while i < len( self.pulse_array ):
-                    if int( self.pulse_array[i]['delta_start'][:-3] ) == 0:
+                    if int( float( self.pulse_array[i]['delta_start'][:-3] ) ) == 0:
                         pass
                     else:
                         # convertion to ns
                         temp = self.pulse_array[i]['delta_start'].split(' ')
                         if temp[1] in self.timebase_dict:
                             flag = self.timebase_dict[temp[1]]
-                            d_start = int((temp[0]))*flag
+                            d_start = int(float(temp[0]))*flag
                         else:
-                            assert(1 == 2), "Incorrect time dimension (ns, us, ms, s)"
+                            assert(1 == 2), 'Incorrect time; time: int + [" ms", " us", " ns"]'
 
                         temp2 = self.pulse_array[i]['start'].split(' ')
                         if temp2[1] in self.timebase_dict:
                             flag2 = self.timebase_dict[temp2[1]]
-                            st = int((temp2[0]))*flag2
+                            st = int(float(temp2[0]))*flag2
                         else:
-                            assert(1 == 2), "Incorrect time dimension (ns, us, ms, s)"
+                            assert(1 == 2), 'Incorrect time; time: int + [" ms", " us", " ns"]'
                                 
                         self.pulse_array[i]['start'] = str( st + d_start ) + ' ns'
 
@@ -825,23 +821,23 @@ class PB_ESR_500_Pro:
                     if element in self.pulse_name_array:
 
                         pulse_index = self.pulse_name_array.index(element)
-                        if int( self.pulse_array[pulse_index]['delta_start'][:-3] ) == 0:
+                        if int( float( self.pulse_array[pulse_index]['delta_start'][:-3] ) ) == 0:
                             pass
                         else:
                             # convertion to ns
                             temp = self.pulse_array[pulse_index]['delta_start'].split(' ')
                             if temp[1] in self.timebase_dict:
                                 flag = self.timebase_dict[temp[1]]
-                                d_start = int((temp[0]))*flag
+                                d_start = int(float(temp[0]))*flag
                             else:
-                                assert(1 == 2), "Incorrect time dimension (ns, us, ms, s)"
+                                assert(1 == 2), 'Incorrect time; time: int + [" ms", " us", " ns"]'
 
                             temp2 = self.pulse_array[pulse_index]['start'].split(' ')
                             if temp2[1] in self.timebase_dict:
                                 flag2 = self.timebase_dict[temp2[1]]
-                                st = int((temp2[0]))*flag2
+                                st = int(float(temp2[0]))*flag2
                             else:
-                                assert(1 == 2), "Incorrect time dimension (ns, us, ms, s)"
+                                assert(1 == 2), 'Incorrect time; time: int + [" ms", " us", " ns"]'
                                     
                             self.pulse_array[pulse_index]['start'] = str( st + d_start ) + ' ns'
 
@@ -860,7 +856,7 @@ class PB_ESR_500_Pro:
             if len(pulses) == 0:
                 i = 0
                 while i < len( self.pulse_array ):
-                    if int( self.pulse_array[i]['length_increment'][:-3] ) == 0:
+                    if int( float( self.pulse_array[i]['length_increment'][:-3] ) ) == 0:
                         pass
                     else:
                         # convertion to ns
@@ -891,7 +887,7 @@ class PB_ESR_500_Pro:
                     if element in self.pulse_name_array:
                         pulse_index = self.pulse_name_array.index(element)
 
-                        if int( self.pulse_array[pulse_index]['length_increment'][:-3] ) == 0:
+                        if int( float( self.pulse_array[pulse_index]['length_increment'][:-3] ) ) == 0:
                             pass
                         else:
                             # convertion to ns
@@ -918,7 +914,7 @@ class PB_ESR_500_Pro:
             if len(pulses) == 0:
                 i = 0
                 while i < len( self.pulse_array ):
-                    if int( self.pulse_array[i]['length_increment'][:-3] ) == 0:
+                    if int( float( self.pulse_array[i]['length_increment'][:-3] ) ) == 0:
                         pass
                     else:
                         # convertion to ns
@@ -927,19 +923,19 @@ class PB_ESR_500_Pro:
                             flag = self.timebase_dict[temp[1]]
                             d_length = int(float(temp[0]))*flag
                         else:
-                            assert(1 == 2), "Incorrect time dimension (ns, us, ms, s)"
+                            assert(1 == 2), 'Incorrect time; time: int + [" ms", " us", " ns"]'
 
                         temp2 = self.pulse_array[i]['length'].split(' ')
                         if temp2[1] in self.timebase_dict:
                             flag2 = self.timebase_dict[temp2[1]]
                             leng = int(float(temp2[0]))*flag2
                         else:
-                            assert(1 == 2), "Incorrect time dimension (ns, us, ms, s)"
+                            assert(1 == 2), 'Incorrect time; time: int + [" ms", " us", " ns"]'
                         
                         if ( leng + d_length ) <= self.max_pulse_length:
                             self.pulse_array[i]['length'] = str( leng + d_length ) + ' ns'
                         else:
-                            assert(1 == 2), 'Exceeded maximum pulse length (1900 ns) when increment the pulse'
+                            assert(1 == 2), 'Exceeded the maximum pulse length (1900 ns) when incrementing the pulse'
 
                     i += 1
 
@@ -952,7 +948,7 @@ class PB_ESR_500_Pro:
                     if element in self.pulse_name_array:
 
                         pulse_index = self.pulse_name_array.index(element)
-                        if int( self.pulse_array[pulse_index]['length_increment'][:-3] ) == 0:
+                        if int( float( self.pulse_array[pulse_index]['length_increment'][:-3] ) ) == 0:
                             pass
                         else:
                             # convertion to ns
@@ -961,19 +957,19 @@ class PB_ESR_500_Pro:
                                 flag = self.timebase_dict[temp[1]]
                                 d_length = int(float(temp[0]))*flag
                             else:
-                                assert(1 == 2), "Incorrect time dimension (ns, us, ms, s)"
+                                assert(1 == 2), 'Incorrect time; time: int + [" ms", " us", " ns"]'
 
                             temp2 = self.pulse_array[pulse_index]['length'].split(' ')
                             if temp2[1] in self.timebase_dict:
                                 flag2 = self.timebase_dict[temp2[1]]
                                 leng = int(float(temp2[0]))*flag2
                             else:
-                                assert(1 == 2), "Incorrect time dimension (ns, us, ms, s)"
+                                assert(1 == 2), 'Incorrect time; time: int + [" ms", " us", " ns"]'
                                     
                             if ( leng + d_length ) <= self.max_pulse_length:
                                 self.pulse_array[pulse_index]['length'] = str( leng + d_length ) + ' ns'
                             else:
-                                assert(1 == 2), 'Exceeded maximum pulse length (1900 ns) when increment the pulse'
+                                assert(1 == 2), 'Exceeded the maximum pulse length (1900 ns) when incrementing the pulse'
 
                         self.increment_count = 1
                         self.current_phase_index = 0
@@ -981,7 +977,6 @@ class PB_ESR_500_Pro:
                     else:
                         assert(1 == 2), "There is no pulse with the specified name"
 
-    #UNDOCUMENTED
     def pulser_phase_reset(self):
         """
         Reset phase index to zero in order to start phase cycling once again
@@ -1082,7 +1077,7 @@ class PB_ESR_500_Pro:
             elif rep_rate[-3:] == 'MHz':
                 rep_time = int(1000/float(rep_rate[:-4]))
             else:
-                assert( 1 == 2 ), 'Incorrect dimension of repetition rate (Hz, kHz, MHz)'
+                assert( 1 == 2 ), "Incorrect repetition rate; rep_rate: int + [' Hz', ' kHz', ' MHz']"
 
             # reset the pulses; deepcopy helps to create a TRULY NEW array
             self.pulse_array = deepcopy( self.pulse_array_init )
@@ -1292,8 +1287,8 @@ class PB_ESR_500_Pro:
 
         elif self.test_flag == 'test':
 
-            assert( len(acq_cycle) == len(data1) ), 'Acquisition cycle and Data 1 have incompatible size'
-            assert( len(acq_cycle) == len(data2) ), 'Acquisition cycle and Data 2 have incompatible size'
+            assert( len(acq_cycle) == len(data1) ), 'Number of phases of acquisition cycle and Data 1 have incompatible size'
+            assert( len(acq_cycle) == len(data2) ), 'Number of phases of acquisition cycle and Data 2 have incompatible size'
 
             answer = np.zeros( data1.shape ) + 1j*np.zeros( data2.shape )
 
@@ -1311,7 +1306,6 @@ class PB_ESR_500_Pro:
 
             return (answer.real / len(acq_cycle))[0], (answer.imag / len(acq_cycle))[0]
     
-    #UNDOCUMENTED
     def pulser_instruction_from_file(self, flag, filename = 'instructions.out'):
         """
         Special function to read instructions from the .txt file
@@ -2080,7 +2074,6 @@ class PB_ESR_500_Pro:
                 return one_array
             else:
                 general.message('Pulse sequence is longer than one period of the repetition rate')
-                sys.exit()
 
         elif self.test_flag == 'test':
             answer = []
@@ -2092,10 +2085,9 @@ class PB_ESR_500_Pro:
             index_jump = np.where(np.diff(sorted_pulses_start[:,1], axis = 0) > self.max_pulse_length/self.timebase )[0]
             sorted_arrays_parts = np.split(sorted_pulses_start, index_jump + 1)
 
-            general.message(sorted_arrays_parts)
+
             for index, element in enumerate(sorted_arrays_parts):
                 temp, min_value = self.convert_to_bit_pulse(element)
-                general.message(min_value)
                 answer.append(self.instruction_pulse(temp))
                 # keep them all for further shifting
                 min_list.append(min_value)
@@ -2378,7 +2370,6 @@ class PB_ESR_500_Pro:
             ranges = np.where(absdiff != 0)[0]
             pulse_array = np.split(np_array, ranges)
             pulse_info = np.concatenate(([0], ranges))
-            general.message(np_array)
 
             for index, element in enumerate(pulse_info[:-1]):
                 final_pulse_array.append( [pulse_array[index][0], self.timebase*pulse_info[index], self.timebase*(pulse_info[index + 1] - pulse_info[index])] )
@@ -2479,14 +2470,14 @@ class PB_ESR_500_Pro:
                             amp_on_list.append( [2**(self.channel_dict['AMP_ON']), element[1] - self.switch_delay, element[2] + self.amp_delay] )
                             
                         else:
-                            assert(1 == 2), 'Maximum available length (1900 ns) for AMP_ON pulse is reached'
+                            assert(1 == 2), 'Maximum available length of 1900 ns for AMP_ON pulse is reached'
                     # AMP_ON and RECT_AWG coincide now
                     elif element[0] == 2**(self.channel_dict['AWG']):
                         if element[2] - element[1]  <= self.max_pulse_length/2:
                             amp_on_list.append( [2**(self.channel_dict['AMP_ON']), element[1], element[2]] )
                             awg_list.append(element)
                         else:
-                            assert(1 == 2), 'Maximum available length (1900 ns) for AMP_ON pulse is reached'
+                            assert(1 == 2), 'Maximum available length of 1900 ns for AMP_ON pulse is reached'
 
                     else:
                         pass
@@ -3003,7 +2994,7 @@ class PB_ESR_500_Pro:
             temp = parameter.split(' ')
             if temp[1] in self.timebase_dict:
                 flag = self.timebase_dict[temp[1]]
-                par_st = int(int((temp[0]))*flag + delay)
+                par_st = int(float(temp[0])*flag + delay)
                 new_parameter = str( par_st ) + ' ns'
 
             return new_parameter
@@ -3012,10 +3003,10 @@ class PB_ESR_500_Pro:
             temp = parameter.split(' ')
             if temp[1] in self.timebase_dict:
                 flag = self.timebase_dict[temp[1]]
-                par_st = int(int((temp[0]))*flag + delay)
+                par_st = int(float(temp[0])*flag + delay)
                 new_parameter = str( par_st ) + ' ns'
             else:
-                assert(1 == 2), 'Incorrect time dimension (ns, us, ms, s)'
+                assert(1 == 2), 'Incorrect time; time: int + [" ms", " us", " ns"]'
 
             return new_parameter
 
