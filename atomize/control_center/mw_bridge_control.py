@@ -9,9 +9,8 @@ import socket
 import configparser
 #import time
 #import numpy as np
-#from PyQt5.QtWidgets import QListView, QAction
-from PyQt5 import QtWidgets, uic #, QtCore, QtGui
-from PyQt5.QtGui import QIcon
+from PyQt6 import QtWidgets, uic #, QtCore, QtGui
+from PyQt6.QtGui import QIcon
 
 class MainWindow(QtWidgets.QMainWindow):
     """
@@ -450,9 +449,11 @@ def main():
     A function to run the main window of the programm.
     """
     app = QtWidgets.QApplication(sys.argv)
+    from atomize.general_modules.gui_style import apply_app_style
+    apply_app_style(app, app_id='Atomize.NIOCH.MWBridge')
     main = MainWindow()
     main.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 if __name__ == '__main__':
     main()
