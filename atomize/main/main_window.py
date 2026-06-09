@@ -6,35 +6,33 @@ import os
 import sys
 import time
 import json
+import locale
+import ctypes
 import logging
 import signal
-import socket
 import threading
+import webbrowser
+import subprocess
 import configparser
 import platform
-#from tkinter import filedialog#, ttk
-#import tkinter
 import numpy as np
 from . import widgets
 import pyqtgraph as pg
 from datetime import datetime
-#import OpenGL
-from PyQt5.QtCore import QSharedMemory, QSize
-from PyQt5.QtGui import QColor, QIcon, QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QFileDialog, QMessageBox, QListView, QDockWidget, QVBoxLayout, QAction
-from PyQt5.QtNetwork import QLocalServer
-from PyQt5 import QtWidgets, uic, QtCore, QtGui
-from PyQt5.Qt import Qt as QtConst
+from pathlib import Path
+from PyQt6.QtCore import QSharedMemory, QSize, QEventLoop
+from PyQt6.QtGui import QColor, QIcon, QStandardItem, QStandardItemModel, QAction
+from PyQt6.QtWidgets import QFileDialog, QMessageBox, QListView, QDockWidget, QVBoxLayout, QWidget, QGridLayout, QTabWidget, QMainWindow, QPlainTextEdit, QHBoxLayout, QApplication, QPushButton, QWidget, QFileDialog, QLabel, QSizePolicy, QSizeGrip, QLineEdit, QFileIconProvider, QTreeView, QHeaderView
+from PyQt6.QtNetwork import QLocalServer
+from PyQt6 import QtCore, QtGui
 from pyqtgraph.dockarea import DockArea
-import atomize.main.messenger_socket_server as socket_server
-###AWG
-#sys.path.append('/home/pulseepr/Sources/AWG/Examples/python')
-#sys.path.append('/home/anatoly/AWG/spcm_examples/python')
+import atomize.main.queue as queue
+import atomize.main.codeeditor as codeedit
+import atomize.main.local_config as lconf
+import atomize.general_modules.csv_opener_saver as openfile
+os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 
-#from pyspcm import *
-#from spcm_tools import *
-
-class MainWindow(QtWidgets.QMainWindow):
+class MainWindow(QMainWindow):
     """
     A main window class.
     """
@@ -42,176 +40,32 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         A function for connecting actions and creating a main window.
         """
+        additional_path = kwargs.pop('ptm', '')
         super(MainWindow, self).__init__(*args, **kwargs)
-        # absolute path to icon:
-        self.path_to_main = os.path.abspath(os.getcwd())
-        self.icon_path = os.path.join(self.path_to_main,'atomize/main','Icon.png')
-        self.setWindowIcon(QIcon(self.icon_path))
 
-        #self.destroyed.connect(MainWindow._on_destroyed)         # connect some actions to exit
-        self.destroyed.connect(lambda: self._on_destroyed())       # connect some actions to exit
-        # Load the UI Page
-        uic.loadUi('atomize/main/gui/main_window.ui', self)        # Design file
+        path_to_main = Path(__file__).parent
+
+        self.design_setting()
+
+        path_to_main_lib = os.path.join(path_to_main, additional_path)
+        os.chdir(path_to_main_lib)
+
+        self.icon_path = os.path.join(path_to_main,'icon.ico')
+        self.setWindowIcon(QIcon(self.icon_path))
 
         # important attribures
         if len(sys.argv) > 1 and sys.argv[1] != '':  # for bash option
             self.script = sys.argv[1]
-            self.open_file( self.script )
+            self.open_file(self.script)
         elif len(sys.argv) == 1:
             self.script = '' # for not opened script
         self.test_flag = 0 # flag for not running script if test is failed
         self.flag_opened_script_changed = 0 # flag for saving changes in the opened script
-        self.path = os.path.join(self.path_to_main,'atomize/tests')
-        # Connection of different action to different Menus and Buttons
-        self.tabwidget.tabBar().setTabTextColor(0, QColor(193, 202, 227))
-        self.tabwidget.tabBar().setTabTextColor(1, QColor(193, 202, 227))
-        self.tabwidget.tabBar().setTabTextColor(2, QColor(193, 202, 227))
-        self.button_open.clicked.connect(self.open_file_dialog)
-        self.button_open.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227);}\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
-        self.button_edit.clicked.connect(self.edit_file)
-        self.button_edit.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227);}\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
-        self.button_test.clicked.connect(self.test)
-        self.button_test.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227);}\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
-        self.button_reload.clicked.connect(self.reload)
-        self.button_reload.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227); }\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
-        self.button_start.clicked.connect(self.start_experiment)
-        self.button_start.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227);}\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); border-style: inset}")
-        self.button_help.clicked.connect(self.help)
-        self.button_help.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227);}\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); border-style: inset}")
-        self.button_quit.clicked.connect(lambda: self.quit())
-        self.button_quit.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227);}\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); border-style: inset}")
-        self.textEdit.setStyleSheet("QPlainTextEdit {background-color: rgb(42, 42, 64); color: rgb(211, 194, 78); }\
-         QScrollBar:vertical {background-color: rgb(42, 42, 64);}")
-        
-        # show spaces
-        option = QtGui.QTextOption()
-        option.setFlags( QtGui.QTextOption.ShowTabsAndSpaces ) # | QtGui.QTextOption.ShowLineAndParagraphSeparators
-        self.textEdit.document().setDefaultTextOption(option)
-        self.textEdit.textChanged.connect(self.save_edited_text)
+        #self.path = os.path.join(path_to_main,'atomize/tests')
+        self.path = os.path.join(path_to_main, '..', 'tests')
 
-        # set tab distance
-        self.textEdit.setTabStopDistance( QtGui.QFontMetricsF(self.textEdit.font()).horizontalAdvance(' ') * 4 )
-        #self.textEdit.setTabStopWidth( 20 )
-        
-        self.text_errors.top_margin  = 2
-        self.text_errors.setCenterOnScroll(True)
-        self.text_errors.ensureCursorVisible()
-
-        self.text_errors.setContextMenuPolicy(QtConst.ActionsContextMenu)
-        self.text_errors.setStyleSheet("QPlainTextEdit {background-color: rgb(42, 42, 64); color: rgb(211, 194, 78); } \
-                                    QMenu::item { color: rgb(211, 194, 78); } QMenu::item:selected {color: rgb(193, 202, 227); }")
-        clear_action = QAction('Clear', self.text_errors)
-        clear_action.triggered.connect(self.clear_errors)
-        self.text_errors.addAction(clear_action)
-       
-        # Control Window tab setting
-        self.tab_control.setStyleSheet("background-color: rgb(42, 42, 64); color: rgb(211, 194, 78); ")
-        self.button_osc.clicked.connect(self.start_osc_control)
-        self.button_osc.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227);}\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
-        #self.button_dig.clicked.connect(self.start_dig_control)
-        #self.button_dig.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-        # border-style: outset; color: rgb(193, 202, 227);}\
-        #  QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
-        self.button_mw.clicked.connect(self.start_mw_control)
-        self.button_mw.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227);}\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
-        self.button_temp.clicked.connect(self.start_temp_control)
-        self.button_temp.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227);}\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
-        #self.button_pulse.clicked.connect(self.start_pulse_control)
-        #self.button_pulse.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-        # border-style: outset; color: rgb(193, 202, 227);}\
-        #  QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
-        #self.button_awg.clicked.connect(self.start_awg_control)
-        #self.button_awg.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-        # border-style: outset; color: rgb(193, 202, 227);}\
-        #  QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
-        self.button_phasing.clicked.connect(self.start_phasing)
-        self.button_phasing.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227);}\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
-        self.button_awg_phasing.clicked.connect(self.start_awg_phasing)
-        self.button_awg_phasing.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227);}\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
-
-        #self.fft_analyzer.clicked.connect(self.start_fft_control)
-        #self.fft_analyzer.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-        # border-style: outset; color: rgb(193, 202, 227);}\
-        #  QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
-
-        self.button_t2.clicked.connect(self.start_t2_preset)
-        self.button_t2.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227);}\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
-        self.button_t1.clicked.connect(self.start_t1_preset)
-        self.button_t1.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227);}\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
-        self.button_echo.clicked.connect(self.start_echo_preset)
-        self.button_echo.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227);}\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
-        self.button_eseem.clicked.connect(self.start_eseem_preset)
-        self.button_eseem.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227);}\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
-        self.button_tune.clicked.connect(self.start_tune_preset)
-        self.button_tune.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227);}\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
-        self.button_laser.clicked.connect(self.start_laser_preset)
-        self.button_laser.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227);}\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
-        self.button_ph_cor.clicked.connect(self.start_ph_cor)
-        self.button_ph_cor.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227);}\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
-
-        self.label_creator.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
-        self.label.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
-        self.label_filename.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
-        self.script_chooser.setStyleSheet("QComboBox { color : rgb(193, 202, 227); selection-color: rgb(211, 194, 78); }")
-        self.script_chooser.currentIndexChanged.connect(self.script_open_combo)
-        self.script = self.text_to_script_name( self.script_chooser.currentText() )
-        # preopen script
-        self.open_file( self.script )
-
-        self.checkTests.setStyleSheet("QCheckBox { color : rgb(193, 202, 227); }")
-
-        # Liveplot tab setting
-        self.dockarea = DockArea()
-        self.namelist = NameList(self)
-        self.tab_liveplot.setStyleSheet("background-color: rgb(42, 42, 64); color: rgb(211, 194, 78); ")
-        self.gridLayout_tab_liveplot.setColumnMinimumWidth(0, 200)
-        self.gridLayout_tab_liveplot.setColumnStretch(1, 2000)
-        self.gridLayout_tab_liveplot.addWidget(self.namelist, 0, 0)
-        self.gridLayout_tab_liveplot.setAlignment(self.namelist, QtConst.AlignLeft)
-        self.gridLayout_tab_liveplot.addWidget(self.dockarea, 0, 1)
-        #self.gridLayout_tab_liveplot.setAlignment(self.dockarea, QtConst.AlignRight)
-        self.namelist.setStyleSheet("background-color: rgb(42, 42, 64); color: rgb(211, 194, 78); border: 2px solid rgb(40, 30, 45)")
-        self.namelist.namelist_view.setStyleSheet("QListView::item:selected:active {background-color: rgb(63, 63, 97);\
-            color: rgb(211, 194, 78); } QListView::item:hover {background-color: rgb(48, 48, 75); }")
-        self.namelist.namelist_view.setStyleSheet("QMenu::item:selected {background-color: rgb(48, 48, 75);  }")
+        self.queue = 0
+        self.success = False
 
         # Liveplot server settings
         self.server = QLocalServer()
@@ -225,96 +79,101 @@ class MainWindow(QtWidgets.QMainWindow):
         self.conns = []
         self.shared_mems = []
         signal.signal(signal.SIGINT, self.close)
+        self.system = platform.system()
+        self.system_encoding = locale.getpreferredencoding()
 
         # configuration data
-        path_config_file = os.path.join(self.path_to_main,'atomize/config.ini')
+        #path_config_file = os.path.join(path_to_main,'atomize/config.ini')
+        path_config_file = os.path.join(path_to_main, '..', 'config.ini')
+        path_config_file_device = os.path.join(path_to_main, '..', 'device_modules/config')
+        path_config_file, self.path_config2 = lconf.copy_config(path_config_file, path_config_file_device)
+
         config = configparser.ConfigParser()
         config.read(path_config_file)
         # directories
         self.open_dir = str(config['DEFAULT']['open_dir'])
+        if self.open_dir == '':
+            self.open_dir = lconf.load_scripts(os.path.join(path_to_main, '..', 'tests'))
+
         self.script_dir = str(config['DEFAULT']['script_dir'])
+        if self.script_dir == '':
+            self.script_dir = lconf.load_scripts(os.path.join(path_to_main, '..', 'tests'))
+
+        print( f'SYSTEM: {self.system}' )
+        print( f'DATA DIRECTORY: {self.open_dir}' )
+        print( f'SCRIPTS DIRECTORY: {self.script_dir}' )
+        print( f'MAIN CONFIG PATH: {path_config_file}' )
+        print( f'DEVICE CONFIG DIRECTORY: {self.path_config2}' )
+
         self.path = self.script_dir
         self.test_timeout = int(config['DEFAULT']['test_timeout']) * 1000 # in ms
 
         # for running different processes using QProcess
-        self.process = QtCore.QProcess(self)
         self.process_text_editor = QtCore.QProcess(self)
         self.process_python = QtCore.QProcess(self)
-        #self.process_pulse = QtCore.QProcess(self)
-        self.process_osc = QtCore.QProcess(self)
-        #self.process_dig = QtCore.QProcess(self)
-        self.process_mw = QtCore.QProcess(self)
-        self.process_temp = QtCore.QProcess(self)
-        self.process_t2 = QtCore.QProcess(self)
-        self.process_t1 = QtCore.QProcess(self)
-        self.process_echo = QtCore.QProcess(self)
-        self.process_laser = QtCore.QProcess(self)
-        self.process_eseem = QtCore.QProcess(self)
-        self.process_tune = QtCore.QProcess(self)
-        #self.process_awg = QtCore.QProcess(self)
-        #self.process_fft = QtCore.QProcess(self)
-        self.process_phasing = QtCore.QProcess(self)
-        self.process_awg_phasing = QtCore.QProcess(self)
-        self.process_ph_cor = QtCore.QProcess(self)
-        # check where we are
-        self.system = platform.system()
+        self.process_python.readyReadStandardOutput.connect( 
+            lambda: self.handle_output(self.process_python) 
+            )
+
+        self.process_test = QtCore.QProcess(self)
+        self.process_test.readyReadStandardOutput.connect( lambda: self.handle_output(self.process_test) )
+
+        self.pid = 0
+
+        # Use the current interpreter so script-runner / syntax-check
+        # subprocesses inherit the pipx/venv/conda site-packages.
+        self.process_python.setProgram(sys.executable)
+        self.process_test.setProgram(sys.executable)
         if self.system == 'Windows':
             self.process_text_editor.setProgram(str(config['DEFAULT']['editorW']))
-            self.process.setProgram('python.exe')
-            self.process_python.setProgram('python.exe')
-            #self.process_pulse.setProgram('python.exe')
-            self.process_osc.setProgram('python.exe')
-            #self.process_dig.setProgram('python.exe')
-            self.process_mw.setProgram('python.exe')
-            self.process_temp.setProgram('python.exe')
-            self.process_t2.setProgram('python.exe')
-            self.process_t1.setProgram('python.exe')
-            self.process_echo.setProgram('python.exe')
-            self.process_laser.setProgram('python.exe')
-            self.process_eseem.setProgram('python.exe')
-            self.process_tune.setProgram('python.exe')
-            #self.process_awg.setProgram('python.exe')
-            #self.process_fft.setProgram('python.exe')
-            self.process_phasing.setProgram('python.exe')
-            self.process_awg_phasing.setProgram('python.exe')
-            self.process_ph_cor.setProgram('python.exe')
+            print('EDITOR: ' + str(config['DEFAULT']['editorW']))
         elif self.system == 'Linux':
             self.editor = str(config['DEFAULT']['editor'])
             if self.editor == 'nano' or self.editor == 'vi':
                 self.process_text_editor.setProgram('xterm')
+                print(f'EDITOR: nano / vi')
             else:
                 self.process_text_editor.setProgram(str(config['DEFAULT']['editor']))
-            self.process.setProgram('python3')
-            self.process_python.setProgram('python3')
-            #self.process_pulse.setProgram('python3')
-            self.process_osc.setProgram('python3')
-            #self.process_dig.setProgram('python3')
-            self.process_mw.setProgram('python3')
-            self.process_temp.setProgram('python3')
-            self.process_t2.setProgram('python3')
-            self.process_t1.setProgram('python3')
-            self.process_echo.setProgram('python3')
-            self.process_laser.setProgram('python3')
-            self.process_eseem.setProgram('python3')
-            self.process_tune.setProgram('python3')
-            #self.process_awg.setProgram('python3')
-            #self.process_fft.setProgram('python3')
-            self.process_phasing.setProgram('python3')
-            self.process_awg_phasing.setProgram('python3')
-            self.process_ph_cor.setProgram('python3')
+                print('EDITOR: ' + str(config['DEFAULT']['editor']))
 
-        self.process.finished.connect(self.on_finished_checking)
         self.process_python.finished.connect(self.on_finished_script)
+        self.file_handler = openfile.Saver_Opener()
 
-    ############################################## Liveplot Functions
+        self.loop = QEventLoop()
+        self.process_test.finished.connect(lambda exit_code, exit_status: self.on_finished_checking(exit_code, exit_status, self.loop, self.process_test))
+        self.checked = 0
+        self.cached_stamp2 = 0
 
+    def handle_output(self, process):
+        raw_data = process.readAllStandardOutput().data().decode(self.system_encoding, errors='replace')
+
+        lines = raw_data.strip().split('\n')
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+
+            if line.startswith("create_file_dialog"):
+                file_data = self.file_handler.create_file_dialog(multiprocessing = True)
+                self.process_python.write(f"{file_data}\n".encode())
+                
+            elif line.startswith("open_file_dialog"):
+                file_data = self.file_handler.open_file_dialog(multiprocessing = True)
+                self.process_python.write(f"{file_data}\n".encode())
+                
+            elif line.startswith("print "):
+                msg = line[6:].strip()
+                self.text_errors.appendPlainText(msg)
+
+    ##### Liveplot Functions
     def close(self, sig = None, frame = None):
         #print('closing')
         for conn in self.conns:
             conn.close()
         for shm in self.shared_mems:
             shm.detach()
-        self._on_destroyed()
+        self.quit()
         #QApplication.instance().exit()
 
     def accept(self):
@@ -334,26 +193,36 @@ class MainWindow(QtWidgets.QMainWindow):
         conn.disconnected.connect(memory.detach)
         conn.write(b'ok')
 
-    # noinspection PyNoneFunctionAssignment
     def read_from(self, conn, memory):
         logging.debug('reading data')
-        self.meta = json.loads(conn.read(300).decode())
+
+        try:
+            self.meta = json.loads(conn.read(320).decode())
+        except json.decoder.JSONDecodeError:
+            #print('error')
+            pass
+
         if self.meta['arrsize'] != 0:
             memory.lock()
-            raw_data = memory.data()
-            if raw_data!=None:
-                ba = raw_data[:self.meta['arrsize']]
-                arr = np.frombuffer(memoryview(ba), dtype=self.meta['dtype'])
+            try:
+                raw_data = memory.data()
+                if raw_data is not None:
+                    # Slice and create a view directly without copying yet
+                    ba = raw_data[:self.meta['arrsize']]
+                    # interpreted as the correct dtype
+                    arr = np.frombuffer(ba, dtype = self.meta['dtype'])
+                    # Reshape first, THEN copy while still LOCKED to ensure data integrity
+                    arr = arr.reshape(self.meta['shape']).copy() 
+                    conn.write(b'ok')
+                else:
+                    arr = None
+            finally:
+                # Using finally ensures the lock is released even if reshape/copy fails
                 memory.unlock()
-                conn.write(b'ok')
-                arr = arr.reshape(self.meta['shape']).copy()
-            else: 
-                arr = None
         else:
             arr = None
+
         self.do_operation(arr)
-        if conn.bytesAvailable():
-            self.read_from(conn, memory)
 
     def do_operation(self, arr = None):
         def clear(name):
@@ -371,9 +240,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if name in self.namelist:
             pw = self.namelist[name]
-            if pw.closed:
-                pw.closed = False
-                self.dockarea.addDock(pw)
+            #if pw.closed:
+            #    pw.closed = False
+            #    self.dockarea.addDock(pw)
 
         elif name == "*":
             if operation == 'clear':
@@ -384,7 +253,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 list(map(remove, list(self.namelist.keys())))
             return
         else:
-            if operation in ('clear', 'close', 'remove','none'):
+            if operation in ('clear', 'close', 'remove', 'none'):
                 return
             pw = self.add_new_plot(meta['rank'], name)
 
@@ -437,14 +306,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 (x0, dx), (y0, dy) = start_step
                 pw.setAxisLabels(xname=xnam, xscale =xscal, yname=ynam, yscale =yscal,\
                 zname=znam, zscale =zscal)
-                pw.setImage(arr, pos=(x0, y0), scale=(dx, dy)) #, axes={'y':0, 'x':1}
+                pw.setImage(arr, pos=(x0, y0), scale=(dx, dy), autoLevels=False ) # , axes={'y':0, 'x':1}
                 # Graph title
                 if tex != '':
                     pw.setTitle(meta['value'])
             else:
                 pw.setAxisLabels(xname=xnam, xscale =xscal, yname=ynam, yscale =yscal,\
                  zname=znam, zscale =zscal)
-                pw.setImage(arr) #, axes={'y':0, 'x':1}
+                pw.setImage(arr, autoLevels=False) #, axes={'y':0, 'x':1}
                 # Graph title
                 if tex != '':
                     pw.setTitle(meta['value'])
@@ -459,7 +328,7 @@ class MainWindow(QtWidgets.QMainWindow):
             scat = meta['Scatter']
             taxis = meta['TimeAxis']
             verline = meta['Vline']
-
+            
             xs, ys = pw.get_data(label)
             new_ys = list(ys)
             new_ys.append(meta['value'])
@@ -506,10 +375,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 (x0, dx), (y0, dy) = start_step
                 pw.setAxisLabels(xname=xnam, xscale =xscal, yname=ynam, yscale =yscal,\
                  zname=znam, zscale =zscal)
-                pw.setImage(image, pos=(x0, y0), scale=(dx, dy), axes={'y':0, 'x':1})
+                pw.setImage(image, pos=(x0, y0), scale=(dx, dy), axes={'y':0, 'x':1}, autoLevels=False)
             else:
                 pw.setAxisLabels(xname=xnam, xscale =xscal, yname=ynam, yscale =yscal)
-                pw.setImage(image, axes={'y':0, 'x':1})
+                pw.setImage(image, axes={'y':0, 'x':1}, autoLevels=False)
 
 
         elif operation == 'label':
@@ -529,216 +398,360 @@ class MainWindow(QtWidgets.QMainWindow):
 
     #####################################################
 
-    def _on_destroyed(self):
+    def design_setting(self):
+        
+        self.setObjectName("MainWindow")
+        self.setWindowTitle("Atomize")
+
+        screen_geometry = QApplication.primaryScreen().geometry()
+        width = int(screen_geometry.width() * 0.6)
+        height = int(screen_geometry.height() * 0.7)
+
+        #int(screen_geometry.height() * 0.6)
+        self.setMinimumSize(int(screen_geometry.width() * 0.65), 650)
+        self.resize(width, height)
+
+        x = (screen_geometry.width() - self.width()) // 2
+        y = (screen_geometry.height() - self.height()) // 2
+
+        self.move(x, y)
+        
+        self.setStyleSheet("""
+            QMainWindow { background-color: rgb(42, 42, 64); }
+            QTabWidget::pane {
+            border: 1.5px solid rgb(40, 30, 45 );
+            }
+            QTabBar::tab { 
+                width: 185px;
+                height: 25px;
+                font-weight: bold; 
+                color: rgb(193, 202, 227);
+                background: rgb(63, 63, 97);
+                border: 1px solid rgb(43, 43, 77);
+                border-bottom: none;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+                margin-right: 2px;
+            }
+            QTabBar::tab:selected {
+                color: rgb(211, 194, 78);
+                background: rgb(83, 83, 117); /* Чуть светлее при выборе */
+                border-bottom: 2px solid rgb(211, 194, 78);
+            }
+            QTabBar::tab:hover {
+                background: rgb(73, 73, 107);
+            }
+
+            QScrollBar:vertical { border: none; background: rgb(43, 43, 77); width: 10px; }
+            QScrollBar::handle:vertical { background: rgb(193, 202, 227); border-radius: 5px; min-height: 20px; }
+            QScrollBar::handle:vertical:hover { background: rgb(211, 194, 78); }
+
+        """)
+
+        central_container = QWidget()
+        self.setCentralWidget(central_container)
+        main_window_layout = QVBoxLayout(central_container)
+        main_window_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.tabwidget = QTabWidget()
+        self.tab1 = QWidget()
+        self.tabwidget.addTab(self.tab1, "Main")
+        main_window_layout.addWidget(self.tabwidget)
+
+        self.gridLayout_tab = QGridLayout(self.tab1)
+        self.gridLayout_tab.setContentsMargins(5, 5, 5, 5)
+        self.gridLayout_tab.setSpacing(5)
+
+        buttons_widget = QWidget()
+        buttons_widget.setMinimumHeight(420)
+        buttons_v_layout = QVBoxLayout(buttons_widget)
+        #buttons_v_layout.setContentsMargins(10, 5, 10, 5)
+        buttons_v_layout.setSpacing(5)
+
+        buttons_v_layout.addStretch()
+
+        self.button_open = QPushButton("&Open Script")
+        self.button_edit = QPushButton("&Edit Script")
+        self.button_test = QPushButton("&Test Script")
+        self.button_reload = QPushButton("&Update Script")
+        self.button_start = QPushButton("&Start Experiment")
+        self.button_stop = QPushButton("Stop Experiment")
+        self.button_queue = QPushButton("&Add to Queue")
+        self.button_help = QPushButton("&Help")
+        self.button_quit = QPushButton("&Quit")
+
+        btn_list = [
+            (self.button_open, self.open_file_dialog), (self.button_edit, self.edit_file),
+            (self.button_test, lambda: self.test(self.script)), (self.button_reload, self.reload),
+            (self.button_start, self.start_experiment), (self.button_stop, self.stop_script),
+            (self.button_queue, self.add_to_queue), (self.button_help, self.help),
+            (self.button_quit, self.quit)
+        ]
+
+        for btn, method in btn_list:
+            btn.clicked.connect(method)
+            btn.setFixedSize(140, 40)
+            btn.setSizePolicy(QSizePolicy.Policy.Fixed, 
+                              QSizePolicy.Policy.Fixed)
+            buttons_v_layout.addWidget(btn)
+            btn.setStyleSheet("""
+                QPushButton {
+                border-radius: 4px; background-color: rgb(63, 63, 97); 
+                border-style: outset; color: rgb(193, 202, 227); font-weight: bold;
+                padding: 2px 10px;
+            }
+                QPushButton:pressed { background-color: rgb(211, 194, 78); border-style: inset; }
+            """)
+
+        buttons_v_layout.addStretch()
+        self.gridLayout_tab.addWidget(buttons_widget, 0, 0, 1, 1)
+
+        self.textEdit = codeedit.CodeEditor(self)
+        #self.textEdit.setReadOnly(True)
+        self.textEdit.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.NoContextMenu)
+        option = QtGui.QTextOption()
+        self.textEdit.document().setDefaultTextOption(option)
+        self.textEdit.setTabStopDistance(
+            QtGui.QFontMetricsF(self.textEdit.font()).horizontalAdvance(' ') * 4
+        )
+
+        self.textEdit.setStyleSheet("""
+            QPlainTextEdit {
+                background-color: rgb(42, 42, 64); 
+                color: rgb(211, 194, 78); 
+                selection-background-color: rgb(211, 197, 78); 
+                selection-color: rgb(63, 63, 97);
+                border: 1px solid rgb(63, 63, 97);
+            }
+            QMenu {
+                background-color: rgb(42, 42, 64);
+                border: 1px solid rgb(63, 63, 97);
+            }
+            QMenu::item { color: rgb(211, 194, 78); } 
+            QMenu::item:selected { background-color: rgb(48, 48, 75); } 
+            QScrollBar:vertical {
+                border: none; background: rgb(42, 42, 64); 
+                width: 10px; margin: 0px;
+            }
+            QScrollBar::handle:vertical {
+                background: rgb(193, 202, 227); min-height: 20px; border-radius: 5px;
+            }
+            QScrollBar::handle:vertical:hover { background: rgb(211, 194, 78); }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }
+        """)
+
+        self.textEdit.textChanged.connect(self.save_edited_text)
+
+        self.text_errors = codeedit.CodeEditor(self)
+        self.text_errors.setReadOnly(True)
+        self.text_errors.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.NoContextMenu)
+        self.text_errors.setCenterOnScroll(True)
+        self.text_errors.ensureCursorVisible()
+        self.text_errors.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.ActionsContextMenu)
+
+        self.text_errors.setStyleSheet("""
+            QPlainTextEdit {
+                background-color: rgb(42, 42, 64); 
+                color: rgb(211, 194, 78); 
+                selection-background-color: rgb(211, 197, 78); 
+                selection-color: rgb(63, 63, 97);
+                border: 1px solid rgb(63, 63, 97);
+            }
+            QMenu {
+                background-color: rgb(42, 42, 64);
+                border: 1px solid rgb(63, 63, 97);
+            }
+            QMenu::item { color: rgb(211, 194, 78); } 
+            QMenu::item:selected { background-color: rgb(48, 48, 75); } 
+
+            QScrollBar:vertical {
+                border: none; background: rgb(43, 43, 77); 
+                width: 10px; margin: 0px;
+            }
+            QScrollBar::handle:vertical {
+                background: rgb(193, 202, 227); min-height: 20px; border-radius: 5px;
+            }
+            QScrollBar::handle:vertical:hover { background: rgb(211, 194, 78); }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }
+        """)
+
+        self.gridLayout_tab.setColumnStretch(1, 1)
+        self.gridLayout_tab.setRowStretch(0, 10)
+        self.gridLayout_tab.setRowStretch(1, 3)
+
+
+        self.dockarea2 = DockArea()
+        self.dock_editor = self.dockarea2.addDock(name="Script Editor")
+        self.textEdit.textChanged.connect(self.save_edited_text)
+        self.dock_editor.addWidget(widget=self.textEdit)
+        self.gridLayout_tab.addWidget(self.dockarea2, 0, 1, 1, 1)
+
+        self.dockarea3 = DockArea()
+        self.dock_errors = self.dockarea3.addDock(name="Output")
+        self.dockarea3.setMinimumHeight(100)
+        self.dock_errors.addWidget(widget=self.text_errors)
+        self.gridLayout_tab.addWidget(self.dockarea3, 1, 0, 1, 2)
+
+        self.dockarea4 = DockArea()
+        self.dockarea4.setMaximumHeight(60)    
+        self.dockarea4.setMaximumHeight(80)
+        self.script_queue = queue.QueueList(self)
+        self.dock_queue = self.dockarea4.addDock(name="Queue")
+        self.dock_queue.addWidget(widget=self.script_queue)
+        self.gridLayout_tab.addWidget(self.dockarea4, 2, 0, 1, 2)
+
+
+        self.label_filename = QLabel("No experimental script is opened")
+        self.label_filename.setStyleSheet("color: rgb(193, 202, 227); font-weight: bold; padding: 2px;")
+        self.gridLayout_tab.addWidget(self.label_filename, 4, 0, 1, 2)
+
+        self.gridLayout_tab.setRowStretch(0, 10)
+        self.gridLayout_tab.setRowStretch(4, 0)
+
+        self.tabwidget.tabBar().setTabTextColor(0, QColor(193, 202, 227))
+        self.tabwidget.tabBar().setTabTextColor(1, QColor(193, 202, 227))
+
+        actions = [
+            ('Clear', self.clear_errors),
+            ('Open Config Directory', self.conf_dir_action),
+            ('List Resources', self.list_resources_action)
+        ]
+
+        for name, method in actions:
+            action = QAction(name, self.text_errors)
+            action.triggered.connect(method)
+            self.text_errors.addAction(action)
+
+
+        # Liveplot tab setting
+        tab3 = QWidget()
+        self.gridLayout_tab_liveplot = QGridLayout(tab3)
+        self.gridLayout_tab_liveplot.setContentsMargins(5, 5, 5, 5)
+        self.tabwidget.addTab(tab3, "Liveplot")
+        self.tabwidget.tabBar().setTabTextColor(1, QColor(193, 202, 227))
+
+        # Liveplot tab setting
+        self.dockarea = DockArea()
+        self.namelist = self.create_namelist()
+
+        self.gridLayout_tab_liveplot.setColumnMinimumWidth(0, 200)
+        self.gridLayout_tab_liveplot.setColumnStretch(1, 2000)
+        self.gridLayout_tab_liveplot.addWidget(self.namelist, 0, 0)
+        self.gridLayout_tab_liveplot.setAlignment(self.namelist, QtCore.Qt.AlignmentFlag.AlignLeft)
+        self.gridLayout_tab_liveplot.addWidget(self.dockarea, 0, 1)
+        #self.gridLayout_tab_liveplot.setAlignment(self.dockarea, QtConst.AlignRight)
+        self.namelist.setStyleSheet(
+            "QListView {background-color: rgb(42, 42, 64); selection-color: rgb(211, 194, 78); color: rgb(211, 194, 78); selection-background-color: rgb(63, 63, 97); border: 1px solid rgb(40, 30, 45);} "
+            "QListView::item:hover {background-color: rgb(211, 194, 78); color: rgb(42, 42, 64);} "
+            "QMenu {background-color: rgb(42, 42, 64); border: 1px solid rgb(63, 63, 97);} "
+            "QMenu::item {color: rgb(211, 194, 78);} "
+            "QMenu::item:selected {background-color: rgb(48, 48, 75);}"
+        )
+
+    def create_namelist(self):
+        return NameList(self)
+
+    def stop_script(self):
+        self.script_queue.clear()
+        self.queue = 0
+        self.process_test.terminate()
+        self.process_python.terminate()
+
+    def add_to_queue(self):
+        key_number = str( len(self.script_queue.keys()) )
+        self.checked = 0
+        self.test(self.script)
+        exec_code = self.success
+        if self.test_flag == 0 and exec_code == True:
+            self.script_queue[key_number] = self.script
+        else:
+            pass
+
+    def closeEvent(self, event):
         """
         A function to do some actions when the main window is closing.
         """
-        self.process_python.close()
-        #self.process_pulse.close()
-        self.process_osc.close()
-        #self.process_dig.close()
-        self.process_mw.close()
-        self.process_temp.close()
-        self.process_t2.close()
-        self.process_t1.close()
-        self.process_echo.close()
-        self.process_laser.close()
-        self.process_eseem.close()
-        self.process_tune.close()
-        #self.process_awg.close()
-        #self.process_fft.close()
-        self.process_phasing.close()
-        self.process_awg_phasing.close()
-        self.process_ph_cor.close()
+        active_processes = []
+        try:
+            if self.process_python.state() != QtCore.QProcess.ProcessState.NotRunning:
+                active_processes.append(self.process_python)
+        except AttributeError:
+            pass
+
+        if active_processes:
+            event.ignore()
+            self.text_errors.appendPlainText(f"{len(active_processes)} process is still running. Please terminate it")
+        else:
+            sys.exit()
+    
+    def clear_errors(self):
+        self.text_errors.clear()
+
+    def conf_dir_action(self):
+        self.open_directory(self.path_config2)
+
+    def list_resources_action(self):
+        import pyvisa
+
+        rm = pyvisa.ResourceManager()
+        print(f"AVAILABLE INSTRUMENTS: {rm.list_resources()}")
 
     def quit(self):
         """
         A function to quit the programm
         """
-        self.process_python.terminate()
-        #self.process_pulse.terminate()
-        self.process_osc.terminate()
-        #self.process_dig.terminate()
-        self.process_mw.terminate()
-        self.process_temp.terminate()
-        self.process_t2.terminate()
-        self.process_t1.terminate()
-        self.process_echo.terminate()
-        self.process_laser.terminate()
-        self.process_eseem.terminate()
-        self.process_tune.terminate()
-        #self.process_awg.terminate()
-        #self.process_fft.terminate()
-        self.process_phasing.terminate()
-        self.process_awg_phasing.terminate()
-        self.process_ph_cor.terminate()
-        sys.exit()
-        ####
-        #### QProcess: Destroyed while process ("python3") is still running.
-        ####
+        
+        active_processes = []
+        try:
+            if self.process_python.state() != QtCore.QProcess.ProcessState.NotRunning:
+                active_processes.append(self.process_python)
+        except AttributeError:
+            pass
 
-    def clear_errors(self):
-        self.text_errors.clear()
+        if active_processes:
+            event.ignore()
+            self.text_errors.appendPlainText(f"{len(active_processes)} process is still running. Please terminate it")
+        else:
+            sys.exit()
 
     def start_experiment(self):
         """
         A function to run an experimental script using python.exe.
         """
+        if len(self.script_queue.keys()) != 0:
+            self.queue = 1
+            first_index = self.script_queue.namelist_model.index(0, 0 )
+            self.script_queue.namelist_view.setCurrentIndex(first_index)
+
+        else:
+            self.queue = 0
+
+        if self.queue == 0:
+            name = self.script
+        else:
+            name = self.script_queue.values()[0]
+
         if self.script != '':
-            stamp = os.stat(self.script).st_mtime
+            stamp = os.stat(name).st_mtime
         else:
             self.text_errors.appendPlainText('No experimental script is opened')
             return
 
-        if self.checkTests.checkState() == 2:
-            self.test()
-            exec_code = self.process.waitForFinished( msecs = self.test_timeout ) # timeout in msec
-        elif self.checkTests.checkState() == 0:
-            self.test_flag = 0
-            exec_code = True
-            self.text_errors.appendPlainText("Testing of experimental scripts are disabled")
+        self.test(name)
+        exec_code = self.success
 
         if self.test_flag == 1:
-            self.text_errors.appendPlainText("Experiment cannot be started, since test is not passed. Test execution timeout is " +\
-                                str( self.test_timeout / 60000 ) + " minutes")
-            return        # stop current function
+            self.text_errors.appendPlainText("Experiment cannot be started, since test is not passed. Test execution timeout is " + str( self.test_timeout / 60000 ) + " minutes")
+            return
+
         elif self.test_flag == 0 and exec_code == True:
-            self.process_python.setArguments([self.script])
+            self.process_python.setArguments([name])
+            self.button_start.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(211, 194, 78); border-style: outset; color: rgb(63, 63, 97); font-weight: bold; } ")
             self.process_python.start()
-
-    def start_awg_phasing(self):
-        """
-        A function to run online awg phase cycling.
-        """
-        self.process_awg_phasing.setArguments(['atomize/control_center/awg_phasing.py'])
-        self.process_awg_phasing.start()
-
-    def start_phasing(self):
-        """
-        A function to run online phase cycling.
-        """
-        self.process_phasing.setArguments(['atomize/control_center/phasing.py'])
-        self.process_phasing.start()
-
-    #def start_fft_control(self):
-    #    """
-    #    A function to run a fft_control.
-    #    """
-    #    self.process_fft.setArguments(['atomize/control_center/fft_control.py'])
-    #    self.process_fft.start()
-
-    #def start_awg_control(self):
-    #    """
-    #    A function to run an awg_creator.
-    #    """
-    #    self.process_awg.setArguments(['atomize/control_center/awg_creator.py'])
-    #    self.process_awg.start()
-
-    #def start_pulse_control(self):
-    #    """
-    #    A function to run a pulse_creator.
-    #    """
-    #    self.process_pulse.setArguments(['atomize/control_center/pulse_creator.py'])
-    #    self.process_pulse.start()
-    
-    def start_osc_control(self):
-        """
-        A function to run an Keysight control.
-        """
-        self.process_osc.setArguments(['atomize/control_center/osc_control.py'])
-        self.process_osc.start()
-
-    #def start_dig_control(self):
-    #    """
-    #    A function to run an digitizer control.
-    #    """
-    #    self.process_dig.setArguments(['atomize/control_center/dig_control.py'])
-    #    self.process_dig.start()
-
-    def start_mw_control(self):
-        """
-        A function to run an Keysight control.
-        """
-        self.process_mw.setArguments(['atomize/control_center/mw_bridge_control.py'])
-        self.process_mw.start()
-
-    def start_temp_control(self):
-        """
-        A function to run an Keysight control.
-        """
-        self.process_temp.setArguments(['atomize/control_center/temp_control.py'])
-        self.process_temp.start()
-
-    def start_t2_preset(self):
-        self.process_t2.setArguments(['atomize/control_center/t2_preset.py'])
-        self.process_t2.start()
-    
-    def start_t1_preset(self):
-        self.process_t1.setArguments(['atomize/control_center/t1_preset.py'])
-        self.process_t1.start()
-    
-    def start_laser_preset(self):
-        self.process_laser.setArguments(['atomize/control_center/laser_preset.py'])
-        self.process_laser.start()
-
-    def start_ph_cor(self):
-        self.process_ph_cor.setArguments(['atomize/control_center/phase_cor.py'])
-        self.process_ph_cor.start()
-
-    def start_echo_preset(self):
-        self.process_echo.setArguments(['atomize/control_center/echo_det_preset.py'])
-        self.process_echo.start()
-
-    def start_eseem_preset(self):
-        self.process_eseem.setArguments(['atomize/control_center/eseem_preset.py'])
-        self.process_eseem.start()
-
-    def start_tune_preset(self):
-        self.process_tune.setArguments(['atomize/control_center/tune_preset.py'])
-        self.process_tune.start()
-
-    def script_open_combo(self):
-        self.script = self.text_to_script_name( self.script_chooser.currentText() )
-        self.open_file( self.script )
-
-    def text_to_script_name(self, text_to_parse):
-
-        if text_to_parse == ' Tuning':
-            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/01_resonator_tuning.py')
-        elif text_to_parse == ' T2':
-            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/02_t2.py')
-        elif text_to_parse == ' T2 Baseline':
-            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/02_t2_baseline.py')
-        elif text_to_parse == ' T1 Baseline':
-            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/04_t1_inversion_recovery.py')
-        elif text_to_parse == ' T1':
-            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/04_t1_inversion_recovery_baseline.py')
-        elif text_to_parse == ' Echo Detected':
-            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/03_echo_detected_spectrum.py')
-        elif text_to_parse == ' Echo Detected 2D':
-            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/03_echo_detected_spectrum_baseline_2d.py')
-        elif text_to_parse == ' Echo Detected Baseline':
-            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/03_echo_detected_spectrum_baseline.py')
-        elif text_to_parse == ' Laser ED':
-            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/14_laser_echo_detected_spectrum_baseline.py')
-        elif text_to_parse == ' Laser ED 2D':
-            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/14_laser_echo_detected_spectrum_baseline_2D.py')
-        elif text_to_parse == ' Laser Kinetics':
-            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/14_laser_echo_detected_spectrum_baseline_kinetics.py')
-        elif text_to_parse == ' ESEEM':
-            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/07_eseem_phase.py')
-        elif text_to_parse == ' Nutations':
-            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/05_nutations.py')
-        elif text_to_parse == ' HYSCORE':
-            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/08_hyscore.py')
-        elif text_to_parse == ' SIFTER':
-            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/10_sifter.py')
-        elif text_to_parse == ' DQC':
-            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/11_dqc.py')
-        elif text_to_parse == ' DEER':
-            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/awg/digitizer/02_deer_64_steps_phase_8ns_cylces.py')
-        elif text_to_parse == ' DEER Static':
-            return os.path.join(self.path_to_main, 'atomize/tests/pulse_epr/awg//01_deer_static.py')
+            self.pid = self.process_python.processId()
+            print(f'SCRIPT PROCESS ID: {self.pid}')
 
     def message_box_clicked(self, btn):
         """
@@ -748,88 +761,118 @@ class MainWindow(QtWidgets.QMainWindow):
             self.start_experiment()
         elif btn.text() == "Update Script":
             self.reload()
+            self.button_test.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97); border-style: outset; color: rgb(193, 202, 227); font-weight: bold; } ")
+            #self.start_experiment()
         else:
             return
 
-    def test(self):
+    def test(self, name):
         """
         A function to run script check.
         """
+        self.button_test.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(193, 202, 227); border-style: outset; color: rgb(63, 63, 97); font-weight: bold; } ")
 
-        if self.script != '':
-            stamp = os.stat(self.script).st_mtime
+        QApplication.processEvents()
+
+        self.success = False
+
+        if name != '':
+            stamp = os.stat(name).st_mtime
         else:
             self.text_errors.appendPlainText('No experimental script is opened')
             return
+        
+        if self.cached_stamp2 != stamp:
+            self.checked = 0
+        self.cached_stamp2 = stamp
 
-        if stamp != self.cached_stamp and self.flag_opened_script_changed == 1:
+        if stamp != self.cached_stamp and self.flag_opened_script_changed == 1 and self.queue == 0:
             self.cached_stamp = stamp
             message = QMessageBox(self);  # Message Box for warning of updated file
             message.setWindowTitle("Your script has been changed!")
             message.setStyleSheet("QWidget { background-color : rgb(42, 42, 64); color: rgb(211, 194, 78); }")
-            message.addButton(QtWidgets.QPushButton('Discrad and Run Experiment'), QtWidgets.QMessageBox.YesRole)
-            message.addButton(QtWidgets.QPushButton('Update Script'), QtWidgets.QMessageBox.NoRole)
+            message.addButton(QPushButton('Discrad and Run Experiment'), QMessageBox.ButtonRole.YesRole)
+            message.addButton(QPushButton('Update Script'), QMessageBox.ButtonRole.NoRole)
             message.setText("Your experimental script has been changed   ");
             message.show();
-            message.buttonClicked.connect(self.message_box_clicked)   # connect function clicked to button; get the button name
-            return        # stop current function
+            message.buttonClicked.connect(self.message_box_clicked)
+            return
 
         #self.text_errors.appendPlainText("Testing... Please, wait!")
         #self.process.setArguments(['--errors-only', self.script])
-        self.process.setArguments([self.script, 'test'])
-        self.process.start()
+        if self.checked == 0:
+            self.process_test.setArguments([name, 'test'])
+            self.process_test.start()
+
+            self.loop.exec()
+        else:
+            self.text_errors.appendPlainText("Script has been already tested. No errors are found")
+            self.button_test.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97); border-style: outset; color: rgb(193, 202, 227); font-weight: bold; } ")
+            self.success = True
 
     def reload(self):
         """
         A function to reload an experimental script.
         """
-        self.cached_stamp = os.stat(self.script).st_mtime
-        text = open(self.script).read()
-        self.textEdit.setPlainText(text)
+        try:
+            self.cached_stamp = os.stat(self.script).st_mtime
+            text = open(self.script).read()
+            self.textEdit.setPlainText(text)
+        except FileNotFoundError:
+            pass
 
-    def on_finished_checking(self):
+    def on_finished_checking(self, exit_code, exit_status, loop, process):
         """
         A function to add the information about errors found during syntax checking
         to a dedicated text box in the main window of the programm.
         """
-        #text = self.process.readAllStandardOutput().data().decode()
-        #if text == '':
-        #    self.text_errors.appendPlainText("No errors are found!")
-        #else:
-        #    self.text_errors.appendPlainText(text)
-        #    self.text_errors.verticalScrollBar().setValue(self.text_errors.verticalScrollBar().maximum())
-
-        # Version for real tests
-        text = self.process.readAllStandardOutput().data().decode()
-        text_errors_script = self.process.readAllStandardError().data().decode()
+        text = process.readAllStandardOutput().data().decode(self.system_encoding, errors='replace')
+        text_errors_script = process.readAllStandardError().data().decode(self.system_encoding, errors='replace')
         if text_errors_script == '':
-        # if text == '' and text_errors_script == '':
             self.text_errors.appendPlainText("No errors are found")
             self.test_flag = 0
+            self.checked = 1
         elif text_errors_script != '':
             self.test_flag = 1
+            self.checked = 0
             self.text_errors.appendPlainText(text_errors_script)
-            #self.text_errors.verticalScrollBar().setValue(self.text_errors.verticalScrollBar().maximum())
 
+        self.button_test.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97); border-style: outset; color: rgb(193, 202, 227); font-weight: bold; } ")
+
+        self.success = (exit_status == QtCore.QProcess.ExitStatus.NormalExit and exit_code == 0)
+        loop.quit()
+ 
     def on_finished_script(self):
         """
         A function to add the information about errors found during syntax checking to a dedicated text box in the main window of the programm.
         """
-        text = self.process_python.readAllStandardOutput().data().decode()
-        text_errors_script = self.process_python.readAllStandardError().data().decode()
+        if self.queue == 1:
+            key_to_del = self.script_queue.values()[0]
+            del self.script_queue[key_to_del]
+        #except IndexError:
+        #    pass
+
+        text = self.process_python.readAllStandardOutput().data().decode(self.system_encoding, errors='replace')
+        text_errors_script = self.process_python.readAllStandardError().data().decode(self.system_encoding, errors='replace')
         if text_errors_script == '':
-        #if text == '' and text_errors_script == '':
-            self.text_errors.appendPlainText("Script done!")
+            self.text_errors.appendPlainText(f"The script PID {self.pid} was executed normally")
         elif text_errors_script != '':
-            self.text_errors.appendPlainText("Script done!")
+            self.text_errors.appendPlainText(f"The script PID {self.pid} was executed with errors")
             self.text_errors.appendPlainText(text_errors_script)
-            #self.text_errors.verticalScrollBar().setValue(self.text_errors.verticalScrollBar().maximum())
+
+        self.button_start.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97); border-style: outset; color: rgb(193, 202, 227); font-weight: bold; } ")
+
+        if len(self.script_queue.keys()) != 0:
+            self.start_experiment()
+            self.queue = 1
+        else:
+            self.queue = 0
 
     def help(self):
         """
         A function to open a documentation
         """
-        pass
+        webbrowser.open("https://anatoly1010.github.io/atomize_docs/", new = 0, autoraise = True)
 
     def edit_file(self):
         """
@@ -857,9 +900,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.script = filename
         self.textEdit.setPlainText(text)
 
-        # scroll to Experimental parameters
-        QtCore.QTimer.singleShot(0, lambda: self.textEdit.verticalScrollBar().setValue(9))
-
         self.label_filename.setText( str( self.script ) )
 
     def save_file(self, filename):
@@ -877,11 +917,231 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         A function to open a new window for choosing an experimental script.
         """
-        filedialog = QFileDialog(self, 'Open File', directory = self.path, filter = "python (*.py)",\
-            options = QtWidgets.QFileDialog.DontUseNativeDialog)
-        # use QFileDialog.DontUseNativeDialog to change directory
-        filedialog.setStyleSheet("QWidget { background-color : rgb(42, 42, 64); color: rgb(211, 194, 78);}")
-        filedialog.setFileMode(QtWidgets.QFileDialog.AnyFile)
+        filedialog = QFileDialog(self, 'Open File', directory = self.path, filter = "python (*.py)",options = QFileDialog.Option.DontUseNativeDialog)
+
+        filedialog.setIconProvider(QFileIconProvider())
+        filedialog.resize(800, 450) 
+        # use QFileDialog.Option.DontUseNativeDialog to change directory
+
+        tree = filedialog.findChild(QTreeView)
+        header = tree.header()
+        for i in range(header.count()):
+            header.setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
+
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+
+        buttons = filedialog.findChildren(QPushButton)
+        seen_texts = []
+        for btn in buttons:
+            if btn.text() in seen_texts:
+                btn.hide()
+            else:
+                seen_texts.append(btn.text())
+    
+        line_edit = filedialog.findChild(QLineEdit)
+
+        if line_edit:
+            line_edit.setCompleter(None)
+
+        size_grip = filedialog.findChild(QSizeGrip)
+        if size_grip:
+            size_grip.setVisible(False)
+
+        filedialog.setStyleSheet("""
+            QFileDialog, QDialog { 
+                background-color: rgb(42, 42, 64); 
+                color: rgb(193, 202, 227);
+                font-size: 11px;
+            }
+
+            QFileDialog QListView {
+                min-width: 150px; 
+                background-color: rgb(35, 35, 55);
+                border: 1px solid rgb(63, 63, 97);
+                color: rgb(193, 202, 227);
+            }
+
+            QTreeView {
+                min-width: 500px;
+                background-color: rgb(35, 35, 55);
+                border: 1px solid rgb(63, 63, 97);
+                color: rgb(193, 202, 227);
+                outline: none;
+            }
+
+            QFileDialog QFrame#qt_contents, QFileDialog QWidget {
+                background-color: rgb(42, 42, 64);
+            }
+            
+            QFileDialog QToolBar {
+                background-color: rgb(42, 42, 64);
+                border-bottom: 1px solid rgb(63, 63, 97);
+                min-height: 34px; 
+                padding: 2px;
+            }
+
+            QToolButton {
+                background-color: rgb(63, 63, 97);
+                border: 1px solid rgb(83, 83, 117);
+                border-radius: 4px;
+                min-height: 23px; 
+                max-height: 23px;
+                min-width: 23px;
+                qproperty-iconSize: 14px 14px; 
+                margin: 0px 2px;
+                vertical-align: middle;
+            }
+
+            QToolButton:hover {
+                border: 1px solid rgb(211, 194, 78);
+                background-color: rgb(83, 83, 117);
+            }
+
+            QLineEdit, QComboBox {
+                background-color: rgb(63, 63, 97);
+                color: rgb(193, 202, 227);
+                border: 1px solid rgb(83, 83, 117);
+                border-radius: 3px;
+                padding: 2px 5px;
+                min-height: 16px; 
+            }
+
+            QLineEdit:focus, QFileDialog QComboBox:focus {
+                border: 1px solid rgb(211, 194, 78);
+                color: rgb(211, 194, 78);
+                outline: none;
+            }
+
+            QFileDialog QComboBox#lookInCombo {
+                background-color: rgb(42, 42, 64);
+                color: rgb(193, 202, 227);
+                border: 1px solid rgb(83, 83, 117);
+                border-radius: 3px;
+                padding-left: 5px;
+                min-height: 19px;
+                max-height: 19px;
+                selection-background-color: rgb(48, 48, 75);
+                selection-color: rgb(211, 194, 78);
+            }
+
+            QFileDialog QComboBox#lookInCombo QAbstractItemView {
+                outline: none;
+                border: 1px solid rgb(48, 48, 75);
+                background-color: rgb(42, 42, 64);
+            }
+
+            QFileDialog QDialogButtonBox QPushButton {
+                background-color: rgb(63, 63, 97);
+                color: rgb(193, 202, 227);
+                border: 1px solid rgb(83, 83, 117);
+                border-radius: 4px;
+                font-weight: bold;
+                min-height: 23px;
+                max-height: 23px;
+                min-width: 75px;
+                padding: 0px 12px;
+            }
+
+            QFileDialog QDialogButtonBox QPushButton:hover {
+                background-color: rgb(83, 83, 117);
+                border: 1px solid rgb(211, 194, 78);
+                color: rgb(211, 194, 78);
+            }
+            
+            QHeaderView::section {
+                background-color: rgb(63, 63, 97);
+                color: rgb(193, 202, 227);
+                padding: 4px;
+                border: none;
+                border-right: 1px solid rgb(83, 83, 117);
+                min-height: 20px;
+            }
+
+            QScrollBar:vertical {
+                border: none; background: rgb(43, 43, 77); 
+                width: 10px; margin: 0px;
+            }
+            QScrollBar::handle:vertical {
+                background: rgb(193, 202, 227); min-height: 20px; border-radius: 5px;
+            }
+            QScrollBar::handle:vertical:hover { background: rgb(211, 194, 78); }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }
+
+            QScrollBar:horizontal {
+                border: none; 
+                background: rgb(43, 43, 77); 
+                height: 10px; 
+                margin: 0px;
+            }
+            QScrollBar::handle:horizontal {
+                background: rgb(193, 202, 227); 
+                min-width: 20px; 
+                border-radius: 5px;
+            }
+            QScrollBar::handle:horizontal:hover { 
+                background: rgb(211, 194, 78); 
+            }
+            QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { 
+                width: 0px; 
+            }
+            QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal { 
+                background: none; 
+            }
+
+            QFileDialog QDialogButtonBox {
+                background-color: rgb(42, 42, 64);
+                border-top: 1px solid rgb(63, 63, 97);
+                padding: 6px;
+            }
+
+            QFileDialog QLabel {
+                color: rgb(193, 202, 227);
+            }
+
+            QFileDialog QListView::item:hover {
+                background-color: rgb(48, 48, 75);
+                color: rgb(211, 194, 78);
+            }
+
+            QHeaderView {
+                background-color: rgb(63, 63, 97);
+            }
+
+            QFileDialog QListView#sidebar:inactive, 
+            QTreeView:inactive {
+                selection-background-color: rgb(35, 35, 55);
+                selection-color: rgb(211, 194, 78);
+            }
+
+            QTreeView::item:hover { 
+                background-color: rgb(48, 48, 75);
+                color: rgb(211, 194, 78); 
+                } 
+            QTreeView::item:selected:inactive, 
+            QFileDialog QListView#sidebar::item:selected:inactive {
+                selection-background-color: rgb(63, 63, 97);
+                selection-color: rgb(211, 194, 78);
+            }
+            QFileDialog QListView#sidebar::item {
+                padding-left: 5px; 
+                padding-top: 5px;
+            }
+
+            QMenu {
+                background-color: rgb(42, 42, 64);
+                border: 1px solid rgb(63, 63, 97);
+                padding: 3px;
+            }
+            QMenu::item { color: rgb(211, 194, 78); } 
+            QMenu::item:selected { 
+                background-color: rgb(48, 48, 75); 
+                color: rgb(211, 194, 78);
+                }
+
+        """)
+
+        filedialog.setFileMode(QFileDialog.FileMode.AnyFile)
         filedialog.fileSelected.connect(self.open_file)
         filedialog.show()
 
@@ -889,12 +1149,11 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         A function to open a new window for choosing a name for a new experimental script.
         """
-        filedialog = QFileDialog(self, 'Save File', directory = self.path, filter = "python (*.py)",\
-            options = QtWidgets.QFileDialog.DontUseNativeDialog)
-        filedialog.setAcceptMode(QFileDialog.AcceptSave)
-        # use QFileDialog.DontUseNativeDialog to change directory
+        filedialog = QFileDialog(self, 'Save File', directory = self.path, filter = "python (*.py)",options = QFileDialog.Option.DontUseNativeDialog)
+        filedialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
+        # use QFileDialog.Option.DontUseNativeDialog to change directory
         filedialog.setStyleSheet("QWidget { background-color : rgb(42, 42, 64); color: rgb(211, 194, 78);}")
-        filedialog.setFileMode(QtWidgets.QFileDialog.AnyFile)
+        filedialog.setFileMode(QFileDialog.FileMode.AnyFile)
         filedialog.fileSelected.connect(self.save_file)
         filedialog.show()
 
@@ -911,7 +1170,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.textEdit.toPlainText() != '': # save file dialog will be opened after at least one character is added
                 self.save_file_dialog()
         
-    @QtCore.pyqtSlot(str) 
+    @QtCore.pyqtSlot(str)
     def add_error_message(self, data):
         """
         A function for adding an error message to a dedicated text box in the main window of the programm;
@@ -920,120 +1179,184 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self.text_errors.appendPlainText(str(data))
 
-        if data == 'Script stopped':
-
-            #path_to_main = os.path.abspath(os.getcwd())
-            lib_path = os.path.join(self.path_to_main, 'atomize/general_modules', 'libspinapi.so')
-            lib_path2 = os.path.join(self.path_to_main, 'atomize/general_modules', 'spinapi64.dll')
-
-            if os.path.exists(lib_path) == False and os.path.exists(lib_path2) == False:
-                self.process_python.close()
-            else:
-                # check on windows?!
-                import atomize.device_modules.PB_ESR_500_pro as pb_pro
-                
-                pb = pb_pro.PB_ESR_500_Pro()
-                pb.pulser_stop()
-
-                self.process_python.terminate()
-
-                # AWG
-                hCard1 = spcm_hOpen (create_string_buffer (b'/dev/spcm0'))
-                spcm_dwSetParam_i32 (hCard1, SPC_M2CMD, M2CMD_CARD_STOP)
-                # clean up
-                spcm_vClose (hCard1)
-
-                hCard2 = spcm_hOpen (create_string_buffer (b'/dev/spcm1'))
-                spcm_dwSetParam_i32 (hCard2, SPC_M2CMD, M2CMD_CARD_STOP)
-                # clean up
-                spcm_vClose (hCard2)
-
-                ###
-
-                
+    def open_directory(self, path):
+        if os.name == 'nt':
+            os.startfile(path)
+        elif os.name == 'posix': 
+            subprocess.Popen(['open', path]) 
+        else:
+            print(f"Unsupported operating system: {os.name}")
 
 class NameList(QDockWidget):
     def __init__(self, window):
         super(NameList, self).__init__('Current Plots:')
-        self.setFeatures(QDockWidget.NoDockWidgetFeatures)
+        self.setFeatures(QDockWidget.DockWidgetFeature.NoDockWidgetFeatures)
+        self.setTitleBarWidget(QWidget(self))
 
         #directories
-        self.path_to_main = os.path.abspath( os.getcwd() )
+        path_to_main = Path(__file__).parent
         # configuration data
-        path_config_file = os.path.join(self.path_to_main, 'atomize/config.ini')
+        path_config_file = os.path.join(path_to_main, '..', 'config.ini')
+        path_config_file_device = os.path.join(path_to_main, '..', 'device_modules/config')
+        path_config_file, path_config2 = lconf.copy_config(path_config_file, path_config_file_device)
+
         config = configparser.ConfigParser()
         config.read(path_config_file)
         # directories
         self.open_dir = str(config['DEFAULT']['open_dir'])
-
+        if self.open_dir == '':
+            self.open_dir = lconf.load_scripts(os.path.join(path_to_main, '..', 'tests'))
+        
         self.namelist_model = QStandardItemModel()
         self.namelist_view = QListView()
+        self.namelist_view.setStyleSheet("""
+            QListView {
+                background-color: rgb(42, 42, 64); 
+                color: rgb(211, 194, 78); 
+                selection-color: rgb(211, 194, 78); 
+                selection-background-color: rgb(63, 63, 97); 
+                border: 1px solid rgb(63, 63, 97); 
+                outline: none;
+                font-size: 12px;
+                font-weight: bold;
+
+            }
+
+            QListView::item {
+                padding: 5px; 
+                border-bottom: 1px solid rgb(53, 53, 84); 
+            }
+
+            QListView::item:hover { 
+                background-color: rgb(211, 194, 78); 
+                color: rgb(42, 42, 64);
+            }
+
+            QScrollBar:vertical {
+                border: none;
+                background: rgb(43, 43, 77); 
+                width: 10px;
+                margin: 0px;
+            }
+            QScrollBar::handle:vertical {
+                background: rgb(193, 202, 227); 
+                min-height: 20px;
+                border-radius: 5px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background: rgb(211, 194, 78); 
+            }
+            
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                height: 0px;
+            }
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+                background: none;
+            }
+            QScrollBar:horizontal {
+                border: none;
+                background: rgb(43, 43, 77); 
+                height: 10px; /* Здесь теперь высота */
+                margin: 0px;
+            }
+            QScrollBar::handle:horizontal {
+                background: rgb(193, 202, 227); 
+                min-width: 20px; /* Здесь min-width вместо min-height */
+                border-radius: 5px;
+            }
+            QScrollBar::handle:horizontal:hover {
+                background: rgb(211, 194, 78); 
+            }
+            
+            QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+                width: 0px; /* Убираем стрелочки по бокам */
+            }
+            QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+                background: none;
+            }
+        """)
+        
         self.namelist_view.setModel(self.namelist_model)
         self.setWidget(self.namelist_view)
         self.window = window
         self.plot_dict = {}
 
         self.namelist_view.doubleClicked.connect(self.activate_item)
-        self.namelist_view.setContextMenuPolicy(QtConst.ActionsContextMenu)
+        self.namelist_view.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.ActionsContextMenu)
         delete_action = QAction("Delete Selected", self.namelist_view)
         ###
-        pause_action = QAction("Stop Script", self.namelist_view)
         delete_action.triggered.connect(self.delete_item)
-        pause_action.triggered.connect(self.pause)
         self.namelist_view.addAction(delete_action)
-        self.namelist_view.addAction(pause_action)
 
         open_action = QAction('Open 1D Data', self)
-        open_action.triggered.connect(self.file_dialog) #self.open_file_dialog_1
+        open_action.triggered.connect(self.file_dialog)
         self.namelist_view.addAction(open_action)
 
         open_action_2 = QAction('Open 2D Data', self)
-        open_action_2.triggered.connect(self.file_dialog_2d) #self.open_file_dialog_2
+        open_action_2.triggered.connect(self.file_dialog_2d)
         self.namelist_view.addAction(open_action_2)
 
     def open_file(self, filename):
         """
-        A function to open 1d data.
+        A function to open existing 1d data.
         :param filename: string
         """
         file_path = filename
 
-        header_array = []
-        header = 0
+        header_lines = []
 
-        file_to_read = open(filename, 'r')
-        for i, line in enumerate(file_to_read):
-            if i is header: break
-            temp = line.split("#")
-            header_array.append(temp)
-        file_to_read.close()
+        with open(file_path, 'r') as file_to_read:
+            for line in file_to_read:
+                if line.startswith('#'):
+                    header_lines.append(line)
+                else:
+                    break
 
+        header_count = len(header_lines)
+        header_text = "".join(header_lines)
+
+        # read data
         temp = np.genfromtxt(file_path, dtype = float, delimiter = ',', skip_header = 1, comments = '#') 
         data = np.transpose(temp)
 
-        name_plot = datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+        # universal name
+        #name_plot = datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+        name_plot = os.path.splitext(os.path.basename(file_path))[0]
+
         pw = self.window.add_new_plot(1, name_plot)
+        # opening of a simple CSV file with a maximum of 4 columns. 
+        # this is usually related to internal pyqtgraph export.
+        # in this case, there is an extra comma that creates an empty column, which should be taken into account
+        # the data may have a different number of columns.
         if len(data) == 2:
-            pw.plot(data[0], data[1], parametric = True, name = file_path, xname = 'X', xscale = 'Arb. U.',\
-                yname = 'Y', yscale = 'Arb. U.', label = 'Data_1', scatter = 'False')
+            pw.plot(data[0], data[1], parametric = True, name = name_plot, xname = 'X', 
+                xscale = 'Arb. U.',yname = 'Y', yscale = 'Arb. U.', 
+                label = 'Data_1', scatter = 'False')
         elif len(data) == 3 and np.isnan(data[2][0]) != True:
-            pw.plot(data[0], data[1], parametric = True, name = file_path + '_1', xname = 'X', xscale = 'Arb. U.',\
-                yname = 'Y', yscale = 'Arb. U.', label = 'Data_1', scatter = 'False')
-            pw.plot(data[0], data[2], parametric = True, name = file_path + '_2', xname = 'X', xscale = 'Arb. U.',\
-                yname = 'Y', yscale = 'Arb. U.', label = 'Data_2', scatter = 'False')
+            pw.plot(data[0], data[1], parametric = True, name = name_plot + '_1', xname = 'X',
+                xscale = 'Arb. U.', yname = 'Y', yscale = 'Arb. U.', 
+                label = 'Data_1', scatter = 'False')
+            pw.plot(data[0], data[2], parametric = True, name = name_plot + '_2', xname = 'X', 
+                xscale = 'Arb. U.', yname = 'Y', yscale = 'Arb. U.', 
+                label = 'Data_2', scatter = 'False')
         elif len(data) == 3 and np.isnan(data[2][0]) == True:
-            pw.plot(data[0], data[1], parametric = True, name = file_path, xname = 'X', xscale = 'Arb. U.',\
-                yname = 'Y', yscale = 'Arb. U.', label = 'Data_1', scatter = 'False')
+            pw.plot(data[0], data[1], parametric = True, name = name_plot, xname = 'X', 
+                xscale = 'Arb. U.', yname = 'Y', yscale = 'Arb. U.', 
+                label = 'Data_1', scatter = 'False')
         elif len(data) == 4 and np.isnan(data[3][0]) == True:
-            pw.plot(data[0], data[1], parametric = True, name = file_path + '_1', xname = 'X', xscale = 'Arb. U.',\
-                yname = 'Y', yscale = 'Arb. U.', label = 'Data_1', scatter = 'False')
-            pw.plot(data[0], data[2], parametric = True, name = file_path + '_2', xname = 'X', xscale = 'Arb. U.',\
-                yname = 'Y', yscale = 'Arb. U.', label = 'Data_2', scatter = 'False')
+            pw.plot(data[0], data[1], parametric = True, name = name_plot + '_1', xname = 'X', 
+                xscale = 'Arb. U.', yname = 'Y', yscale = 'Arb. U.', 
+                label = 'Data_1', scatter = 'False')
+            pw.plot(data[0], data[2], parametric = True, name = name_plot + '_2', xname = 'X', 
+                xscale = 'Arb. U.', yname = 'Y', yscale = 'Arb. U.', 
+                label = 'Data_2', scatter = 'False')
         elif len(data) == 5 and np.isnan(data[4][0]) == True:
-            pw.plot(data[0], data[1], parametric = True, name = file_path + '_1', xname = 'X', xscale = 'Arb. U.',\
-                yname = 'Y', yscale = 'Arb. U.', label = 'Data_1', scatter = 'False')
-            pw.plot(data[0], data[3], parametric = True, name = file_path + '_2', xname = 'X', xscale = 'Arb. U.',\
-                yname = 'Y', yscale = 'Arb. U.', label = 'Data_2', scatter = 'False')
+            pw.plot(data[0], data[1], parametric = True, name = name_plot + '_1', xname = 'X', 
+                xscale = 'Arb. U.', yname = 'Y', yscale = 'Arb. U.', 
+                label = 'Data_1', scatter = 'False')
+            pw.plot(data[0], data[3], parametric = True, name = name_plot + '_2', xname = 'X', 
+                xscale = 'Arb. U.', yname = 'Y', yscale = 'Arb. U.', 
+                label = 'Data_2', scatter = 'False')
 
     def open_file_2d(self, filename):
         """
@@ -1042,87 +1365,258 @@ class NameList(QDockWidget):
         """
         file_path = filename
 
-        header_array = []
-        header = 0
+        header_lines = []
 
-        header_array = []
-        file_to_read = open(file_path, 'r')
-        for i, line in enumerate(file_to_read):
-            if i is header: break
-            temp = line.split("#")
-            header_array.append(temp)
-        file_to_read.close()
+        with open(file_path, 'r') as file_to_read:
+            for line in file_to_read:
+                if line.startswith('#'):
+                    header_lines.append(line)
+                else:
+                    break
 
-        temp = np.genfromtxt(file_path, dtype = float, delimiter = ',', skip_header = 0) 
+        header_count = len(header_lines)
+        header_text = "".join(header_lines)
+
+        temp = np.genfromtxt(file_path, dtype = float, delimiter = ',', skip_header = header_count) 
         data = temp
 
-        name_plot = datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+        #name_plot = datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+        name_plot = os.path.splitext(os.path.basename(file_path))[0]
+
         pw = self.window.add_new_plot(2, name_plot)
-        pw.setAxisLabels(xname = 'X', xscale = 'Arb. U.',yname = 'X', yscale = 'Arb. U.',\
-            zname = 'X', zscale = 'Arb. U.')
-        pw.setImage(data, axes = {'y': 0, 'x': 1})
-
-    # unused
-    def open_file_dialog(self, directory = '', header = 0):
-        pass
-        # For Tkinter Open 1D; Unused
-        # file_path = self.file_dialog(directory = directory)
-
-        #header_array = [];
-        #file_to_read = open(file_path, 'r')
-        #for i, line in enumerate(file_to_read):
-        #    if i is header: break
-        #    temp = line.split("#")
-        #    header_array.append(temp)
-        #file_to_read.close()
-
-        #temp = np.genfromtxt(file_path, dtype = float, delimiter = ',', skip_header = 0) 
-        #data = np.transpose(temp)
-
-        #name_plot = datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-        #pw = self.window.add_new_plot(1, name_plot)
-        #if len(data) == 2:
-        #    pw.plot(data[0], data[1], parametric = True, name = file_path, xname = 'X', xscale = 'Arb. U.',\
-        #            yname = 'Y', yscale = 'Arb. U.', label = 'Data_1', scatter = 'False')
-        #elif len(data) == 3:
-        #    pw.plot(data[0], data[1], parametric = True, name = file_path + '_1', xname = 'X', xscale = 'Arb. U.',\
-        #            yname = 'Y', yscale = 'Arb. U.', label = 'Data_1', scatter = 'False')
-        #    pw.plot(data[0], data[2], parametric = True, name = file_path + '_2', xname = 'X', xscale = 'Arb. U.',\
-        #            yname = 'Y', yscale = 'Arb. U.', label = 'Data_2', scatter = 'False')
-
-    # unused
-    def open_file_dialog_2(self, directory = '', header = 0):
-        pass
-        # For Tkinter Open 1D; Unused
-        #file_path = self.file_dialog(directory = directory)
-
-        #header_array = []
-        #file_to_read = open(file_path, 'r')
-        #for i, line in enumerate(file_to_read):
-        #    if i is header: break
-        #    temp = line.split("#")
-        #    header_array.append(temp)
-        #file_to_read.close()
-
-        #temp = np.genfromtxt(file_path, dtype = float, delimiter = ',', skip_header = 0) 
-        #data = temp
-
-        #name_plot = datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-        #pw = self.window.add_new_plot(2, name_plot)
-        #pw.setAxisLabels(xname = 'X', xscale = 'Arb. U.',yname = 'X', yscale = 'Arb. U.',\
-        #    zname = 'X', zscale = 'Arb. U.')
-        #pw.setImage(data, axes = {'y': 0, 'x': 1})
+        pw.setAxisLabels(xname = 'X', xscale = 'Arb. U.',yname = 'Y', yscale = 'Arb. U.',
+                zname = 'Z', zscale = 'Arb. U.')
+        pw.setImage(data, axes = {'y': 0, 'x': 1}, autoLevels=False)
 
     def file_dialog(self, directory = ''):
         """
         A function to open a new window for choosing 1d data
         """
-        filedialog = QFileDialog(self, 'Open File', directory = self.open_dir, filter = "CSV (*.csv)", \
-                                    options = QtWidgets.QFileDialog.DontUseNativeDialog )
-        # options = QtWidgets.QFileDialog.DontUseNativeDialog
-        # use QFileDialog.DontUseNativeDialog to change directory
-        filedialog.setStyleSheet("QWidget { background-color : rgb(42, 42, 64); color: rgb(211, 194, 78);}")
-        filedialog.setFileMode(QtWidgets.QFileDialog.AnyFile)
+        filedialog = QFileDialog(self, 'Open File', directory = self.open_dir, filter = "CSV (*.csv)", options = QFileDialog.Option.DontUseNativeDialog )
+
+        filedialog.setIconProvider(QFileIconProvider())
+        filedialog.resize(800, 450) 
+
+        tree = filedialog.findChild(QTreeView)
+        header = tree.header()
+        for i in range(header.count()):
+            header.setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
+
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+
+        buttons = filedialog.findChildren(QPushButton)
+        seen_texts = []
+        for btn in buttons:
+            if btn.text() in seen_texts:
+                btn.hide()
+            else:
+                seen_texts.append(btn.text())
+
+        line_edit = filedialog.findChild(QLineEdit)
+
+        if line_edit:
+            line_edit.setCompleter(None)
+
+        size_grip = filedialog.findChild(QSizeGrip)
+        if size_grip:
+            size_grip.setVisible(False)
+
+        filedialog.setStyleSheet("""
+            QFileDialog, QDialog { 
+                background-color: rgb(42, 42, 64); 
+                color: rgb(193, 202, 227);
+                font-size: 11px;
+            }
+
+            QFileDialog QListView {
+                min-width: 150px; 
+                background-color: rgb(35, 35, 55);
+                border: 1px solid rgb(63, 63, 97);
+                color: rgb(193, 202, 227);
+            }
+
+            QTreeView {
+                min-width: 500px;
+                background-color: rgb(35, 35, 55);
+                border: 1px solid rgb(63, 63, 97);
+                color: rgb(193, 202, 227);
+                outline: none;
+            }
+
+            QFileDialog QFrame#qt_contents, QFileDialog QWidget {
+                background-color: rgb(42, 42, 64);
+            }
+            
+            QFileDialog QToolBar {
+                background-color: rgb(42, 42, 64);
+                border-bottom: 1px solid rgb(63, 63, 97);
+                min-height: 34px; 
+                padding: 2px;
+            }
+
+            QToolButton {
+                background-color: rgb(63, 63, 97);
+                border: 1px solid rgb(83, 83, 117);
+                border-radius: 4px;
+                min-height: 23px; 
+                max-height: 23px;
+                min-width: 23px;
+                qproperty-iconSize: 14px 14px; 
+                margin: 0px 2px;
+                vertical-align: middle;
+            }
+
+            QToolButton:hover {
+                border: 1px solid rgb(211, 194, 78);
+                background-color: rgb(83, 83, 117);
+            }
+
+            QLineEdit, QComboBox {
+                background-color: rgb(63, 63, 97);
+                color: rgb(193, 202, 227);
+                border: 1px solid rgb(83, 83, 117);
+                border-radius: 3px;
+                padding: 2px 5px;
+                min-height: 16px; 
+            }
+
+            QLineEdit:focus, QFileDialog QComboBox:focus {
+                border: 1px solid rgb(211, 194, 78);
+                color: rgb(211, 194, 78);
+                outline: none;
+            }
+
+            QFileDialog QComboBox#lookInCombo {
+                background-color: rgb(42, 42, 64);
+                color: rgb(193, 202, 227);
+                border: 1px solid rgb(83, 83, 117);
+                border-radius: 3px;
+                padding-left: 5px;
+                min-height: 19px;
+                max-height: 19px;
+                selection-background-color: rgb(48, 48, 75);
+                selection-color: rgb(211, 194, 78);
+            }
+
+            QFileDialog QComboBox#lookInCombo QAbstractItemView {
+                outline: none;
+                border: 1px solid rgb(48, 48, 75);
+                background-color: rgb(42, 42, 64);
+            }
+
+            QFileDialog QDialogButtonBox QPushButton {
+                background-color: rgb(63, 63, 97);
+                color: rgb(193, 202, 227);
+                border: 1px solid rgb(83, 83, 117);
+                border-radius: 4px;
+                font-weight: bold;
+                min-height: 23px;
+                max-height: 23px;
+                min-width: 75px;
+                padding: 0px 12px;
+            }
+
+            QFileDialog QDialogButtonBox QPushButton:hover {
+                background-color: rgb(83, 83, 117);
+                border: 1px solid rgb(211, 194, 78);
+                color: rgb(211, 194, 78);
+            }
+            
+            QHeaderView::section {
+                background-color: rgb(63, 63, 97);
+                color: rgb(193, 202, 227);
+                padding: 4px;
+                border: none;
+                border-right: 1px solid rgb(83, 83, 117);
+                min-height: 20px;
+            }
+
+            QScrollBar:vertical {
+                border: none; background: rgb(43, 43, 77); 
+                width: 10px; margin: 0px;
+            }
+            QScrollBar::handle:vertical {
+                background: rgb(193, 202, 227); min-height: 20px; border-radius: 5px;
+            }
+            QScrollBar::handle:vertical:hover { background: rgb(211, 194, 78); }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }
+
+            QScrollBar:horizontal {
+                border: none; 
+                background: rgb(43, 43, 77); 
+                height: 10px; 
+                margin: 0px;
+            }
+            QScrollBar::handle:horizontal {
+                background: rgb(193, 202, 227); 
+                min-width: 20px; 
+                border-radius: 5px;
+            }
+            QScrollBar::handle:horizontal:hover { 
+                background: rgb(211, 194, 78); 
+            }
+            QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { 
+                width: 0px; 
+            }
+            QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal { 
+                background: none; 
+            }
+
+            QFileDialog QDialogButtonBox {
+                background-color: rgb(42, 42, 64);
+                border-top: 1px solid rgb(63, 63, 97);
+                padding: 6px;
+            }
+
+            QFileDialog QLabel {
+                color: rgb(193, 202, 227);
+            }
+
+            QFileDialog QListView::item:hover {
+                background-color: rgb(48, 48, 75);
+                color: rgb(211, 194, 78);
+            }
+
+            QHeaderView {
+                background-color: rgb(63, 63, 97);
+            }
+
+            QFileDialog QListView#sidebar:inactive, 
+            QTreeView:inactive {
+                selection-background-color: rgb(35, 35, 55);
+                selection-color: rgb(211, 194, 78);
+            }
+
+            QTreeView::item:hover { 
+                background-color: rgb(48, 48, 75);
+                color: rgb(211, 194, 78); 
+                } 
+            QTreeView::item:selected:inactive, 
+            QFileDialog QListView#sidebar::item:selected:inactive {
+                selection-background-color: rgb(63, 63, 97);
+                selection-color: rgb(211, 194, 78);
+            }
+            QFileDialog QListView#sidebar::item {
+                padding-left: 5px; 
+                padding-top: 5px;
+            }
+
+            QMenu {
+                background-color: rgb(42, 42, 64);
+                border: 1px solid rgb(63, 63, 97);
+                padding: 3px;
+            }
+            QMenu::item { color: rgb(211, 194, 78); } 
+            QMenu::item:selected { 
+                background-color: rgb(48, 48, 75); 
+                color: rgb(211, 194, 78);
+                }
+
+        """)
+
+
+        filedialog.setFileMode(QFileDialog.FileMode.AnyFile)
         filedialog.fileSelected.connect(self.open_file)
         filedialog.show()
 
@@ -1139,16 +1633,241 @@ class NameList(QDockWidget):
         #    )
         #return file_path
 
-    def file_dialog_2d(self, directory = ''):
+    def file_dialog_2d(self, directory = '', is_2d = False):
         """
         A function to open a new window for choosing 2D data
         """
-        filedialog = QFileDialog(self, 'Open File', directory = self.open_dir, filter = "CSV (*.csv)")
-        #options = QtWidgets.QFileDialog.DontUseNativeDialog
-        # use QFileDialog.DontUseNativeDialog to change directory
-        filedialog.setStyleSheet("QWidget { background-color : rgb(42, 42, 64); color: rgb(211, 194, 78);}")
-        filedialog.setFileMode(QtWidgets.QFileDialog.AnyFile)
-        filedialog.fileSelected.connect(self.open_file_2d)
+        filedialog = QFileDialog(self, 'Open File', directory = self.open_dir, filter = "CSV (*.csv)", options = QFileDialog.Option.DontUseNativeDialog )
+
+        filedialog.setIconProvider(QFileIconProvider())
+        filedialog.resize(800, 450) 
+        # use QFileDialog.Option.DontUseNativeDialog to change directory
+
+        tree = filedialog.findChild(QTreeView)
+        header = tree.header()
+        for i in range(header.count()):
+            header.setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
+
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        
+        buttons = filedialog.findChildren(QPushButton)
+        seen_texts = []
+        for btn in buttons:
+            if btn.text() in seen_texts:
+                btn.hide()
+            else:
+                seen_texts.append(btn.text())
+
+        size_grip = filedialog.findChild(QSizeGrip)
+        if size_grip:
+            size_grip.setVisible(False)
+
+        line_edit = filedialog.findChild(QLineEdit)
+
+        if line_edit:
+            line_edit.setCompleter(None)
+        
+        filedialog.setStyleSheet("""
+            QFileDialog, QDialog { 
+                background-color: rgb(42, 42, 64); 
+                color: rgb(193, 202, 227);
+                font-size: 11px;
+            }
+
+            QFileDialog QListView {
+                min-width: 150px; 
+                background-color: rgb(35, 35, 55);
+                border: 1px solid rgb(63, 63, 97);
+                color: rgb(193, 202, 227);
+            }
+
+            QTreeView {
+                min-width: 500px;
+                background-color: rgb(35, 35, 55);
+                border: 1px solid rgb(63, 63, 97);
+                color: rgb(193, 202, 227);
+                outline: none;
+            }
+
+            QFileDialog QFrame#qt_contents, QFileDialog QWidget {
+                background-color: rgb(42, 42, 64);
+            }
+            
+            QFileDialog QToolBar {
+                background-color: rgb(42, 42, 64);
+                border-bottom: 1px solid rgb(63, 63, 97);
+                min-height: 34px; 
+                padding: 2px;
+            }
+
+            QToolButton {
+                background-color: rgb(63, 63, 97);
+                border: 1px solid rgb(83, 83, 117);
+                border-radius: 4px;
+                min-height: 23px; 
+                max-height: 23px;
+                min-width: 23px;
+                qproperty-iconSize: 14px 14px; 
+                margin: 0px 2px;
+                vertical-align: middle;
+            }
+
+            QToolButton:hover {
+                border: 1px solid rgb(211, 194, 78);
+                background-color: rgb(83, 83, 117);
+            }
+
+            QLineEdit, QComboBox {
+                background-color: rgb(63, 63, 97);
+                color: rgb(193, 202, 227);
+                border: 1px solid rgb(83, 83, 117);
+                border-radius: 3px;
+                padding: 2px 5px;
+                min-height: 16px; 
+            }
+
+            QLineEdit:focus, QFileDialog QComboBox:focus {
+                border: 1px solid rgb(211, 194, 78);
+                color: rgb(211, 194, 78);
+                outline: none;
+            }
+
+            QFileDialog QComboBox#lookInCombo {
+                background-color: rgb(42, 42, 64);
+                color: rgb(193, 202, 227);
+                border: 1px solid rgb(83, 83, 117);
+                border-radius: 3px;
+                padding-left: 5px;
+                min-height: 19px;
+                max-height: 19px;
+                selection-background-color: rgb(48, 48, 75);
+                selection-color: rgb(211, 194, 78);
+            }
+
+            QFileDialog QComboBox#lookInCombo QAbstractItemView {
+                outline: none;
+                border: 1px solid rgb(48, 48, 75);
+                background-color: rgb(42, 42, 64);
+            }
+
+            QFileDialog QDialogButtonBox QPushButton {
+                background-color: rgb(63, 63, 97);
+                color: rgb(193, 202, 227);
+                border: 1px solid rgb(83, 83, 117);
+                border-radius: 4px;
+                font-weight: bold;
+                min-height: 23px;
+                max-height: 23px;
+                min-width: 75px;
+                padding: 0px 12px;
+            }
+
+            QFileDialog QDialogButtonBox QPushButton:hover {
+                background-color: rgb(83, 83, 117);
+                border: 1px solid rgb(211, 194, 78);
+                color: rgb(211, 194, 78);
+            }
+            
+            QHeaderView::section {
+                background-color: rgb(63, 63, 97);
+                color: rgb(193, 202, 227);
+                padding: 4px;
+                border: none;
+                border-right: 1px solid rgb(83, 83, 117);
+                min-height: 20px;
+            }
+
+            QScrollBar:vertical {
+                border: none; background: rgb(43, 43, 77); 
+                width: 10px; margin: 0px;
+            }
+            QScrollBar::handle:vertical {
+                background: rgb(193, 202, 227); min-height: 20px; border-radius: 5px;
+            }
+            QScrollBar::handle:vertical:hover { background: rgb(211, 194, 78); }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }
+
+            QScrollBar:horizontal {
+                border: none; 
+                background: rgb(43, 43, 77); 
+                height: 10px; 
+                margin: 0px;
+            }
+            QScrollBar::handle:horizontal {
+                background: rgb(193, 202, 227); 
+                min-width: 20px; 
+                border-radius: 5px;
+            }
+            QScrollBar::handle:horizontal:hover { 
+                background: rgb(211, 194, 78); 
+            }
+            QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { 
+                width: 0px; 
+            }
+            QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal { 
+                background: none; 
+            }
+
+            QFileDialog QDialogButtonBox {
+                background-color: rgb(42, 42, 64);
+                border-top: 1px solid rgb(63, 63, 97);
+                padding: 6px;
+            }
+
+            QFileDialog QLabel {
+                color: rgb(193, 202, 227);
+            }
+
+            QFileDialog QListView::item:hover {
+                background-color: rgb(48, 48, 75);
+                color: rgb(211, 194, 78);
+            }
+
+            QHeaderView {
+                background-color: rgb(63, 63, 97);
+            }
+
+            QFileDialog QListView#sidebar:inactive, 
+            QTreeView:inactive {
+                selection-background-color: rgb(35, 35, 55);
+                selection-color: rgb(211, 194, 78);
+            }
+
+            QTreeView::item:hover { 
+                background-color: rgb(48, 48, 75);
+                color: rgb(211, 194, 78); 
+                } 
+            QTreeView::item:selected:inactive, 
+            QFileDialog QListView#sidebar::item:selected:inactive {
+                selection-background-color: rgb(63, 63, 97);
+                selection-color: rgb(211, 194, 78);
+            }
+            QFileDialog QListView#sidebar::item {
+                padding-left: 5px; 
+                padding-top: 5px;
+            }
+
+            QMenu {
+                background-color: rgb(42, 42, 64);
+                border: 1px solid rgb(63, 63, 97);
+                padding: 3px;
+            }
+            QMenu::item { color: rgb(211, 194, 78); } 
+            QMenu::item:selected { 
+                background-color: rgb(48, 48, 75); 
+                color: rgb(211, 194, 78);
+                }
+
+        """)
+
+        filedialog.setFileMode(QFileDialog.FileMode.AnyFile)
+
+        if is_2d:
+            filedialog.fileSelected.connect(self.open_file_tr)
+        else:
+            filedialog.fileSelected.connect(self.open_file_2d)
+
         filedialog.show()
 
     def activate_item(self, index):
@@ -1162,12 +1881,6 @@ class NameList(QDockWidget):
         index = self.namelist_view.currentIndex()
         item = self.namelist_model.itemFromIndex(index)
         del self[str(item.text())]
-
-    def pause(self):
-        sock = socket.socket()
-        sock.connect(('localhost', 9091))
-        sock.send(b'Script stopped')
-        sock.close()
 
     def __getitem__(self, item):
         return self.plot_dict[item]
@@ -1184,25 +1897,33 @@ class NameList(QDockWidget):
     def __delitem__(self, name):
         self.namelist_model.removeRow(self.namelist_model.findItems(name)[0].index().row())
         self.plot_dict[name].close()
+        try:
+            self.plot_dict[name].h_cross_dock.close()
+            self.plot_dict[name].v_cross_dock.close()
+        except AttributeError:
+            pass        
         del self.plot_dict[name]
 
     def keys(self):
-        return list( self.plot_dict.keys() )
+        return list(self.plot_dict.keys())
 
 
 def main():
     """
     A function to run the main window of the programm.
     """
-    app = QtWidgets.QApplication(sys.argv)
+    # Windows taskbar
+    try:
+        myappid = 'atomize' 
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+    except Exception:
+        pass
+
+    app = QApplication(sys.argv)
     main = MainWindow()
-    helper = socket_server.Helper()
-    server = socket_server.Socket_server()
-    # to connect a function add_error_message when the signal from the helper will be emitted.
-    helper.changedSignal.connect( main.add_error_message, QtCore.Qt.QueuedConnection )
-    threading.Thread( target = server.start_messenger_server, args = (helper,), daemon = True ).start()
+
     main.show()
-    sys.exit( app.exec_() )
+    sys.exit(app.exec())
 
 if __name__ == '__main__':
     main()
