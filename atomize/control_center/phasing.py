@@ -483,10 +483,10 @@ class MainWindow(QMainWindow):
 
 
         # ---- Boxes ----
-        pulses = [(QDoubleSpinBox, 0, 100e6, 0, 3.2, 1, " ns", "_st", "_start"),
-                  (QDoubleSpinBox, 0, 1900, 0, 3.2, 1, " ns", "_len", "_length"),
-                  (QDoubleSpinBox, 0, 1e6, 0, 3.2, 1, " ns", "_st_inc", "_st_increment"),
-                  (QDoubleSpinBox, 0, 320, 0, 3.2, 1, " ns", "_len_inc", "_len_increment")
+        pulses = [(QDoubleSpinBox, 0, 100e6, 0, 2, 1, " ns", "_st", "_start"),
+                  (QDoubleSpinBox, 0, 1900, 0, 2, 1, " ns", "_len", "_length"),
+                  (QDoubleSpinBox, 0, 1e6, 0, 2, 1, " ns", "_st_inc", "_st_increment"),
+                  (QDoubleSpinBox, 0, 320, 0, 2, 1, " ns", "_len_inc", "_len_increment")
                  ]
 
         for j in range(1, 5):
@@ -839,8 +839,8 @@ class MainWindow(QMainWindow):
                       (QDoubleSpinBox, "box_st_field", "cur_start_field", self.st_field, 0, 15000, 3000, 1, 1, " G"),
                       (QDoubleSpinBox, "box_end_field", "cur_end_field", self.end_field, 0, 15000, 4000, 1, 1, " G"),
                       (QDoubleSpinBox, "box_step_field", "cur_step", self.step_field, 0.01, 50, 0.5, 0.1, 2, " G"),
-                      (QDoubleSpinBox, "X0", "cur_x0", self.x0, -100e6, 100e6, 0, 3.2, 1, " ns"),
-                      (QDoubleSpinBox, "XDelta", "cur_xdelta", self.xdelta, -100e6, 100e6, 0, 3.2, 1, " ns")
+                      (QDoubleSpinBox, "X0", "cur_x0", self.x0, -100e6, 100e6, 0, 2, 1, " ns"),
+                      (QDoubleSpinBox, "XDelta", "cur_xdelta", self.xdelta, -100e6, 100e6, 0, 2, 1, " ns")
                         ]
 
         for widget_class, attr_name, par_name, func, v_min, v_max, cur_val, v_step, dec, suf in double_boxes:
@@ -2149,7 +2149,7 @@ class MainWindow(QMainWindow):
         """
         """
         raw = doubleBox.value()
-        current = self.round_to_closest( raw, 3.2 )
+        current = self.round_to_closest( raw, 2 )
         if current != raw:
             doubleBox.setValue( current )
         return self.add_ns( doubleBox.value() )
@@ -2158,7 +2158,7 @@ class MainWindow(QMainWindow):
         """
         """
         raw = doubleBox.value()
-        current = self.round_to_closest( raw, 3.2 )
+        current = self.round_to_closest( raw, 2 )
         if current != raw:
             doubleBox.setValue( current )
         return doubleBox.value()
@@ -2333,7 +2333,7 @@ class MainWindow(QMainWindow):
         if self.cur_sweep == 'Linear Time':
             self.digitizer_process = Process( target = worker.exp, args = (
                 self.child_conn_dig,
-                self.decimation, self.number_averages, self.cur_scan, self.cur_points,
+                self.dig_points, self.number_averages, self.cur_scan, self.cur_points,
                 self.cur_win_left, self.cur_exp_name, self.cur_curve_name,
                 self.cur_win_right, self.p1_exp, self.p2_exp, self.p3_exp, self.p4_exp,
                 self.p5_exp, self.p6_exp, self.p7_exp, self.p8_exp, self.p9_exp, self.laser_flag,
@@ -2346,7 +2346,7 @@ class MainWindow(QMainWindow):
         elif self.cur_sweep == 'Field':
             self.digitizer_process = Process( target = worker.exp_field, args = (
                 self.child_conn_dig,
-                self.decimation, self.number_averages, self.cur_scan, self.cur_start_field,
+                self.dig_points, self.number_averages, self.cur_scan, self.cur_start_field,
                 self.cur_end_field, self.cur_step,
                 self.cur_win_left, self.cur_exp_name, self.cur_curve_name,
                 self.cur_win_right, self.p1_exp, self.p2_exp, self.p3_exp, self.p4_exp,
@@ -2359,7 +2359,7 @@ class MainWindow(QMainWindow):
         elif self.cur_sweep == 'Log Time':
             self.digitizer_process = Process( target = worker.exp_log, args = (
                 self.child_conn_dig,
-                self.decimation, self.number_averages, self.cur_scan, self.cur_points,
+                self.dig_points, self.number_averages, self.cur_scan, self.cur_points,
                 self.cur_log_start, self.cur_log_end,
                 self.cur_win_left, self.cur_exp_name, self.cur_curve_name,
                 self.cur_win_right, self.p1_exp, self.p2_exp, self.p3_exp, self.p4_exp,
@@ -2633,7 +2633,7 @@ class MainWindow(QMainWindow):
         if self.cur_sweep == 'Linear Time':
             self.digitizer_process = Process( target = worker.exp, args = ( 
                 self.child_conn_dig,
-                self.decimation, self.number_averages, self.cur_scan, self.cur_points,
+                self.dig_points, self.number_averages, self.cur_scan, self.cur_points,
                 self.cur_win_left, self.cur_exp_name, self.cur_curve_name,
                 self.cur_win_right, self.p1_exp, self.p2_exp, self.p3_exp, self.p4_exp, 
                 self.p5_exp, self.p6_exp, self.p7_exp, self.p8_exp, self.p9_exp, self.laser_flag, 
@@ -2646,7 +2646,7 @@ class MainWindow(QMainWindow):
         elif self.cur_sweep == 'Field':
             self.digitizer_process = Process( target = worker.exp_field, args = ( 
                 self.child_conn_dig,
-                self.decimation, self.number_averages, self.cur_scan, self.cur_start_field,
+                self.dig_points, self.number_averages, self.cur_scan, self.cur_start_field,
                 self.cur_end_field, self.cur_step,
                 self.cur_win_left, self.cur_exp_name, self.cur_curve_name,
                 self.cur_win_right, self.p1_exp, self.p2_exp, self.p3_exp, self.p4_exp, 
@@ -2659,7 +2659,7 @@ class MainWindow(QMainWindow):
         elif self.cur_sweep == 'Log Time':
             self.digitizer_process = Process( target = worker.exp_log, args = ( 
                 self.child_conn_dig,
-                self.decimation, self.number_averages, self.cur_scan, self.cur_points,
+                self.dig_points, self.number_averages, self.cur_scan, self.cur_points,
                 self.cur_log_start, self.cur_log_end,
                 self.cur_win_left, self.cur_exp_name, self.cur_curve_name,
                 self.cur_win_right, self.p1_exp, self.p2_exp, self.p3_exp, self.p4_exp, 
@@ -3048,20 +3048,23 @@ class Worker():
             import atomize.general_modules.general_functions as general
             if script_test:
                 general.test_flag = 'test'
-            import atomize.device_modules.Insys_FPGA as pb_pro
+            import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
+            import atomize.device_modules.PB_ESR_500_pro as pb_pro
             import atomize.device_modules.Lakeshore_335 as ls
             import atomize.device_modules.BH_15 as bh
-            import atomize.device_modules.Micran_X_band_MW_bridge_v2 as mwBridge
+            import atomize.device_modules.Mikran_X_band_MW_bridge as mwBridge
             import atomize.general_modules.csv_opener_saver as openfile
 
-            pb = pb_pro.Insys_FPGA()
+            pb = pb_pro.PB_ESR_500_Pro()
+            dig = spectrum.Spectrum_M4I_4450_X8()
             file_handler = openfile.Saver_Opener()
             bh15 = bh.BH_15()
             ls335 = ls.Lakeshore_335()
-            mw = mwBridge.Micran_X_band_MW_bridge_v2()
+            mw = mwBridge.Mikran_X_band_MW_bridge()
 
-            pb.win_left = win_left
-            pb.win_right = win_right
+            # integration window (point indices) for digitizer_get_curve(integral=True)
+            dig.win_left = win_left
+            dig.win_right = win_right
 
             if xd == 0.0:
                 pulses2 = [p2_exp, p3_exp, p4_exp, p5_exp, p6_exp, p7_exp, p8_exp, p9_exp]
@@ -3071,19 +3074,19 @@ class Worker():
                     step = round( float( p1_exp[4].split(' ')[0] ), 1)
                     for p in pulses2:
                         if p[5] != '0.0 ns':
-                            f_delay = self.round_to_closest( float(p[2].split(' ')[0]), 3.2)
+                            f_delay = self.round_to_closest( float(p[2].split(' ')[0]), 2)
                             break
                         else:
-                            f_delay = self.round_to_closest( float(p1_exp[1].split(' ')[0]), 3.2)
+                            f_delay = self.round_to_closest( float(p1_exp[1].split(' ')[0]), 2)
                 elif p1_exp[5] != '0.0 ns':
                     #length_increment
                     step = round( float( p1_exp[5].split(' ')[0] ), 1)
-                    f_delay = self.round_to_closest( float(p1_exp[2].split(' ')[0]), 3.2)
+                    f_delay = self.round_to_closest( float(p1_exp[2].split(' ')[0]), 2)
                 else:                
                     for p in pulses2:
                         if p[4] != '0.0 ns':
                             step = round( float( p[4].split(' ')[0] ), 1)
-                            f_delay = self.round_to_closest( float(p[1].split(' ')[0]), 3.2)
+                            f_delay = self.round_to_closest( float(p[1].split(' ')[0]), 2)
                             break
                         else:
                             #prevent no increment
@@ -3092,7 +3095,7 @@ class Worker():
             
             else:
                 step = round( xd, 1 )
-                f_delay =  self.round_to_closest( x0, 3.2 )
+                f_delay =  self.round_to_closest( x0, 2 )
 
             if step == 1 and not script_test:
                 conn.send( ('Message', 'No START or LENGTH increment; the time axis corresponds to the number of points in the experiment') )
@@ -3145,7 +3148,7 @@ class Worker():
                 for i, p in enumerate(pulses):
                     if i != 1:
                         start_val = float(p[1].split(' ')[0]) + q_switch_delay
-                        p[1] = f"{self.round_to_closest(start_val, 3.2)} ns"
+                        p[1] = f"{self.round_to_closest(start_val, 2)} ns"
 
                     length_val = int(float(p[2].split(' ')[0]))
                     if script_test and i == 1 and length_val == 0:
@@ -3174,11 +3177,18 @@ class Worker():
                 else:
                     pb.pulser_repetition_rate( REP_RATE )
 
-            pb.digitizer_decimation(DEC_COEF)
-            #points_window = pb.digitizer_window_points()
+            # DEC_COEF is the digitizer record length (= DETECTION window in points,
+            # 2 ns/point). Posttrigger defaults to half the window.
+            DIG_POINTS = int( DEC_COEF )
+            POSTTRIGGER = int( DIG_POINTS / 2 )
+            dig.digitizer_card_mode('Average')
+            dig.digitizer_clock_mode('External')
+            dig.digitizer_reference_clock(100)
+            dig.digitizer_number_of_points( DIG_POINTS )
+            dig.digitizer_posttrigger( POSTTRIGGER )
+            dig.digitizer_number_of_averages( AVERAGES )
+            dig.digitizer_setup()
 
-            pb.pulser_open()
-            pb.digitizer_number_of_averages(AVERAGES)
             data = np.zeros( ( 2, POINTS ) )
             x_axis = f_delay + np.linspace(0, (POINTS - 1)*STEP, num = POINTS)
             x_axis_plot = x_axis / 1e9
@@ -3206,20 +3216,23 @@ class Worker():
                         break
 
                     for j in range(POINTS):
+                        # phase cycle for this tau point: one integral per phase,
+                        # combined by the pulser, then averaged over scans (k)
+                        cyc_x = np.zeros( PHASES )
+                        cyc_y = np.zeros( PHASES )
                         for i in range(PHASES):
-
                             pb.pulser_next_phase()
+                            cyc_x[i], cyc_y[i] = dig.digitizer_get_curve( integral = True )
 
-                            if (not script_test) or j == 0:
-                                if a is not None:
-                                    if step != 1:
-                                        general.plot_1d(EXP_NAME, x_axis_plot, ( data[0], data[1] ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Time: ' + str(k) + ' / ' + str(round(j*STEP, 1)))
-                                    else:
-                                        general.plot_1d(EXP_NAME, x_axis, ( data[0], data[1] ), xname = 'Point', xscale = '', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Time: ' + str(k) + ' / ' + str(round(j, 1)))
+                        ix, iy = pb.pulser_acquisition_cycle( cyc_x, cyc_y, acq_cycle = p1_exp[3] )
+                        data[0, j] = ( data[0, j] * (k - 1) + ix ) / k
+                        data[1, j] = ( data[1, j] * (k - 1) + iy ) / k
 
-                                a, b = pb.digitizer_get_curve( POINTS, PHASES, current_scan = k, total_scan = SCANS, integral = True )
-                                if a is not None:
-                                    data[0], data[1] = a, b
+                        if (not script_test) or j == POINTS - 1:
+                            if step != 1:
+                                general.plot_1d(EXP_NAME, x_axis_plot, ( data[0], data[1] ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Time: ' + str(k) + ' / ' + str(round(j*STEP, 1)))
+                            else:
+                                general.plot_1d(EXP_NAME, x_axis, ( data[0], data[1] ), xname = 'Point', xscale = '', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Time: ' + str(k) + ' / ' + str(round(j, 1)))
 
                         pb.pulser_shift()
                         pb.pulser_increment()
@@ -3232,7 +3245,6 @@ class Worker():
                             SCANS = int( self.command[2:] )
                             self.command = 'start'
                         elif self.command == 'exit':
-                            data[0], data[1] = pb.digitizer_at_exit(integral = True)
                             break
 
                         if conn.poll() == True:
@@ -3243,8 +3255,10 @@ class Worker():
                 self.command = 'exit'
 
             if self.command == 'exit':
-                tb = round( pb.digitizer_window(), 1)
-                pb.pulser_close()
+                tb = round( int(DEC_COEF) * 2, 1)      # detection window, ns (2 ns/point)
+                dig.digitizer_stop()
+                dig.digitizer_close()
+                pb.pulser_stop()
 
                 if step != 1:
                     general.plot_1d(EXP_NAME, x_axis_plot, ( data[0], data[1] ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Time: ' + str(k) + ' / ' + str(round(j*STEP, 1)))
@@ -3259,10 +3273,11 @@ class Worker():
                     f"{'Date:':<{w}} {now}\n"
                     f"{'Experiment:':<{w}} Pulsed EPR Experiment\n"
                     f"{'Field:':<{w}} {FIELD} G\n"
-                    f"{general.fmt(mw.mw_bridge_rotary_vane(), w)}\n"
                     f"{general.fmt(mw.mw_bridge_att_prm(), w)}\n"
-                    f"{general.fmt(mw.mw_bridge_att2_prm(), w)}\n"
                     f"{general.fmt(mw.mw_bridge_att1_prd(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_att2_prd(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_fv_ctrl(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_fv_prm(), w)}\n"
                     f"{general.fmt(mw.mw_bridge_synthesizer(), w)}\n"
                     f"{'Repetition Rate:':<{w}} {pb.pulser_repetition_rate()}\n"
                     f"{'Number of Scans:':<{w}} {SCANS}\n"
@@ -3319,20 +3334,23 @@ class Worker():
             import atomize.general_modules.general_functions as general
             if script_test:
                 general.test_flag = 'test'
-            import atomize.device_modules.Insys_FPGA as pb_pro
+            import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
+            import atomize.device_modules.PB_ESR_500_pro as pb_pro
             import atomize.device_modules.Lakeshore_335 as ls
             import atomize.device_modules.BH_15 as bh
-            import atomize.device_modules.Micran_X_band_MW_bridge_v2 as mwBridge
+            import atomize.device_modules.Mikran_X_band_MW_bridge as mwBridge
             import atomize.general_modules.csv_opener_saver as openfile
 
             file_handler = openfile.Saver_Opener()
-            pb = pb_pro.Insys_FPGA()
+            pb = pb_pro.PB_ESR_500_Pro()
+            dig = spectrum.Spectrum_M4I_4450_X8()
             bh15 = bh.BH_15()
             ls335 = ls.Lakeshore_335()
-            mw = mwBridge.Micran_X_band_MW_bridge_v2()
+            mw = mwBridge.Mikran_X_band_MW_bridge()
 
-            pb.win_left = win_left
-            pb.win_right = win_right
+            # integration window (point indices) for digitizer_get_curve(integral=True)
+            dig.win_left = win_left
+            dig.win_right = win_right
 
             START_FIELD = start_field
             END_FIELD = end_field
@@ -3388,7 +3406,7 @@ class Worker():
 
                     if i != 1:
                         start_val = float(p[1].split(' ')[0]) + q_switch_delay
-                        p[1] = f"{self.round_to_closest(start_val, 3.2)} ns"
+                        p[1] = f"{self.round_to_closest(start_val, 2)} ns"
 
                     length_val = int(float(p[2].split(' ')[0]))
                     if script_test and i == 1 and length_val == 0:
@@ -3418,11 +3436,17 @@ class Worker():
                     pb.pulser_repetition_rate( REP_RATE )
 
 
-            pb.digitizer_decimation(DEC_COEF)
-            #points_window = pb.digitizer_window_points()
-
-            pb.pulser_open()
-            pb.digitizer_number_of_averages(AVERAGES)
+            # DEC_COEF is the digitizer record length (= DETECTION window in points,
+            # 2 ns/point). Posttrigger defaults to half the window.
+            DIG_POINTS = int( DEC_COEF )
+            POSTTRIGGER = int( DIG_POINTS / 2 )
+            dig.digitizer_card_mode('Average')
+            dig.digitizer_clock_mode('External')
+            dig.digitizer_reference_clock(100)
+            dig.digitizer_number_of_points( DIG_POINTS )
+            dig.digitizer_posttrigger( POSTTRIGGER )
+            dig.digitizer_number_of_averages( AVERAGES )
+            dig.digitizer_setup()
 
             POINTS = int( (END_FIELD - START_FIELD) / FIELD_STEP ) + 1
             data = np.zeros( ( 2, POINTS ) )
@@ -3458,22 +3482,21 @@ class Worker():
 
                         bh15.magnet_field(field)#, calibration = 'True')
 
+                        # phase cycle at this field; combine phases, average scans (k)
+                        cyc_x = np.zeros( PHASES )
+                        cyc_y = np.zeros( PHASES )
                         for i in range(PHASES):
-
-                            if (not script_test) or j == 0:
-                                if a is not None:
-                                    process = general.plot_1d(EXP_NAME, x_axis, ( data[0], data[1] ), xname = 'Field', xscale = 'G', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Field: ' + str(k) + ' / ' + str(field), pr = process)
-
                             pb.pulser_next_phase()
+                            cyc_x[i], cyc_y[i] = dig.digitizer_get_curve( integral = True )
 
-                            if (not script_test) or j == 0:
-                                a, b = pb.digitizer_get_curve( POINTS, PHASES, current_scan = k, total_scan = SCANS, integral = True )
-                                if a is not None:
-                                    data[0], data[1] = a, b
+                        ix, iy = pb.pulser_acquisition_cycle( cyc_x, cyc_y, acq_cycle = p1_exp[3] )
+                        data[0, j] = ( data[0, j] * (k - 1) + ix ) / k
+                        data[1, j] = ( data[1, j] * (k - 1) + iy ) / k
+
+                        if (not script_test) or j == POINTS - 1:
+                            process = general.plot_1d(EXP_NAME, x_axis, ( data[0], data[1] ), xname = 'Field', xscale = 'G', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Field: ' + str(k) + ' / ' + str(field), pr = process)
 
                         field = round( (FIELD_STEP + field), 3 )
-
-                        pb.pulser_shift()
 
                         if not script_test:
                             conn.send( ('Status', int( 100 * (( k - 1 ) * POINTS + j + 1) / POINTS / SCANS)) )
@@ -3483,7 +3506,6 @@ class Worker():
                             SCANS = int( self.command[2:] )
                             self.command = 'start'
                         elif self.command == 'exit':
-                            data[0], data[1] = pb.digitizer_at_exit(integral = True)
                             break
 
                         if conn.poll() == True:
@@ -3500,8 +3522,10 @@ class Worker():
                 self.command = 'exit'
 
             if self.command == 'exit':
-                tb = round( pb.digitizer_window(), 1)
-                pb.pulser_close()
+                tb = round( int(DEC_COEF) * 2, 1)      # detection window, ns (2 ns/point)
+                dig.digitizer_stop()
+                dig.digitizer_close()
+                pb.pulser_stop()
 
                 general.plot_1d(EXP_NAME, x_axis, ( data[0], data[1] ), xname = 'Field', xscale = 'G', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Field: ' + str(k) + ' / ' + str(field))
 
@@ -3515,10 +3539,11 @@ class Worker():
                     f"{'Start Field:':<{w}} {START_FIELD} G\n"
                     f"{'End Field:':<{w}} {END_FIELD} G\n"
                     f"{'Field Step:':<{w}} {FIELD_STEP} G\n"
-                    f"{general.fmt(mw.mw_bridge_rotary_vane(), w)}\n"
                     f"{general.fmt(mw.mw_bridge_att_prm(), w)}\n"
-                    f"{general.fmt(mw.mw_bridge_att2_prm(), w)}\n"
                     f"{general.fmt(mw.mw_bridge_att1_prd(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_att2_prd(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_fv_ctrl(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_fv_prm(), w)}\n"
                     f"{general.fmt(mw.mw_bridge_synthesizer(), w)}\n"
                     f"{'Repetition Rate:':<{w}} {pb.pulser_repetition_rate()}\n"
                     f"{'Number of Scans:':<{w}} {SCANS}\n"
@@ -3573,10 +3598,11 @@ class Worker():
             import atomize.general_modules.general_functions as general
             if script_test:
                 general.test_flag = 'test'
-            import atomize.device_modules.Insys_FPGA as pb_pro
+            import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
+            import atomize.device_modules.PB_ESR_500_pro as pb_pro
             import atomize.device_modules.Lakeshore_335 as ls
             import atomize.device_modules.BH_15 as bh
-            import atomize.device_modules.Micran_X_band_MW_bridge_v2 as mwBridge
+            import atomize.device_modules.Mikran_X_band_MW_bridge as mwBridge
             import atomize.general_modules.csv_opener_saver as openfile
 
             ### Nonlinear axis
@@ -3585,20 +3611,22 @@ class Worker():
             T_end = log_end
 
             nonlinear_time_raw = 10 ** np.linspace( T_start, T_end, POINTS )
-            nonlinear_time = np.unique( general.numpy_round( nonlinear_time_raw, 3.2 ) )
+            nonlinear_time = np.unique( general.numpy_round( nonlinear_time_raw, 2 ) )
             nonlinear_diff = np.append(np.diff(nonlinear_time), 0)
             original_time = np.concatenate(([0], nonlinear_diff)).cumsum()
             POINTS = len( nonlinear_time )
             x_axis = original_time[:-1]
 
             file_handler = openfile.Saver_Opener()
-            pb = pb_pro.Insys_FPGA()
+            pb = pb_pro.PB_ESR_500_Pro()
+            dig = spectrum.Spectrum_M4I_4450_X8()
             bh15 = bh.BH_15()
             ls335 = ls.Lakeshore_335()
-            mw = mwBridge.Micran_X_band_MW_bridge_v2()
+            mw = mwBridge.Mikran_X_band_MW_bridge()
 
-            pb.win_left = win_left
-            pb.win_right = win_right
+            # integration window (point indices) for digitizer_get_curve(integral=True)
+            dig.win_left = win_left
+            dig.win_right = win_right
 
             FIELD = field
             AVERAGES = num_ave
@@ -3642,11 +3670,11 @@ class Worker():
             rel_shift = ( (rel_shift ) / next_after_min).astype(int)
 
             if rel_shift[0] != 0.0:
-                x_axis = x_axis * rel_shift[0] + self.round_to_closest( float(p1_exp[1].split(" ")[0]) , 3.2)
+                x_axis = x_axis * rel_shift[0] + self.round_to_closest( float(p1_exp[1].split(" ")[0]) , 2)
             else:
                 indices = np.where(rel_shift[1:] != 0)[0] + 1
                 if indices.size > 0:
-                    x_axis = x_axis * rel_shift[indices[0]] + self.round_to_closest( float(pulses[indices[0]][1].split(" ")[0]) , 3.2)
+                    x_axis = x_axis * rel_shift[indices[0]] + self.round_to_closest( float(pulses[indices[0]][1].split(" ")[0]) , 2)
                 else:
                     ## this is for start increments: [3.2 3.2 3.2]
                     raise ValueError(f"Pulses do not have Start Increments")
@@ -3669,7 +3697,7 @@ class Worker():
                             start=p[1],
                             length=p[2],
                             phase_list=p[3],
-                            delta_start=f"{self.round_to_closest( nonlinear_diff[0] * rel_shift[rs_idx], 3.2 )} ns"
+                            delta_start=f"{self.round_to_closest( nonlinear_diff[0] * rel_shift[rs_idx], 2 )} ns"
                         )
                         rs_idx += 1
                 pb.pulser_repetition_rate( REP_RATE )
@@ -3680,7 +3708,7 @@ class Worker():
                 for i, p in enumerate(pulses):
                     if i != 1:
                         start_val = float(p[1].split(' ')[0]) + q_switch_delay
-                        p[1] = f"{self.round_to_closest(start_val, 3.2)} ns"
+                        p[1] = f"{self.round_to_closest(start_val, 2)} ns"
 
                     length_val = int(float(p[2].split(' ')[0]))
                     if script_test and i == 1 and length_val == 0:
@@ -3693,7 +3721,7 @@ class Worker():
                             'channel': p[0],
                             'start': p[1],
                             'length': p[2],
-                            'delta_start': f"{self.round_to_closest( nonlinear_diff[0] * rel_shift[rs_idx], 3.2 )} ns"
+                            'delta_start': f"{self.round_to_closest( nonlinear_diff[0] * rel_shift[rs_idx], 2 )} ns"
                         }
 
                         if i != 1:
@@ -3710,11 +3738,18 @@ class Worker():
                     pb.pulser_repetition_rate( REP_RATE )
 
 
-            pb.digitizer_decimation(DEC_COEF)
-            #points_window = pb.digitizer_window_points()
+            # DEC_COEF is the digitizer record length (= DETECTION window in points,
+            # 2 ns/point). Posttrigger defaults to half the window.
+            DIG_POINTS = int( DEC_COEF )
+            POSTTRIGGER = int( DIG_POINTS / 2 )
+            dig.digitizer_card_mode('Average')
+            dig.digitizer_clock_mode('External')
+            dig.digitizer_reference_clock(100)
+            dig.digitizer_number_of_points( DIG_POINTS )
+            dig.digitizer_posttrigger( POSTTRIGGER )
+            dig.digitizer_number_of_averages( AVERAGES )
+            dig.digitizer_setup()
 
-            pb.pulser_open()
-            pb.digitizer_number_of_averages(AVERAGES)
             data = np.zeros( ( 2, POINTS ) )
             x_axis_plot = x_axis / 1e9
             a = 0
@@ -3743,23 +3778,25 @@ class Worker():
 
                     for j in range(POINTS):
 
+                        # phase cycle at this nonlinear-time point; combine + average
+                        cyc_x = np.zeros( PHASES )
+                        cyc_y = np.zeros( PHASES )
                         for i in range(PHASES):
-
                             pb.pulser_next_phase()
+                            cyc_x[i], cyc_y[i] = dig.digitizer_get_curve( integral = True )
 
-                            if (not script_test) or j == 0:
-                                if a is not None:
-                                    process = general.plot_1d(EXP_NAME, x_axis_plot, ( data[0], data[1] ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Point: ' + str(k) + ' / ' + str(j), pr = process)
+                        ix, iy = pb.pulser_acquisition_cycle( cyc_x, cyc_y, acq_cycle = p1_exp[3] )
+                        data[0, j] = ( data[0, j] * (k - 1) + ix ) / k
+                        data[1, j] = ( data[1, j] * (k - 1) + iy ) / k
 
-                                a, b = pb.digitizer_get_curve( POINTS, PHASES, current_scan = k, total_scan = SCANS, integral = True )
-                                if a is not None:
-                                    data[0], data[1] = a, b
+                        if (not script_test) or j == POINTS - 1:
+                            process = general.plot_1d(EXP_NAME, x_axis_plot, ( data[0], data[1] ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Point: ' + str(k) + ' / ' + str(j), pr = process)
 
-                        # nonlinear_time_shift is calculated from the initial position of the pulses
+                        # nonlinear time shift from the initial pulse positions
                         if j > 0:
                             new_delta_start = nonlinear_diff[j]
 
-                            delta_starts = [f"{self.round_to_closest(x * new_delta_start, 3.2)} ns" for x in rel_shift]
+                            delta_starts = [f"{self.round_to_closest(x * new_delta_start, 2)} ns" for x in rel_shift]
                             pb.pulser_redefine_delta_start(name = name_list, delta_start = delta_starts )
 
                         pb.pulser_shift()
@@ -3772,7 +3809,6 @@ class Worker():
                             SCANS = int( self.command[2:] )
                             self.command = 'start'
                         elif self.command == 'exit':
-                            data[0], data[1] = pb.digitizer_at_exit(integral = True)
                             break
 
                         if conn.poll() == True:
@@ -3783,8 +3819,10 @@ class Worker():
                 self.command = 'exit'
 
             if self.command == 'exit':
-                tb = round( pb.digitizer_window(), 1)
-                pb.pulser_close()
+                tb = round( int(DEC_COEF) * 2, 1)      # detection window, ns (2 ns/point)
+                dig.digitizer_stop()
+                dig.digitizer_close()
+                pb.pulser_stop()
 
                 general.plot_1d(EXP_NAME, x_axis_plot, ( data[0], data[1] ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Point: ' + str(k) + ' / ' + str(j))
 
@@ -3796,10 +3834,11 @@ class Worker():
                     f"{'Date:':<{w}} {now}\n"
                     f"{'Experiment:':<{w}} Pulsed EPR Log Experiment\n"
                     f"{'Field:':<{w}} {FIELD} G\n"
-                    f"{general.fmt(mw.mw_bridge_rotary_vane(), w)}\n"
                     f"{general.fmt(mw.mw_bridge_att_prm(), w)}\n"
-                    f"{general.fmt(mw.mw_bridge_att2_prm(), w)}\n"
                     f"{general.fmt(mw.mw_bridge_att1_prd(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_att2_prd(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_fv_ctrl(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_fv_prm(), w)}\n"
                     f"{general.fmt(mw.mw_bridge_synthesizer(), w)}\n"
                     f"{'Repetition Rate:':<{w}} {pb.pulser_repetition_rate()}\n"
                     f"{'Number of Scans:':<{w}} {SCANS}\n"
