@@ -49,7 +49,10 @@ class PB_Micran:
         self.timebase_dict = {'s': 1000000000, 'ms': 1000000, 'us': 1000, 'ns': 1, }
         # -Y for Mikran bridge is simutaneously turned on -X; +Y
         # that is why there is no -Y channel instead we add both -X and +Y pulses
-        self.channel_dict = {self.ch1: 1, self.ch2: 2, self.ch3: 3, self.ch4: 4, self.ch5: 5, self.ch6: 6, \
+        # 'DETECTION' shares the physical digitizer-trigger line (ch1) but, unlike
+        # the plain 'TRIGGER' channel, it carries the acquisition phase_list used
+        # by pulser_acquisition_cycle() (mirrors Insys_FPGA's DETECTION channel).
+        self.channel_dict = {self.ch1: 1, 'DETECTION': 1, self.ch2: 2, self.ch3: 3, self.ch4: 4, self.ch5: 5, self.ch6: 6, \
                         self.ch7: 7, self.ch8: 8, self.ch9: 9, self.ch10: 10, self.ch11: 11, self.ch12: 12,\
                         'CH12': 12, 'CH13': 13, 'CH14': 14, 'CH15': 15, 'CH16': 16, 'CH17': 17,\
                         'CH18': 18, 'CH19': 19, 'CH20': 20, 'CH21': 21, }
@@ -138,6 +141,7 @@ class PB_Micran:
             #pb_core_clock(self.clock)
             self.pulse_array = []
             self.phase_array_length = []
+            self.detection_phase_list = []
             self.pulse_name_array = []
             self.pulse_array_init = []
             self.rep_rate = (self.repetition_rate, )
@@ -154,9 +158,10 @@ class PB_Micran:
         elif self.test_flag == 'test':
             open('instructions.out', 'w').close()
             self.test_rep_rate = '200 Hz'
-            
+
             self.pulse_array = []
             self.phase_array_length = []
+            self.detection_phase_list = []
             self.pulse_name_array = []
             self.pulse_array_init = []
             self.rep_rate = (self.repetition_rate, )
@@ -193,15 +198,23 @@ class PB_Micran:
             # for correcting AMP_ON (PB restriction in 10 ns minimal instruction) according to phase pulses
             if channel == 'MW':
                 self.phase_array_length.append(len(list(phase_list)))
+            elif channel == 'DETECTION':
+                # acquisition phase cycle declared on the detection pulse
+                self.detection_phase_list = list(phase_list)
 
         elif self.test_flag == 'test':
 
             pulse = {'name': name, 'channel': channel, 'start': start, \
                 'length': length, 'delta_start' : delta_start, 'length_increment': length_increment, 'phase_list': phase_list}
-            
+
             # phase_list's length
             if channel == 'MW':
                 self.phase_array_length.append(len(list(phase_list)))
+            elif channel == 'DETECTION':
+                # acquisition phase cycle declared on the detection pulse; its
+                # length must match the MW phase cycle (checked in next_phase).
+                self.detection_phase_list = list(phase_list)
+                self.phase_array_length.append(len(self.detection_phase_list))
             elif channel == 'TRIGGER':
                 assert( len(list(phase_list)) ) == 0, 'TRIGGER pulse should not have phase'
 
@@ -434,7 +447,7 @@ class PB_Micran:
             self.phase_pulses = 0
             # adding phase switch pulses
             for index, element in enumerate(self.pulse_array):
-                if len(list(element['phase_list'])) != 0:
+                if len(list(element['phase_list'])) != 0 and element['channel'] != 'DETECTION':
                     if element['phase_list'][self.current_phase_index] == '+x':
                         #pass
                         # 21-08-2021; Correction of non updating case for ['-x', '+x']
@@ -509,7 +522,7 @@ class PB_Micran:
 
             self.phase_pulses = 0
             for index, element in enumerate(self.pulse_array):
-                if len(list(element['phase_list'])) != 0:
+                if len(list(element['phase_list'])) != 0 and element['channel'] != 'DETECTION':
                     if element['phase_list'][self.current_phase_index] == '+x':
                         #pass
                         # 21-08-2021; Correction of non updating case for ['-x', '+x']
@@ -1965,6 +1978,7 @@ class PB_Micran:
         """
         self.pulse_array = []
         self.phase_array_length = []
+        self.detection_phase_list = []
         self.pulse_name_array = []
         self.pulse_array_init = []
         self.rep_rate = (self.repetition_rate, )
@@ -1983,7 +1997,13 @@ class PB_Micran:
         """
         self.test_flag = flag
 
-    def pulser_acquisition_cycle(self, data1, data2, acq_cycle = []):
+    def pulser_acquisition_cycle(self, data1, data2, acq_cycle = None):
+        # Insys_FPGA-style: when no explicit acq_cycle is supplied, use the phase
+        # cycle declared on the DETECTION pulse (self.detection_phase_list). An
+        # explicit acq_cycle argument still overrides it (backward compatible).
+        if acq_cycle is None or len(acq_cycle) == 0:
+            acq_cycle = self.detection_phase_list
+
         if self.test_flag != 'test':
             answer = np.zeros( data1.shape ) + 1j*np.zeros( data2.shape )
 
