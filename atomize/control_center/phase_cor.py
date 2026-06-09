@@ -166,7 +166,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.opened_file = filename
         filename_param = filename.split(".csv")[0] + ".param"
         self.points = int( open(filename_param).read().split("Points: ")[1].split("\n")[0] )
-        self.h_res = int( open(filename_param).read().split("Horizontal Resolution: ")[1].split(" ns")[0] )
+        self.h_res = float( open(filename_param).read().split("Horizontal Resolution: ")[1].split(" ns")[0] )
         try:
             self.v_res = int( open(filename_param).read().split("Vertical Resolution: ")[1].split(" ns")[0] )
             self.echo_det_spectrum = 0
@@ -176,7 +176,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # Start Field: 3394.7 G
             self.st_field = round( float(open(filename_param).read().split("Start Field: ")[1].split(" G")[0]), 3 )
             self.echo_det_spectrum = 1
-        self.wind = int( open(filename_param).read().split("Window: ")[1].split(" ns")[0] )
+        self.wind = float( open(filename_param).read().split("Window: ")[1].split(" ns")[0] )
 
         filename2 = filename.split(".csv")[0] + "_1.csv"
         self.data_i = np.genfromtxt(filename, dtype = float, delimiter = ',')

@@ -35,22 +35,21 @@ signal.signal(signal.SIGTERM, cleanup)
 EXP_NAME = 'DEER'
 
 ### Experimental parameters
-POINTS = 300
+POINTS = 250
 STEP = 4
-STEP8 = 8
 FIELD = 3449
-AVERAGES = 2
+AVERAGES = 20
 SCANS = 1
 
 # PULSES
-REP_RATE = '2000 Hz'
+REP_RATE = '1000 Hz'
 PULSE_1_LENGTH = '16 ns'
 AMPL_1 = 100
 PULSE_2_LENGTH = '32 ns'
 AMPL_2 = 100
 PULSE_3_LENGTH = '32 ns'
 AMPL_3 = 100
-PULSE_PUMP_LENGTH = '18 ns'
+PULSE_PUMP_LENGTH = '20 ns'
 
 FREQ_PUMP = '100 MHz'
 FREQ_OBSERVE = '170 MHz'
@@ -58,9 +57,8 @@ FREQ_OBSERVE = '170 MHz'
 PULSE_1_AWG_START = '0 ns'
 PULSE_2_AWG_START = '300 ns'
 PULSE_AWG_PUMP_START = '500 ns'
-PULSE_3_AWG_START = '1800 ns'
-PULSE_SIGNAL_AWG_START = '3000 ns'
-PHASE = 64
+PULSE_3_AWG_START = '1600 ns'
+PULSE_SIGNAL_AWG_START = '2600 ns'
 ### Experimental parameters
 
 
@@ -77,8 +75,8 @@ dig4450.digitizer_number_of_averages(AVERAGES)
 time_res = int( 1000 / int(dig4450.digitizer_sample_rate().split(' ')[0]) )
 # a full oscillogram will be transfered
 wind = dig4450.digitizer_number_of_points()
-cycle_data_x = np.zeros( (PHASE, int(wind)) )
-cycle_data_y = np.zeros( (PHASE, int(wind)) )
+cycle_data_x = np.zeros( (64, int(wind)) )
+cycle_data_y = np.zeros( (64, int(wind)) )
 data = np.zeros( (2, int(wind), POINTS) )
 ###
 
@@ -91,17 +89,15 @@ awg.awg_pulse(name = 'P2', channel = 'CH0', func = 'SINE', frequency = FREQ_OBSE
             phase_list = ['+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x',\
                           '+y', '+y', '+y', '+y', '+y', '+y', '+y', '+y', '+y', '+y', '+y', '+y', '+y', '+y', '+y', '+y',\
                           '-x', '-x', '-x', '-x', '-x', '-x', '-x', '-x', '-x', '-x', '-x', '-x', '-x', '-x', '-x', '-x',\
-                          '-y', '-y', '-y', '-y', '-y', '-y', '-y', '-y', '-y', '-y', '-y', '-y', '-y', '-y', '-y', '-y'], \
-                          d_coef = 3.448)
+                          '-y', '-y', '-y', '-y', '-y', '-y', '-y', '-y', '-y', '-y', '-y', '-y', '-y', '-y', '-y', '-y'], d_coef = 100/AMPL_1 )
 
-pb.pulser_pulse(name = 'P3', channel = 'AWG', start = PULSE_2_START, length = PULSE_2_LENGTH, delta_start = str( int(STEP8) ) + ' ns')
-awg.awg_pulse(name = 'P4', channel = 'CH0', func = 'SINE', frequency = FREQ_OBSERVE, phase = 0, delta_start = str( int(STEP8) ) + ' ns', \
+pb.pulser_pulse(name = 'P3', channel = 'AWG', start = PULSE_2_START, length = PULSE_2_LENGTH)
+awg.awg_pulse(name = 'P4', channel = 'CH0', func = 'SINE', frequency = FREQ_OBSERVE, phase = 0, \
             length = PULSE_2_LENGTH, sigma = PULSE_2_LENGTH, start = PULSE_2_AWG_START, \
             phase_list = ['+x', '+x', '+x', '+x', '+y', '+y', '+y', '+y', '-x', '-x', '-x', '-x', '-y', '-y', '-y', '-y',\
                           '+x', '+x', '+x', '+x', '+y', '+y', '+y', '+y', '-x', '-x', '-x', '-x', '-y', '-y', '-y', '-y',\
                           '+x', '+x', '+x', '+x', '+y', '+y', '+y', '+y', '-x', '-x', '-x', '-x', '-y', '-y', '-y', '-y',\
-                          '+x', '+x', '+x', '+x', '+y', '+y', '+y', '+y', '-x', '-x', '-x', '-x', '-y', '-y', '-y', '-y'], \
-                          d_coef = 3.448)
+                          '+x', '+x', '+x', '+x', '+y', '+y', '+y', '+y', '-x', '-x', '-x', '-x', '-y', '-y', '-y', '-y'], d_coef = 100/AMPL_2 )
 
 #PUMP
 pb.pulser_pulse(name = 'P7', channel = 'AWG', start = PULSE_PUMP_START, length = PULSE_PUMP_LENGTH, delta_start = str(STEP) + ' ns')
@@ -110,23 +106,22 @@ awg.awg_pulse(name = 'P8', channel = 'CH0', func = 'SINE', frequency = FREQ_PUMP
             phase_list = ['+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x',\
                           '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x',\
                           '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x',\
-                          '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x'] )
+                          '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x', '+x'])
 
-pb.pulser_pulse(name = 'P5', channel = 'AWG', start = PULSE_3_START, length = PULSE_3_LENGTH, delta_start = str( int(STEP8*2) ) + ' ns',)
-awg.awg_pulse(name = 'P6', channel = 'CH0', func = 'SINE', frequency = FREQ_OBSERVE, phase = 0, delta_start = str( int(STEP8*2) ) + ' ns', \
+pb.pulser_pulse(name = 'P5', channel = 'AWG', start = PULSE_3_START, length = PULSE_3_LENGTH)
+awg.awg_pulse(name = 'P6', channel = 'CH0', func = 'SINE', frequency = FREQ_OBSERVE, phase = 0, \
             length = PULSE_3_LENGTH, sigma = PULSE_3_LENGTH, start = PULSE_3_AWG_START, \
             phase_list = ['+x', '+y', '-x', '-y', '+x', '+y', '-x', '-y', '+x', '+y', '-x', '-y', '+x', '+y', '-x', '-y',\
                           '+x', '+y', '-x', '-y', '+x', '+y', '-x', '-y', '+x', '+y', '-x', '-y', '+x', '+y', '-x', '-y',\
                           '+x', '+y', '-x', '-y', '+x', '+y', '-x', '-y', '+x', '+y', '-x', '-y', '+x', '+y', '-x', '-y',\
-                          '+x', '+y', '-x', '-y', '+x', '+y', '-x', '-y', '+x', '+y', '-x', '-y', '+x', '+y', '-x', '-y'], \
-                          d_coef = 3.448)
+                          '+x', '+y', '-x', '-y', '+x', '+y', '-x', '-y', '+x', '+y', '-x', '-y', '+x', '+y', '-x', '-y'], d_coef = 100/AMPL_3 )
 
 # 398 ns is delay from AWG trigger 1.25 GHz
 # 494 ns is delay from AWG trigger 1.00 GHz
 # AWG = 494 (awg_output delay) + (awg pulse position)
 
 #DETECTION
-pb.pulser_pulse(name = 'P9', channel = 'TRIGGER', start = PULSE_SIGNAL_START, length = '100 ns', delta_start = str( int(STEP8*2) ) + ' ns')
+pb.pulser_pulse(name = 'P9', channel = 'TRIGGER', start = PULSE_SIGNAL_START, length = '100 ns')
 
 
 bh15.magnet_setup(FIELD, 1)
@@ -160,59 +155,38 @@ file_handler.save_header(file_param, header = header, mode = 'w')
 # Data acquisition
 for j in general.scans(SCANS):
 
-    cycle_8 = 1 
-    while cycle_8 <= 8:
+    for i in range(POINTS):
 
-        m = 1
-        while m < cycle_8:
-            pb.pulser_redefine_delta_start(name = 'P7', delta_start = str( int(STEP8*2) ) + ' ns')
-            awg.awg_redefine_delta_start(name = 'P8', delta_start = str( int(STEP8*2) ) + ' ns')
-            pb.pulser_shift('P3', 'P7', 'P5', 'P9')
-            awg.awg_shift('P4', 'P8', 'P6')
-            pb.pulser_redefine_delta_start(name = 'P7', delta_start = str( int(STEP) ) + ' ns')
-            awg.awg_redefine_delta_start(name = 'P8', delta_start = str( int(STEP) ) + ' ns')
+        # phase cycle
+        k = 0
+        pb.pulser_update()
+        while k < 64:
 
-            m += 1
+            awg.awg_next_phase()
+            x_axis, cycle_data_x[k], cycle_data_y[k] = dig4450.digitizer_get_curve()
+            awg.awg_stop()
+            k += 1
+        
+        # acquisition cycle
+        x, y = pb.pulser_acquisition_cycle(cycle_data_x, cycle_data_y, \
+            acq_cycle = ['+', '-', '+', '-', '-', '+', '-', '+', '+', '-', '+', '-', '-', '+', '-', '+',
+                         '+i', '-i', '+i', '-i', '-i', '+i', '-i', '+i', '+i', '-i', '+i', '-i', '-i', '+i', '-i', '+i',
+                         '-', '+', '-', '+', '+', '-', '+', '-', '-', '+', '-', '+', '+', '-', '+', '-',
+                         '-i', '+i', '-i', '+i', '+i', '-i', '+i', '-i', '-i', '+i', '-i', '+i', '+i', '-i', '+i', '-i' ])
 
-        for i in range(POINTS):
+        data[0, :, i] = ( data[0, :, i] * (j - 1) + x ) / j
+        data[1, :, i] = ( data[1, :, i] * (j - 1) + y ) / j
 
-            # phase cycle
-            k = 0
-            pb.pulser_update()
-            while k < PHASE:
+        process = general.plot_2d(EXP_NAME, data, start_step = ( (0, time_res), (0, STEP) ), xname = 'Time',\
+            xscale = 'ns', yname = 'Delay', yscale = 'ns', zname = 'Intensity', zscale = 'V', pr = process, \
+            text = 'Scan / Time: ' + str(j) + ' / ' + str(i*STEP))
 
-                awg.awg_next_phase()
-
-                x_axis, cycle_data_x[k], cycle_data_y[k] = dig4450.digitizer_get_curve()
-
-                awg.awg_stop()
-                k += 1
-            
-            # acquisition cycle
-            x, y = pb.pulser_acquisition_cycle(cycle_data_x, cycle_data_y, \
-                acq_cycle = ['+', '-', '+', '-', '-', '+', '-', '+', '+', '-', '+', '-', '-', '+', '-', '+',
-                             '+i', '-i', '+i', '-i', '-i', '+i', '-i', '+i', '+i', '-i', '+i', '-i', '-i', '+i', '-i', '+i',
-                             '-', '+', '-', '+', '+', '-', '+', '-', '-', '+', '-', '+', '+', '-', '+', '-',
-                             '-i', '+i', '-i', '+i', '+i', '-i', '+i', '-i', '-i', '+i', '-i', '+i', '+i', '-i', '+i', '-i' ])
-
-            data[0, :, i] = ( data[0, :, i] * (cycle_8 - 1 + (j - 1) * 8 ) + x ) / ( cycle_8 + (j - 1) * 8 )
-            data[1, :, i] = ( data[1, :, i] * (cycle_8 - 1 + (j - 1) * 8 ) + y ) / ( cycle_8 + (j - 1) * 8 )
-
-            process = general.plot_2d(EXP_NAME, data, start_step = ( (0, time_res), (0, STEP) ), xname = 'Time',\
-                xscale = 'ns', yname = 'Delay', yscale = 'ns', zname = 'Intensity', zscale = 'V', pr = process, \
-                text = str(j) + ' / ' + str(cycle_8) + ' / ' + str(i*STEP))
-
-            #awg.awg_stop()
-            awg.awg_shift('P8')
-            pb.pulser_shift('P7')
-
-        awg.awg_pulse_reset()
-        pb.pulser_pulse_reset()
-        cycle_8 += 1
+        #awg.awg_stop()
+        awg.awg_shift()
+        pb.pulser_shift()
 
     awg.awg_pulse_reset()
-    pb.pulser_reset()
-
+    pb.pulser_pulse_reset()
 
 dig4450.digitizer_stop()
 dig4450.digitizer_close()

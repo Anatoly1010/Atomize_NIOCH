@@ -29,7 +29,14 @@ def message(*text):
             sock.send(str(text).encode())
             sock.close()
     elif test_flag == 'test':
-        pass
+        sock = socket.socket()
+        sock.connect(('localhost', 9091))
+        if len(text) == 1:
+            sock.send(str(text[0]).encode())
+            sock.close()
+        else:
+            sock.send(str(text).encode())
+            sock.close()
 
 def wait(interval):
     time_dict = {'ks': 0.001, 's': 1, 'ms': 1000, 'us': 1000000, 'ns': 1000000000, 'ps': 1000000000000, }

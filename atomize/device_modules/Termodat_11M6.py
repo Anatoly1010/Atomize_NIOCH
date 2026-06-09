@@ -142,16 +142,16 @@ class Termodat_11M6:
     def tc_temperature(self, channel):
         if self.test_flag != 'test':
             if channel == '1':
-                answer = round(float(self.device_read_signed(368, 1)) + 273.15, 1)
+                answer = round(float(self.device_read_signed(368, 1)) + 273.15, 2)
                 return answer
             elif channel == '2':
-                answer = round(float(self.device_read_signed(1392, 1)) + 273.1, 1)
+                answer = round(float(self.device_read_signed(1392, 1)) + 273.15, 1)
                 return answer
             elif channel == '3':
-                answer = round(float(self.device_read_signed(2416, 1)) + 273.1, 1)
+                answer = round(float(self.device_read_signed(2416, 1)) + 273.15, 1)
                 return answer
             elif channel == '4':
-                answer = round(float(self.device_read_signed(3440, 1)) + 273.1, 1)
+                answer = round(float(self.device_read_signed(3440, 1)) + 273.15, 1)
                 return answer
             else:
                 general.message("Invalid argument")

@@ -32,37 +32,40 @@ def cleanup(*args):
 signal.signal(signal.SIGTERM, cleanup)
 
 ### Experimental parameters
-POINTS = 75
-STEP = 2                  # in NS;
+POINTS = 50
+STEP = 2
 FIELD = 3480.8
-AVERAGES = 600
+AVERAGES = 100
 SCANS = 1
-process = 'None'
 
 # PULSES
 REP_RATE = '500 Hz'
 PULSE_1_LENGTH = '10 ns'
+AMPL_1 = 100
 PULSE_2_LENGTH = '80 ns'
+AMPL_2 =  9
 PULSE_3_LENGTH = '80 ns'
-# 398 ns is delay from AWG trigger 1.25 GHz
-# 494 ns is delay from AWG trigger 1.00 GHz
+AMPL_3 = 18
+
 PULSE_AWG_1_START = '0 ns'
-PULSE_AWG_2_START = '250 ns'
-PULSE_AWG_3_START = '750 ns'
-PULSE_DETECTION = '1250 ns'
+PULSE_AWG_2_START = '50000 ns'
+PULSE_AWG_3_START = '50500 ns'
+PULSE_DETECTION = '51000 ns'
+
+SHAPE = 'SINE'
+FREQ = '100 MHz'
+### Experimental parameters
+
+
 PULSE_1_START = general.const_shift(PULSE_AWG_1_START, 494)
 PULSE_2_START = general.const_shift(PULSE_AWG_2_START, 494)
 PULSE_3_START = general.const_shift(PULSE_AWG_3_START, 494)
 PULSE_SIGNAL_START = general.const_shift(PULSE_DETECTION, 494)
 PHASES = 4
 
-SHAPE = 'SINE'
-FREQ = '50 MHz'
-AMPL_2 =  9
-AMPL_3 = 18
-
 # NAMES
 EXP_NAME = 'Nut'
+process = 'None'
 
 # Setting pulses
 pb.pulser_pulse(name = 'P0', channel = 'TRIGGER_AWG', start = '0 ns', length = '30 ns')
@@ -74,7 +77,7 @@ pb.pulser_pulse(name = 'P3', channel = 'AWG', start = PULSE_3_START, length = PU
 
 pb.pulser_pulse(name = 'P4', channel = 'TRIGGER', start = PULSE_SIGNAL_START, length = '100 ns')
 awg.awg_pulse(name = 'P5', channel = 'CH0', func = SHAPE, frequency = FREQ, phase = 0, \
-            length = PULSE_1_LENGTH, sigma = PULSE_1_LENGTH, start = PULSE_AWG_1_START, phase_list = ['+x','+x','-x','-x'], length_increment = str(STEP) + ' ns')
+            length = PULSE_1_LENGTH, sigma = PULSE_1_LENGTH, start = PULSE_AWG_1_START, phase_list = ['+x','+x','-x','-x'], length_increment = str(STEP) + ' ns', d_coef = 100/AMPL_1)
 awg.awg_pulse(name = 'P6', channel = 'CH0', func = SHAPE, frequency = FREQ, phase = 0, \
             length = PULSE_2_LENGTH, sigma = PULSE_2_LENGTH, start = PULSE_AWG_2_START, phase_list = ['+x','-x','+x','-x'], d_coef = 100/AMPL_2 )
 awg.awg_pulse(name = 'P7', channel = 'CH0', func = SHAPE, frequency = FREQ, phase = 0, \

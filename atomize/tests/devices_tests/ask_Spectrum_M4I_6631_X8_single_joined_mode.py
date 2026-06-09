@@ -28,14 +28,17 @@ signal.signal(signal.SIGTERM, cleanup)
 #awg.awg_pulse(name = 'P2', channel = 'CH0', func = 'TEST', frequency = '0 MHz', phase = np.pi/2, length = '2000 ns', sigma = '2000 ns', start = '2832 ns')
 # start + length for the second pulse should be divisible by 32
 
-coef = [5.92087, 412.868, -124.647, 62.0069, 420.717, -35.8879, 34.4214, 9893.97,  12.4056, 150.304]
-awg.awg_correction(only_pi_half = 'True', coef_array = coef, low_level = 16, limit = 23)
+#coef = [5.92087, 412.868, -124.647, 62.0069, 420.717, -35.8879, 34.4214, 9893.97,  12.4056, 150.304]
+#awg.awg_correction(only_pi_half = 'True', coef_array = coef, low_level = 16, limit = 23)
+
+coef = [7.50195, 2375.9, -147.974, 119.59, 6114.93, 0.144502, 132.071, 1776.4, 144.365, 84.4096]
+awg.awg_correction(only_pi_half = 'True', coef_array = coef, low_level = 16, limit = 24)
 
 # EXP2; Linear Frequency Sweep
 # frequency = ('Center', 'Sweep')
 #awg.awg_pulse(name = 'P0', channel = 'CH0', func = 'SINE', frequency = '10 MHz', phase = 0, length = '200 ns', sigma = '0 ns', start = '0 ns')
-awg.awg_pulse(name = 'P0', channel = 'CH0', func = 'WURST', frequency = ('0 MHz', '300 MHz'), phase = 0, length = '400 ns', start = '0 ns', n = 30, d_coef = 3.33)
-#awg.awg_pulse(name = 'P1', channel = 'CH0', func = 'WURST', frequency = ('0 MHz', '300 MHz'), phase = 0, length = '400 ns', start = '600 ns', n = 30)
+awg.awg_pulse(name = 'P0', channel = 'CH0', func = 'GAUSS', frequency = '0 MHz', phase = np.pi/2, length = '15 ns', sigma = '6 ns', start = '0 ns')
+#awg.awg_pulse(name = 'P1', channel = 'CH0', func = 'WURST', frequency = ('0 MHz', '400 MHz'), phase = 0, length = '250 ns', start = '400 ns', n = 30)
 # start + length for the second pulse should be divisible by 32
 
 # EXP3; Amplitude Drop; A Pulse should be at least 416 ns long
@@ -43,7 +46,7 @@ awg.awg_pulse(name = 'P0', channel = 'CH0', func = 'WURST', frequency = ('0 MHz'
 # pulse length should be divisible by 32
 
 ####################################################
-awg.awg_sample_rate(1000)
+awg.awg_sample_rate(1250)
 awg.awg_card_mode('Single Joined')
 awg.awg_channel('CH0', 'CH1')
 awg.awg_trigger_channel('External')

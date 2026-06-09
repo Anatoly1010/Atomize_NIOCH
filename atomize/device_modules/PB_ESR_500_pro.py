@@ -589,6 +589,8 @@ class PB_ESR_500_Pro:
                     raw_data = np.fromstring( self.raw_instructions[self.iterator_of_updates], dtype = int, sep = ',' )
                     to_spinapi = raw_data.reshape( ( int(len(raw_data)/3), 3 ) ).tolist()
 
+
+                """
                 ##for element in to_spinapi:
                 ##    if element[2] < 10: # it was 12; 06.10.2021
                 ##        general.message('Incorrect instruction are found')
@@ -654,6 +656,8 @@ class PB_ESR_500_Pro:
                 self.iterator_of_updates += 1
             else:
                 pass
+
+            """
 
         elif self.test_flag == 'test':
             # get repetition rate
@@ -2068,9 +2072,10 @@ class PB_ESR_500_Pro:
             index_jump = np.where(np.diff(sorted_pulses_start[:,1], axis = 0) > self.max_pulse_length/self.timebase )[0]
             sorted_arrays_parts = np.split(sorted_pulses_start, index_jump + 1)
 
-
+            general.message(sorted_arrays_parts)
             for index, element in enumerate(sorted_arrays_parts):
                 temp, min_value = self.convert_to_bit_pulse(element)
+                general.message(min_value)
                 answer.append(self.instruction_pulse(temp))
                 # keep them all for further shifting
                 min_list.append(min_value)
@@ -2353,6 +2358,7 @@ class PB_ESR_500_Pro:
             ranges = np.where(absdiff != 0)[0]
             pulse_array = np.split(np_array, ranges)
             pulse_info = np.concatenate(([0], ranges))
+            general.message(np_array)
 
             for index, element in enumerate(pulse_info[:-1]):
                 final_pulse_array.append( [pulse_array[index][0], self.timebase*pulse_info[index], self.timebase*(pulse_info[index + 1] - pulse_info[index])] )

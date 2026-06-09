@@ -6,10 +6,10 @@ import sys
 import gc
 import random
 ###AWG
-sys.path.append('/home/pulseepr/Sources/AWG/Examples/python')
+#sys.path.append('/home/pulseepr/Sources/AWG/Examples/python')
 ###sys.path.append('/home/anatoly/AWG/spcm_examples/python')
 #sys.path.append('/home/anatoly/awg_files/python')
-#sys.path.append('C:/Users/User/Desktop/Examples/python')
+sys.path.append('C:/Users/User/Desktop/Examples/python')
 from math import sin, pi, exp, log2
 from itertools import groupby, chain
 from copy import deepcopy
@@ -4412,7 +4412,7 @@ class Spectrum_M4I_6631_X8:
                     ##    c = 1
 
                     #general.plot_1d( 'C', np.arange(0, 0 + pulse_length_smp[index] ), ph_cor * 180 / np.pi )
-                    #general.plot_1d( 'C', np.arange(0, 0 + pulse_length_smp[index] ), c )
+                    general.plot_1d( 'C', np.arange(0, 0 + pulse_length_smp[index] ), c )
 
                     ###############################################
                     
