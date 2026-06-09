@@ -3070,7 +3070,7 @@ class Worker():
                 general.test_flag = 'test'
             import atomize.device_modules.Spectrum_M4I_2211_X8 as spectrum
             import atomize.device_modules.PB_ESR_500_pro as pb_pro
-            import atomize.device_modules.Lakeshore_335 as ls
+            import atomize.device_modules.SR_PTC_10 as ls
             import atomize.device_modules.BH_15 as bh
             import atomize.device_modules.Mikran_X_band_MW_bridge as mwBridge
             import atomize.general_modules.csv_opener_saver as openfile
@@ -3079,7 +3079,7 @@ class Worker():
             dig = spectrum.Spectrum_M4I_2211_X8()
             file_handler = openfile.Saver_Opener()
             #bh15 = bh.BH_15()
-            ls335 = ls.Lakeshore_335()
+            ptc = ls.SR_PTC_10()
             mw = mwBridge.Mikran_X_band_MW_bridge()
 
             # integration window (point indices) for digitizer_get_curve(integral=True)
@@ -3226,8 +3226,8 @@ class Worker():
             while self.command != 'exit':
 
                 for k in _scan_iter():
-                    sp = ls335.tc_setpoint()
-                    ct = ls335.tc_temperature('B')
+                    sp = ptc.tc_setpoint('Heater')
+                    ct = ptc.tc_temperature('3A')
 
                     if np.abs(sp - ct) > 0.8:
                         general.wait('8000 ms')
@@ -3305,8 +3305,8 @@ class Worker():
                     f"{'Points:':<{w}} {POINTS}\n"
                     f"{'Window:':<{w}} {tb} ns\n"
                     f"{'Horizontal Resolution:':<{w}} {STEP} ns\n"
-                    f"{'Temperature:':<{w}} {ls335.tc_temperature('A')} K\n"
-                    f"{'Temperature Cernox:':<{w}} {ls335.tc_temperature('B')} K\n"
+                    f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
+                    f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
                     f"{'-'*50}\n"
                     f"Pulse List:\n{pb.pulser_pulse_list()}"
                     f"{'-'*50}\n"
@@ -3356,7 +3356,7 @@ class Worker():
                 general.test_flag = 'test'
             import atomize.device_modules.Spectrum_M4I_2211_X8 as spectrum
             import atomize.device_modules.PB_ESR_500_pro as pb_pro
-            import atomize.device_modules.Lakeshore_335 as ls
+            import atomize.device_modules.SR_PTC_10 as ls
             import atomize.device_modules.BH_15 as bh
             import atomize.device_modules.Mikran_X_band_MW_bridge as mwBridge
             import atomize.general_modules.csv_opener_saver as openfile
@@ -3365,7 +3365,7 @@ class Worker():
             pb = pb_pro.PB_ESR_500_Pro()
             dig = spectrum.Spectrum_M4I_2211_X8()
             #bh15 = bh.BH_15()
-            ls335 = ls.Lakeshore_335()
+            ptc = ls.SR_PTC_10()
             mw = mwBridge.Mikran_X_band_MW_bridge()
 
             # integration window (point indices) for digitizer_get_curve(integral=True)
@@ -3489,8 +3489,8 @@ class Worker():
                     field = START_FIELD
                     #bh15.magnet_field(field)
 
-                    sp = ls335.tc_setpoint()
-                    ct = ls335.tc_temperature('B')
+                    sp = ptc.tc_setpoint('Heater')
+                    ct = ptc.tc_temperature('3A')
 
                     if np.abs(sp - ct) > 0.8:
                         general.wait('8000 ms')
@@ -3569,8 +3569,8 @@ class Worker():
                     f"{'Number of Scans:':<{w}} {SCANS}\n"
                     f"{'Averages:':<{w}} {AVERAGES}\n"
                     f"{'Window:':<{w}} {tb} ns\n"
-                    f"{'Temperature:':<{w}} {ls335.tc_temperature('A')} K\n"
-                    f"{'Temperature Cernox:':<{w}} {ls335.tc_temperature('B')} K\n"
+                    f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
+                    f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
                     f"{'-'*50}\n"
                     f"Pulse List:\n{pb.pulser_pulse_list()}"
                     f"{'-'*50}\n"
@@ -3620,7 +3620,7 @@ class Worker():
                 general.test_flag = 'test'
             import atomize.device_modules.Spectrum_M4I_2211_X8 as spectrum
             import atomize.device_modules.PB_ESR_500_pro as pb_pro
-            import atomize.device_modules.Lakeshore_335 as ls
+            import atomize.device_modules.SR_PTC_10 as ls
             import atomize.device_modules.BH_15 as bh
             import atomize.device_modules.Mikran_X_band_MW_bridge as mwBridge
             import atomize.general_modules.csv_opener_saver as openfile
@@ -3641,7 +3641,7 @@ class Worker():
             pb = pb_pro.PB_ESR_500_Pro()
             dig = spectrum.Spectrum_M4I_2211_X8()
             #bh15 = bh.BH_15()
-            ls335 = ls.Lakeshore_335()
+            ptc = ls.SR_PTC_10()
             mw = mwBridge.Mikran_X_band_MW_bridge()
 
             # integration window (point indices) for digitizer_get_curve(integral=True)
@@ -3787,8 +3787,8 @@ class Worker():
 
                 for k in _scan_iter():
 
-                    sp = ls335.tc_setpoint()
-                    ct = ls335.tc_temperature('B')
+                    sp = ptc.tc_setpoint('Heater')
+                    ct = ptc.tc_temperature('3A')
 
                     if np.abs(sp - ct) > 0.8:
                         general.wait('8000 ms')
@@ -3867,8 +3867,8 @@ class Worker():
                     f"{'Window:':<{w}} {tb} ns\n"
                     f"{'Lg(X0/ns):':<{w}} {T_start}\n"
                     f"{'Lg(ΔX/ns):':<{w}} {T_end}\n"
-                    f"{'Temperature:':<{w}} {ls335.tc_temperature('A')} K\n"
-                    f"{'Temperature Cernox:':<{w}} {ls335.tc_temperature('B')} K\n"
+                    f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
+                    f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
                     f"{'-'*50}\n"
                     f"Pulse List:\n{pb.pulser_pulse_list()}"
                     f"{'-'*50}\n"

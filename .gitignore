@@ -14,3 +14,6 @@ atomize/device_modules/config/Metrolab_PT2025_config.ini
 atomize/temp.param
 atomize/temp.csv
 atomize/control_center/digitizer.param
+instructions.out
+test
+test.param

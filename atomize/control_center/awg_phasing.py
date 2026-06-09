@@ -3879,21 +3879,25 @@ class Worker():
             import atomize.general_modules.general_functions as general
             if script_test:
                 general.test_flag = 'test'
-            import atomize.device_modules.Insys_FPGA as pb_pro
-            import atomize.device_modules.Lakeshore_335 as ls
+            import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
+            import atomize.device_modules.Spectrum_M4I_6631_X8 as spectrum_awg
+            import atomize.device_modules.PB_ESR_500_pro as pb_pro
+            import atomize.device_modules.SR_PTC_10 as ls
             import atomize.device_modules.BH_15 as bh
-            import atomize.device_modules.Micran_X_band_MW_bridge_v2 as mwBridge
+            import atomize.device_modules.Mikran_X_band_MW_bridge as mwBridge
             import atomize.general_modules.csv_opener_saver as openfile
 
             file_handler = openfile.Saver_Opener()
-            pb = pb_pro.Insys_FPGA()
+            pb = pb_pro.PB_ESR_500_Pro()
+            dig = spectrum.Spectrum_M4I_4450_X8()
+            awg = spectrum_awg.Spectrum_M4I_6631_X8()
             bh15 = bh.BH_15()
-            ls335 = ls.Lakeshore_335()
-            mw = mwBridge.Micran_X_band_MW_bridge_v2()
+            ptc = ls.SR_PTC_10()
+            mw = mwBridge.Mikran_X_band_MW_bridge()
 
             iq_cor = iq_corr
-            pb.win_left = win_left
-            pb.win_right = win_right
+            dig.win_left = win_left
+            dig.win_right = win_right
             zp = zero_phase
 
             #p1_exp DETECTION
@@ -3935,12 +3939,22 @@ class Worker():
                 conn.send( ('Message', 'No START or LENGTH increment; the time axis corresponds to the number of points in the experiment') )
                 general.plot_remove(exp_name)
 
-            pb.phase_shift_ch1_seq_mode_awg = iq_phase
+            awg.phase_shift_ch1_seq_mode = iq_phase
 
             # correction from file
-            self._apply_awg_correction(pb, correction)
+            self._apply_awg_correction(awg, correction)
             
-            pb.awg_amplitude('CH0', str(ch0_ampl), 'CH1', str(ch1_ampl) )
+            # AWG channel + clock configuration (NIOCH Spectrum M4I-6631)
+            awg.awg_channel('CH0', 'CH1')
+            awg.awg_card_mode('Single Joined')
+            awg.awg_clock_mode('External')
+            awg.awg_reference_clock(100)
+            awg.awg_sample_rate(1000)
+            awg.awg_amplitude('CH0', str(ch0_ampl), 'CH1', str(ch1_ampl) )
+
+            # Master AWG-card trigger: one TRIGGER_AWG for the whole sequence;
+            # each AWG pulse is gated by its own 'AWG' channel marker.
+            pb.pulser_pulse(name='P0', channel='TRIGGER_AWG', start='0 ns', length='30 ns')
             
             POINTS = points
             STEP = step
@@ -3993,7 +4007,7 @@ class Worker():
                             'length': ap[3],
                             'sigma': ap[4],
                             'start': ap[5],
-                            'amplitude': ap[6],
+                            'd_coef': ap[6],
                             'phase_list': ap[7],
                             'length_increment': ap[9]
                         }
@@ -4001,12 +4015,12 @@ class Worker():
                         if is_complex:
                             awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
                             
-                        pb.awg_pulse(**awg_kwargs)
+                        awg.awg_pulse(**awg_kwargs)
 
                         if ap[0] != 'BLANK':
                             pb.pulser_pulse(
                                 name=f'P{2*i + 3}',
-                                channel='TRIGGER_AWG', 
+                                channel='AWG',
                                 start=tp[0], 
                                 length=tp[1], 
                                 delta_start=tp[2], 
@@ -4056,7 +4070,7 @@ class Worker():
                             'length': ap[3],
                             'sigma': ap[4],
                             'start': ap[5],
-                            'amplitude': ap[6],
+                            'd_coef': ap[6],
                             'phase_list': ap[7],
                             'length_increment': ap[9]
                         }
@@ -4064,12 +4078,12 @@ class Worker():
                         if is_complex:
                             awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
 
-                        pb.awg_pulse(**awg_kwargs)
+                        awg.awg_pulse(**awg_kwargs)
 
                         if ap[0] != 'BLANK':
                             pb.pulser_pulse(
                                 name=f'P{2*i + 3}',
-                                channel='TRIGGER_AWG',
+                                channel='AWG',
                                 start=tp[0],
                                 length=tp[1],
                                 delta_start=tp[2],
@@ -4082,16 +4096,27 @@ class Worker():
                     pb.pulser_repetition_rate( REP_RATE )
 
 
-            pb.pulser_default_synt(synt)
+            # NIOCH: compile the zero-filled AWG buffer after all pulses
+            awg.awg_setup()
 
-            pb.digitizer_decimation(DEC_COEF)
-            points_window = pb.digitizer_window_points()
+            # NIOCH Spectrum digitizer (point/posttrigger based, 2 ns/point).
+            # DEC_COEF is reinterpreted as the detection record length (points).
+            t_res = 2.0
+            points_window = int( DEC_COEF )
+            POSTTRIGGER = int( DEC_COEF / 2 )
+            dig.digitizer_card_mode('Average')
+            dig.digitizer_clock_mode('External')
+            dig.digitizer_reference_clock(100)
+            dig.digitizer_number_of_points( points_window )
+            dig.digitizer_posttrigger( POSTTRIGGER )
+            dig.digitizer_number_of_averages(AVERAGES)
+            dig.digitizer_setup()
 
-            pb.pulser_open()
-            pb.digitizer_number_of_averages(AVERAGES)
             data = np.zeros( ( 2, points_window, POINTS ) )
+            cycle_data_x = np.zeros( ( PHASES, points_window ) )
+            cycle_data_y = np.zeros( ( PHASES, points_window ) )
 
-            dec_calc = 0.4 * DEC_COEF / 1e9
+            dec_calc = t_res / 1e9
             step_ns = STEP / 1e9
 
             x_axis = f_delay + np.linspace(0, (POINTS - 1)*STEP, num = POINTS)
@@ -4114,8 +4139,8 @@ class Worker():
 
                 for k in _scan_iter():
 
-                    sp = ls335.tc_setpoint()
-                    ct = ls335.tc_temperature('B')
+                    sp = ptc.tc_setpoint('Heater')
+                    ct = ptc.tc_temperature('3A')
 
                     if np.abs(sp - ct) > 0.8:
                         general.wait('8000 ms')
@@ -4124,65 +4149,49 @@ class Worker():
                         break
 
                     for j in range(POINTS):
-                        for i in range(PHASES):
-                            # In test mode, only render the plot on j == 0 to keep the phasing
-                            # loop fast — script_test inner iterations don't redraw.
-                            if (not script_test) or j == 0:
-                                if a is not None:
-                                    if iq_cor == 0:
-                                        if step != 1:
-                                            process = general.plot_2d(
-                                                EXP_NAME,
-                                                data,
-                                                start_step = ((0, dec_calc), (f_delay/1e9, step_ns)),
-                                                xname = 'Time',
-                                                xscale = 's',
-                                                yname = 'Delay',
-                                                yscale = 's',
-                                                zname = 'Intensity',
-                                                zscale = 'mV',
-                                                text = f"Scan / Time: {k} / {j * STEP:.1f}",
-                                                pr = process
-                                            )
-                                        else:
-                                            process = general.plot_2d(
-                                                EXP_NAME,
-                                                data,
-                                                start_step = ((0, dec_calc), (0, 1)),
-                                                xname = 'Time',
-                                                xscale = 's',
-                                                yname = 'Point',
-                                                yscale = '',
-                                                zname = 'Intensity',
-                                                zscale = 'mV',
-                                                text = f"Scan / Time: {k} / {j * STEP:.1f}",
-                                                pr = process
-                                            )
-                                    elif iq_cor == 1:
-                                        data_x, data_y = pb.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
-                                        if step != 1:
-                                            general.plot_1d(EXP_NAME, x_axis_plot, ( data_x, data_y ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Time: ' + str(k) + ' / ' + str(round(j*STEP, 1)))
-                                        else:
-                                            general.plot_1d(EXP_NAME, x_axis, ( data_x, data_y ), xname = 'Point', xscale = '', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Time: ' + str(k) + ' / ' + str(round(j, 1)))
+                        # NIOCH AWG phase cycle: AWG advances phase, one digitizer
+                        # curve per phase, then the pulser combines the cycle
+                        # (see dig_on / tests/pulse_epr/awg/digitizer baseline).
+                        pb.pulser_update()
+                        ph = 0
+                        while ph < PHASES:
+                            awg.awg_next_phase()
+                            x_curve, cycle_data_x[ph], cycle_data_y[ph] = dig.digitizer_get_curve()
+                            awg.awg_stop()
+                            ph += 1
 
-                            pb.awg_next_phase()
-                            pb.pulser_update()
+                        data_x, data_y = pb.pulser_acquisition_cycle( cycle_data_x, cycle_data_y, acq_cycle = p1_exp[3] )
 
-                            if (not script_test) or j == 0:
-                                a, b = pb.digitizer_get_curve(
-                                    POINTS,
-                                    PHASES,
-                                    current_scan = k,
-                                    total_scan = SCANS )
-                                if a is not None:
-                                    data[0], data[1] = a, b
+                        # scan-average the oscillogram into the 2D array
+                        data[0, :, j] = ( data[0, :, j] * (k - 1) + data_x ) / k
+                        data[1, :, j] = ( data[1, :, j] * (k - 1) + data_y ) / k
+
+                        if (not script_test) or j == 0:
+                            if iq_cor == 0:
+                                if step != 1:
+                                    process = general.plot_2d(EXP_NAME, data,
+                                        start_step = ((0, dec_calc), (f_delay/1e9, step_ns)),
+                                        xname = 'Time', xscale = 's', yname = 'Delay', yscale = 's',
+                                        zname = 'Intensity', zscale = 'mV',
+                                        text = f"Scan / Time: {k} / {j * STEP:.1f}", pr = process)
+                                else:
+                                    process = general.plot_2d(EXP_NAME, data,
+                                        start_step = ((0, dec_calc), (0, 1)),
+                                        xname = 'Time', xscale = 's', yname = 'Point', yscale = '',
+                                        zname = 'Intensity', zscale = 'mV',
+                                        text = f"Scan / Time: {k} / {j * STEP:.1f}", pr = process)
+                            elif iq_cor == 1:
+                                area_x, area_y = dig.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                                if step != 1:
+                                    general.plot_1d(EXP_NAME, x_axis_plot, ( area_x, area_y ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Time: ' + str(k) + ' / ' + str(round(j*STEP, 1)))
+                                else:
+                                    general.plot_1d(EXP_NAME, x_axis, ( area_x, area_y ), xname = 'Point', xscale = '', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Time: ' + str(k) + ' / ' + str(round(j, 1)))
 
                         pb.pulser_shift()
                         if increment == 1:
-                            pb.awg_increment()
+                            awg.awg_increment()
                         else:
-                            #pb.awg_pulse_reset()
-                            pb.awg_shift()
+                            awg.awg_shift()
 
                         pb.pulser_increment()
 
@@ -4194,21 +4203,23 @@ class Worker():
                             SCANS = int( self.command[2:] )
                             self.command = 'start'
                         elif self.command == 'exit':
-                            data[0], data[1] = pb.digitizer_at_exit()
                             break
 
                         if conn.poll() == True:
                             self.command = conn.recv()
 
                     pb.pulser_pulse_reset()
-                    #if increment == 1:
-                    pb.awg_pulse_reset()
+                    awg.awg_pulse_reset()
 
                 self.command = 'exit'
 
             if self.command == 'exit':
-                tb = round( pb.digitizer_window(), 1)
-                pb.pulser_close()
+                tb = round( dig.digitizer_window(), 1)
+                dig.digitizer_stop()
+                dig.digitizer_close()
+                awg.awg_stop()
+                awg.awg_close()
+                pb.pulser_stop()
 
                 if iq_cor == 0:
                     if step != 1:
@@ -4238,7 +4249,7 @@ class Worker():
                             text = f"Scan / Time: {k} / {j * STEP:.1f}"
                         )
                 elif iq_cor == 1:
-                    data_x, data_y = pb.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                    data_x, data_y = dig.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
                     if step != 1:
                         general.plot_1d(EXP_NAME, x_axis_plot, ( data_x, data_y ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Time: ' + str(k) + ' / ' + str(round(j*STEP, 1)))
                     else:
@@ -4253,24 +4264,25 @@ class Worker():
                     f"{'Date:':<{w}} {now}\n"
                     f"{'Experiment:':<{w}} Pulsed EPR AWG Experiment\n"
                     f"{'Field:':<{w}} {FIELD} G\n"
-                    f"{general.fmt(mw.mw_bridge_rotary_vane(), w)}\n"
                     f"{general.fmt(mw.mw_bridge_att_prm(), w)}\n"
-                    f"{general.fmt(mw.mw_bridge_att2_prm(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_att1_prd(), w)}\n"
                     f"{general.fmt(mw.mw_bridge_att2_prd(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_fv_ctrl(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_fv_prm(), w)}\n"
                     f"{general.fmt(mw.mw_bridge_synthesizer(), w)}\n"
                     f"{'Repetition Rate:':<{w}} {pb.pulser_repetition_rate()}\n"
                     f"{'Number of Scans:':<{w}} {SCANS}\n"
                     f"{'Averages:':<{w}} {AVERAGES}\n"
                     f"{'Points:':<{w}} {POINTS}\n"
                     f"{'Window:':<{w}} {p1_exp[2]}\n"
-                    f"{'Horizontal Resolution:':<{w}} {0.4 * DEC_COEF:.1f} ns\n"
+                    f"{'Horizontal Resolution:':<{w}} {t_res:.1f} ns\n"
                     f"{'Vertical Resolution:':<{w}} {STEP} ns\n"
-                    f"{'Temperature:':<{w}} {ls335.tc_temperature('A')} K\n"
-                    f"{'Temperature Cernox:':<{w}} {ls335.tc_temperature('B')} K\n"
+                    f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
+                    f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
                     f"{'-'*50}\n"
                     f"Pulse List:\n{pb.pulser_pulse_list()}"
                     f"{'-'*50}\n"
-                    f"AWG Pulse List:\n{pb.awg_pulse_list()}"
+                    f"AWG Pulse List:\n{awg.awg_pulse_list()}"
                     f"{'-'*50}\n"
                     f"2D Data"
                 )
@@ -4280,10 +4292,11 @@ class Worker():
                         f"{'Date:':<{w}} {now}\n"
                         f"{'Experiment:':<{w}} Pulsed EPR AWG Experiment\n"
                         f"{'Field:':<{w}} {FIELD} G\n"
-                        f"{general.fmt(mw.mw_bridge_rotary_vane(), w)}\n"
                         f"{general.fmt(mw.mw_bridge_att_prm(), w)}\n"
-                        f"{general.fmt(mw.mw_bridge_att2_prm(), w)}\n"
+                        f"{general.fmt(mw.mw_bridge_att1_prd(), w)}\n"
                         f"{general.fmt(mw.mw_bridge_att2_prd(), w)}\n"
+                        f"{general.fmt(mw.mw_bridge_fv_ctrl(), w)}\n"
+                        f"{general.fmt(mw.mw_bridge_fv_prm(), w)}\n"
                         f"{general.fmt(mw.mw_bridge_synthesizer(), w)}\n"
                         f"{'Repetition Rate:':<{w}} {pb.pulser_repetition_rate()}\n"
                         f"{'Number of Scans:':<{w}} {SCANS}\n"
@@ -4291,12 +4304,12 @@ class Worker():
                         f"{'Points:':<{w}} {POINTS}\n"
                         f"{'Window:':<{w}} {tb} ns\n"
                         f"{'Horizontal Resolution:':<{w}} {STEP} ns\n"
-                        f"{'Temperature:':<{w}} {ls335.tc_temperature('A')} K\n"
-                        f"{'Temperature Cernox:':<{w}} {ls335.tc_temperature('B')} K\n"
+                        f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
+                        f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
                         f"{'-'*50}\n"
                         f"Pulse List:\n{pb.pulser_pulse_list()}"
                         f"{'-'*50}\n"
-                        f"AWG Pulse List:\n{pb.awg_pulse_list()}"
+                        f"AWG Pulse List:\n{awg.awg_pulse_list()}"
                         f"{'-'*50}\n"
                         f"Time (ns), I (A.U.), Q (A.U.)"
                     )
@@ -4397,21 +4410,25 @@ class Worker():
             import atomize.general_modules.general_functions as general
             if script_test:
                 general.test_flag = 'test'
-            import atomize.device_modules.Insys_FPGA as pb_pro
-            import atomize.device_modules.Lakeshore_335 as ls
+            import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
+            import atomize.device_modules.Spectrum_M4I_6631_X8 as spectrum_awg
+            import atomize.device_modules.PB_ESR_500_pro as pb_pro
+            import atomize.device_modules.SR_PTC_10 as ls
             import atomize.device_modules.BH_15 as bh
-            import atomize.device_modules.Micran_X_band_MW_bridge_v2 as mwBridge
+            import atomize.device_modules.Mikran_X_band_MW_bridge as mwBridge
             import atomize.general_modules.csv_opener_saver as openfile
 
             file_handler = openfile.Saver_Opener()
-            pb = pb_pro.Insys_FPGA()
+            pb = pb_pro.PB_ESR_500_Pro()
+            dig = spectrum.Spectrum_M4I_4450_X8()
+            awg = spectrum_awg.Spectrum_M4I_6631_X8()
             bh15 = bh.BH_15()
-            ls335 = ls.Lakeshore_335()
-            mw = mwBridge.Micran_X_band_MW_bridge_v2()
+            ptc = ls.SR_PTC_10()
+            mw = mwBridge.Mikran_X_band_MW_bridge()
 
             iq_cor = iq_corr
-            pb.win_left = win_left
-            pb.win_right = win_right
+            dig.win_left = win_left
+            dig.win_right = win_right
             zp = zero_phase
 
             #p1_exp DETECTION
@@ -4453,12 +4470,22 @@ class Worker():
                 conn.send( ('Message', 'No START or LENGTH increment; the time axis corresponds to the number of points in the experiment') )
                 general.plot_remove(exp_name)
 
-            pb.phase_shift_ch1_seq_mode_awg = iq_phase
+            awg.phase_shift_ch1_seq_mode = iq_phase
 
             # correction from file
-            self._apply_awg_correction(pb, correction)
+            self._apply_awg_correction(awg, correction)
 
-            pb.awg_amplitude('CH0', str(ch0_ampl), 'CH1', str(ch1_ampl) )
+            # AWG channel + clock configuration (NIOCH Spectrum M4I-6631)
+            awg.awg_channel('CH0', 'CH1')
+            awg.awg_card_mode('Single Joined')
+            awg.awg_clock_mode('External')
+            awg.awg_reference_clock(100)
+            awg.awg_sample_rate(1000)
+            awg.awg_amplitude('CH0', str(ch0_ampl), 'CH1', str(ch1_ampl) )
+
+            # Master AWG-card trigger: one TRIGGER_AWG for the whole sequence;
+            # each AWG pulse is gated by its own 'AWG' channel marker.
+            pb.pulser_pulse(name='P0', channel='TRIGGER_AWG', start='0 ns', length='30 ns')
 
             POINTS = points
             STEP = step
@@ -4530,7 +4557,7 @@ class Worker():
                             'length': ap[3],
                             'sigma': ap[4],
                             'start': ap[5],
-                            'amplitude': ap[6],
+                            'd_coef': ap[6],
                             'phase_list': ap[7],
                             'length_increment': ap[9]
                         }
@@ -4538,12 +4565,12 @@ class Worker():
                         if is_complex:
                             awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
 
-                        pb.awg_pulse(**awg_kwargs)
+                        awg.awg_pulse(**awg_kwargs)
 
                         if ap[0] != 'BLANK':
                             pb.pulser_pulse(
                                 name=f'P{2*i + 3}',
-                                channel='TRIGGER_AWG',
+                                channel='AWG',
                                 start=tp[0],
                                 length=tp[1],
                                 delta_start=tp[2],
@@ -4595,7 +4622,7 @@ class Worker():
                             'length': ap[3],
                             'sigma': ap[4],
                             'start': ap[5],
-                            'amplitude': ap[6],
+                            'd_coef': ap[6],
                             'phase_list': ap[7],
                             'length_increment': ap[9]
                         }
@@ -4603,12 +4630,12 @@ class Worker():
                         if is_complex:
                             awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
 
-                        pb.awg_pulse(**awg_kwargs)
+                        awg.awg_pulse(**awg_kwargs)
 
                         if ap[0] != 'BLANK':
                             pb.pulser_pulse(
                                 name=f'P{2*i + 3}',
-                                channel='TRIGGER_AWG',
+                                channel='AWG',
                                 start=tp[0],
                                 length=tp[1],
                                 delta_start=tp[2],
@@ -4630,7 +4657,7 @@ class Worker():
             pb.pulser_open()
             pb.digitizer_number_of_averages(AVERAGES)
 
-            dec_calc = 0.4 * DEC_COEF / 1e9
+            dec_calc = t_res / 1e9
             step_ns = STEP / 1e9
 
             x_axis = f_delay + np.linspace(0, (POINTS - 1)*STEP, num = POINTS)
@@ -4674,8 +4701,8 @@ class Worker():
 
                 for k in _scan_iter():
 
-                    sp = ls335.tc_setpoint()
-                    ct = ls335.tc_temperature('B')
+                    sp = ptc.tc_setpoint('Heater')
+                    ct = ptc.tc_temperature('3A')
 
                     if np.abs(sp - ct) > 0.8:
                         general.wait('8000 ms')
@@ -4727,7 +4754,7 @@ class Worker():
                                                 pr = process
                                             )
                                     elif iq_cor == 1:
-                                        data_x, data_y = pb.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                                        data_x, data_y = dig.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
                                         if step != 1:
                                             general.plot_1d(EXP_NAME, x_axis_plot, ( data_x, data_y ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = f'Cycle {cycle + 1}/{CYCLES} Scan {k}')
                                         else:
@@ -4795,7 +4822,7 @@ class Worker():
                         else:
                             general.plot_2d(EXP_NAME, data, start_step = ((0, dec_calc), (0, 1)), xname = 'Time', xscale = 's', yname = 'Point', yscale = '', zname = 'Intensity', zscale = 'mV', text = f"ESEEM average over {completed_cycles} cycle(s)")
                     elif iq_cor == 1:
-                        rdx, rdy = pb.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                        rdx, rdy = dig.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
                         if step != 1:
                             general.plot_1d(EXP_NAME, x_axis_plot, ( rdx, rdy ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = f"ESEEM average over {completed_cycles} cycle(s)")
                         else:
@@ -4808,8 +4835,12 @@ class Worker():
             # answer as-is (this is the bug fix: no software division/re-average).
 
             if self.command == 'exit':
-                tb = round( pb.digitizer_window(), 1)
-                pb.pulser_close()
+                tb = round( dig.digitizer_window(), 1)
+                dig.digitizer_stop()
+                dig.digitizer_close()
+                awg.awg_stop()
+                awg.awg_close()
+                pb.pulser_stop()
 
                 if iq_cor == 0:
                     if step != 1:
@@ -4839,7 +4870,7 @@ class Worker():
                             text = f"ESEEM average over {completed_cycles} cycle(s)"
                         )
                 elif iq_cor == 1:
-                    data_x, data_y = pb.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                    data_x, data_y = dig.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
                     if step != 1:
                         general.plot_1d(EXP_NAME, x_axis_plot, ( data_x, data_y ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = f"ESEEM average over {completed_cycles} cycle(s)")
                     else:
@@ -4860,10 +4891,11 @@ class Worker():
                     f"{'Date:':<{w}} {now}\n"
                     f"{'Experiment:':<{w}} Pulsed EPR AWG ESEEM-Averaged Experiment\n"
                     f"{'Field:':<{w}} {FIELD} G\n"
-                    f"{general.fmt(mw.mw_bridge_rotary_vane(), w)}\n"
                     f"{general.fmt(mw.mw_bridge_att_prm(), w)}\n"
-                    f"{general.fmt(mw.mw_bridge_att2_prm(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_att1_prd(), w)}\n"
                     f"{general.fmt(mw.mw_bridge_att2_prd(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_fv_ctrl(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_fv_prm(), w)}\n"
                     f"{general.fmt(mw.mw_bridge_synthesizer(), w)}\n"
                     f"{'Repetition Rate:':<{w}} {pb.pulser_repetition_rate()}\n"
                     f"{'Number of Scans:':<{w}} {SCANS}\n"
@@ -4872,14 +4904,14 @@ class Worker():
                     f"{'Averages:':<{w}} {AVERAGES}\n"
                     f"{'Points:':<{w}} {POINTS}\n"
                     f"{'Window:':<{w}} {p1_exp[2]}\n"
-                    f"{'Horizontal Resolution:':<{w}} {0.4 * DEC_COEF:.1f} ns\n"
+                    f"{'Horizontal Resolution:':<{w}} {t_res:.1f} ns\n"
                     f"{'Vertical Resolution:':<{w}} {STEP} ns\n"
-                    f"{'Temperature:':<{w}} {ls335.tc_temperature('A')} K\n"
-                    f"{'Temperature Cernox:':<{w}} {ls335.tc_temperature('B')} K\n"
+                    f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
+                    f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
                     f"{'-'*50}\n"
                     f"Pulse List:\n{pb.pulser_pulse_list()}"
                     f"{'-'*50}\n"
-                    f"AWG Pulse List:\n{pb.awg_pulse_list()}"
+                    f"AWG Pulse List:\n{awg.awg_pulse_list()}"
                     f"{'-'*50}\n"
                     f"2D Data"
                 )
@@ -4889,10 +4921,11 @@ class Worker():
                         f"{'Date:':<{w}} {now}\n"
                         f"{'Experiment:':<{w}} Pulsed EPR AWG ESEEM-Averaged Experiment\n"
                         f"{'Field:':<{w}} {FIELD} G\n"
-                        f"{general.fmt(mw.mw_bridge_rotary_vane(), w)}\n"
                         f"{general.fmt(mw.mw_bridge_att_prm(), w)}\n"
-                        f"{general.fmt(mw.mw_bridge_att2_prm(), w)}\n"
+                        f"{general.fmt(mw.mw_bridge_att1_prd(), w)}\n"
                         f"{general.fmt(mw.mw_bridge_att2_prd(), w)}\n"
+                        f"{general.fmt(mw.mw_bridge_fv_ctrl(), w)}\n"
+                        f"{general.fmt(mw.mw_bridge_fv_prm(), w)}\n"
                         f"{general.fmt(mw.mw_bridge_synthesizer(), w)}\n"
                         f"{'Repetition Rate:':<{w}} {pb.pulser_repetition_rate()}\n"
                         f"{'Number of Scans:':<{w}} {SCANS}\n"
@@ -4902,12 +4935,12 @@ class Worker():
                         f"{'Points:':<{w}} {POINTS}\n"
                         f"{'Window:':<{w}} {tb} ns\n"
                         f"{'Horizontal Resolution:':<{w}} {STEP} ns\n"
-                        f"{'Temperature:':<{w}} {ls335.tc_temperature('A')} K\n"
-                        f"{'Temperature Cernox:':<{w}} {ls335.tc_temperature('B')} K\n"
+                        f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
+                        f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
                         f"{'-'*50}\n"
                         f"Pulse List:\n{pb.pulser_pulse_list()}"
                         f"{'-'*50}\n"
-                        f"AWG Pulse List:\n{pb.awg_pulse_list()}"
+                        f"AWG Pulse List:\n{awg.awg_pulse_list()}"
                         f"{'-'*50}\n"
                         f"Time (ns), I (A.U.), Q (A.U.)"
                     )
@@ -4969,7 +5002,7 @@ class Worker():
                             if iq_cor == 0:
                                 file_handler.save_data(cpath, cdat, header = header, mode = 'w')
                             elif iq_cor == 1:
-                                cdx, cdy = pb.digitizer_iq(cdat[0], cdat[1], iq_freq, zp, first_order, sec_order, integral = True)
+                                cdx, cdy = dig.digitizer_iq(cdat[0], cdat[1], iq_freq, zp, first_order, sec_order, integral = True)
                                 file_handler.save_data(cpath, np.c_[x_axis, cdx, cdy], header = header2, mode = 'w')
 
                     conn.send( ('', f'Experiment {EXP_NAME} finished') )
@@ -5001,29 +5034,43 @@ class Worker():
             import atomize.general_modules.general_functions as general
             if script_test:
                 general.test_flag = 'test'
-            import atomize.device_modules.Insys_FPGA as pb_pro
-            import atomize.device_modules.Lakeshore_335 as ls
+            import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
+            import atomize.device_modules.Spectrum_M4I_6631_X8 as spectrum_awg
+            import atomize.device_modules.PB_ESR_500_pro as pb_pro
+            import atomize.device_modules.SR_PTC_10 as ls
             import atomize.device_modules.BH_15 as bh
-            import atomize.device_modules.Micran_X_band_MW_bridge_v2 as mwBridge
+            import atomize.device_modules.Mikran_X_band_MW_bridge as mwBridge
             import atomize.general_modules.csv_opener_saver as openfile
 
             file_handler = openfile.Saver_Opener()
-            pb = pb_pro.Insys_FPGA()
+            pb = pb_pro.PB_ESR_500_Pro()
+            dig = spectrum.Spectrum_M4I_4450_X8()
+            awg = spectrum_awg.Spectrum_M4I_6631_X8()
             bh15 = bh.BH_15()
-            ls335 = ls.Lakeshore_335()
-            mw = mwBridge.Micran_X_band_MW_bridge_v2()
+            ptc = ls.SR_PTC_10()
+            mw = mwBridge.Mikran_X_band_MW_bridge()
 
             iq_cor = iq_corr
-            pb.win_left = win_left
-            pb.win_right = win_right
+            dig.win_left = win_left
+            dig.win_right = win_right
             zp = zero_phase
 
-            pb.phase_shift_ch1_seq_mode_awg = iq_phase
+            awg.phase_shift_ch1_seq_mode = iq_phase
 
             # correction from file
-            self._apply_awg_correction(pb, correction)
+            self._apply_awg_correction(awg, correction)
             
-            pb.awg_amplitude('CH0', str(ch0_ampl), 'CH1', str(ch1_ampl) )
+            # AWG channel + clock configuration (NIOCH Spectrum M4I-6631)
+            awg.awg_channel('CH0', 'CH1')
+            awg.awg_card_mode('Single Joined')
+            awg.awg_clock_mode('External')
+            awg.awg_reference_clock(100)
+            awg.awg_sample_rate(1000)
+            awg.awg_amplitude('CH0', str(ch0_ampl), 'CH1', str(ch1_ampl) )
+
+            # Master AWG-card trigger: one TRIGGER_AWG for the whole sequence;
+            # each AWG pulse is gated by its own 'AWG' channel marker.
+            pb.pulser_pulse(name='P0', channel='TRIGGER_AWG', start='0 ns', length='30 ns')
             
             START_FIELD = start_field
             END_FIELD = end_field
@@ -5074,7 +5121,7 @@ class Worker():
                             'length': ap[3],
                             'sigma': ap[4],
                             'start': ap[5],
-                            'amplitude': ap[6],
+                            'd_coef': ap[6],
                             'phase_list': ap[7],
                             'length_increment': ap[9]
                         }
@@ -5082,12 +5129,12 @@ class Worker():
                         if is_complex:
                             awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
 
-                        pb.awg_pulse(**awg_kwargs)
+                        awg.awg_pulse(**awg_kwargs)
 
                         if ap[0] != 'BLANK':
                             pb.pulser_pulse(
                                 name=f'P{2*i + 3}',
-                                channel='TRIGGER_AWG',
+                                channel='AWG',
                                 start=tp[0],
                                 length=tp[1],
                                 delta_start=tp[2],
@@ -5137,7 +5184,7 @@ class Worker():
                             'length': ap[3],
                             'sigma': ap[4],
                             'start': ap[5],
-                            'amplitude': ap[6],
+                            'd_coef': ap[6],
                             'phase_list': ap[7],
                             'length_increment': ap[9]
                         }
@@ -5145,12 +5192,12 @@ class Worker():
                         if is_complex:
                             awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
 
-                        pb.awg_pulse(**awg_kwargs)
+                        awg.awg_pulse(**awg_kwargs)
 
                         if ap[0] != 'BLANK':
                             pb.pulser_pulse(
                                 name=f'P{2*i + 3}',
-                                channel='TRIGGER_AWG',
+                                channel='AWG',
                                 start=tp[0],
                                 length=tp[1],
                                 delta_start=tp[2],
@@ -5173,7 +5220,7 @@ class Worker():
 
             POINTS = int( (END_FIELD - START_FIELD) / FIELD_STEP ) + 1
             data = np.zeros( ( 2, points_window, POINTS ) )
-            dec_calc = 0.4 * DEC_COEF / 1e9
+            dec_calc = t_res / 1e9
 
             x_axis = np.linspace(START_FIELD, END_FIELD, num = POINTS)
             a = 0
@@ -5194,8 +5241,8 @@ class Worker():
                     field = START_FIELD
                     bh15.magnet_field(field)
 
-                    sp = ls335.tc_setpoint()
-                    ct = ls335.tc_temperature('B')
+                    sp = ptc.tc_setpoint('Heater')
+                    ct = ptc.tc_temperature('3A')
 
                     if np.abs(sp - ct) > 0.8:
                         general.wait('8000 ms')
@@ -5226,7 +5273,7 @@ class Worker():
                                             pr = process
                                         )
                                     elif iq_cor == 1:
-                                        data_x, data_y = pb.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                                        data_x, data_y = dig.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
                                         process = general.plot_1d(EXP_NAME, x_axis, ( data_x, data_y ), xname = 'Field', xscale = 'G', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Field: ' + str(k) + ' / ' + str(field), pr = process)
 
                             pb.awg_next_phase()
@@ -5272,8 +5319,12 @@ class Worker():
                 self.command = 'exit'
 
             if self.command == 'exit':
-                tb = round( pb.digitizer_window(), 1)
-                pb.pulser_close()
+                tb = round( dig.digitizer_window(), 1)
+                dig.digitizer_stop()
+                dig.digitizer_close()
+                awg.awg_stop()
+                awg.awg_close()
+                pb.pulser_stop()
 
                 if iq_cor == 0:
                     general.plot_2d(
@@ -5289,7 +5340,7 @@ class Worker():
                         text = f"Scan / Field: {k} / {field}"
                         )
                 elif iq_cor == 1:
-                    data_x, data_y = pb.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                    data_x, data_y = dig.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
                     general.plot_1d(EXP_NAME, x_axis, ( data_x, data_y ), xname = 'Field', xscale = 'G', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Field: ' + str(k) + ' / ' + str(field))
 
                 now = datetime.datetime.now().strftime("%d-%m-%Y %H-%M-%S")
@@ -5302,24 +5353,25 @@ class Worker():
                     f"{'Start Field:':<{w}} {START_FIELD} G\n"
                     f"{'End Field:':<{w}} {END_FIELD} G\n"
                     f"{'Field Step:':<{w}} {FIELD_STEP} G\n"
-                    f"{general.fmt(mw.mw_bridge_rotary_vane(), w)}\n"
                     f"{general.fmt(mw.mw_bridge_att_prm(), w)}\n"
-                    f"{general.fmt(mw.mw_bridge_att2_prm(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_att1_prd(), w)}\n"
                     f"{general.fmt(mw.mw_bridge_att2_prd(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_fv_ctrl(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_fv_prm(), w)}\n"
                     f"{general.fmt(mw.mw_bridge_synthesizer(), w)}\n"
                     f"{'Repetition Rate:':<{w}} {pb.pulser_repetition_rate()}\n"
                     f"{'Number of Scans:':<{w}} {SCANS}\n"
                     f"{'Averages:':<{w}} {AVERAGES}\n"
                     f"{'Points:':<{w}} {POINTS}\n"
                     f"{'Window:':<{w}} {p1_exp[2]}\n"
-                    f"{'Horizontal Resolution:':<{w}} {0.4 * DEC_COEF:.1f} ns\n"
+                    f"{'Horizontal Resolution:':<{w}} {t_res:.1f} ns\n"
                     f"{'Vertical Resolution:':<{w}} {FIELD_STEP} G\n"
-                    f"{'Temperature:':<{w}} {ls335.tc_temperature('A')} K\n"
-                    f"{'Temperature Cernox:':<{w}} {ls335.tc_temperature('B')} K\n"
+                    f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
+                    f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
                     f"{'-'*50}\n"
                     f"Pulse List:\n{pb.pulser_pulse_list()}"
                     f"{'-'*50}\n"
-                    f"AWG Pulse List:\n{pb.awg_pulse_list()}"
+                    f"AWG Pulse List:\n{awg.awg_pulse_list()}"
                     f"{'-'*50}\n"
                     f"2D Data"
                 )
@@ -5330,21 +5382,22 @@ class Worker():
                         f"{'Start Field:':<{w}} {START_FIELD} G\n"
                         f"{'End Field:':<{w}} {END_FIELD} G\n"
                         f"{'Field Step:':<{w}} {FIELD_STEP} G\n"
-                        f"{general.fmt(mw.mw_bridge_rotary_vane(), w)}\n"
                         f"{general.fmt(mw.mw_bridge_att_prm(), w)}\n"
-                        f"{general.fmt(mw.mw_bridge_att2_prm(), w)}\n"
+                        f"{general.fmt(mw.mw_bridge_att1_prd(), w)}\n"
                         f"{general.fmt(mw.mw_bridge_att2_prd(), w)}\n"
+                        f"{general.fmt(mw.mw_bridge_fv_ctrl(), w)}\n"
+                        f"{general.fmt(mw.mw_bridge_fv_prm(), w)}\n"
                         f"{general.fmt(mw.mw_bridge_synthesizer(), w)}\n"
                         f"{'Repetition Rate:':<{w}} {pb.pulser_repetition_rate()}\n"
                         f"{'Number of Scans:':<{w}} {SCANS}\n"
                         f"{'Averages:':<{w}} {AVERAGES}\n"
                         f"{'Window:':<{w}} {tb} ns\n"
-                        f"{'Temperature:':<{w}} {ls335.tc_temperature('A')} K\n"
-                        f"{'Temperature Cernox:':<{w}} {ls335.tc_temperature('B')} K\n"
+                        f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
+                        f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
                         f"{'-'*50}\n"
                         f"Pulse List:\n{pb.pulser_pulse_list()}"
                         f"{'-'*50}\n"
-                        f"AWG Pulse List:\n{pb.awg_pulse_list()}"
+                        f"AWG Pulse List:\n{awg.awg_pulse_list()}"
                         f"{'-'*50}\n"
                         f"Field (G), I (A.U.), Q (A.U.)"
                     )
@@ -5419,7 +5472,7 @@ class Worker():
             if script_test:
                 general.test_flag = 'test'
             import atomize.device_modules.Insys_FPGA as pb_pro
-            import atomize.device_modules.Lakeshore_335 as ls
+            import atomize.device_modules.SR_PTC_10 as ls
             import atomize.device_modules.BH_15 as bh
             import atomize.device_modules.Micran_X_band_MW_bridge_v2 as mwBridge
             import atomize.general_modules.csv_opener_saver as openfile
@@ -5439,7 +5492,7 @@ class Worker():
             file_handler = openfile.Saver_Opener()
             pb = pb_pro.Insys_FPGA()
             bh15 = bh.BH_15()
-            ls335 = ls.Lakeshore_335()
+            ptc = ls.SR_PTC_10()
             mw = mwBridge.Micran_X_band_MW_bridge_v2()
 
             iq_cor = iq_corr
@@ -5447,12 +5500,22 @@ class Worker():
             pb.win_right = win_right
             zp = zero_phase
 
-            pb.phase_shift_ch1_seq_mode_awg = iq_phase
+            awg.phase_shift_ch1_seq_mode = iq_phase
 
             # correction from file
-            self._apply_awg_correction(pb, correction)
+            self._apply_awg_correction(awg, correction)
             
-            pb.awg_amplitude('CH0', str(ch0_ampl), 'CH1', str(ch1_ampl) )
+            # AWG channel + clock configuration (NIOCH Spectrum M4I-6631)
+            awg.awg_channel('CH0', 'CH1')
+            awg.awg_card_mode('Single Joined')
+            awg.awg_clock_mode('External')
+            awg.awg_reference_clock(100)
+            awg.awg_sample_rate(1000)
+            awg.awg_amplitude('CH0', str(ch0_ampl), 'CH1', str(ch1_ampl) )
+
+            # Master AWG-card trigger: one TRIGGER_AWG for the whole sequence;
+            # each AWG pulse is gated by its own 'AWG' channel marker.
+            pb.pulser_pulse(name='P0', channel='TRIGGER_AWG', start='0 ns', length='30 ns')
             
             FIELD = field
             AVERAGES = num_ave
@@ -5562,20 +5625,20 @@ class Worker():
                             'length': ap[3],
                             'sigma': ap[4],
                             'start': ap[5],
-                            'amplitude': ap[6],
+                            'd_coef': ap[6],
                             'phase_list': ap[7]
                         }
 
                         if is_complex:
                             awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
 
-                        pb.awg_pulse(**awg_kwargs)
+                        awg.awg_pulse(**awg_kwargs)
 
                         if ap[0] != 'BLANK':
                             name_list.append(f'P{2*i + 3}')
                             pb.pulser_pulse(
                                 name=f'P{2*i + 3}',
-                                channel='TRIGGER_AWG',
+                                channel='AWG',
                                 start=tp[0],
                                 length=tp[1],
                                 delta_start=f"{self.round_to_closest( nonlinear_time[0] * rel_shift[rs_idx], 3.2 )} ns"
@@ -5632,20 +5695,20 @@ class Worker():
                             'length': ap[3],
                             'sigma': ap[4],
                             'start': ap[5],
-                            'amplitude': ap[6],
+                            'd_coef': ap[6],
                             'phase_list': ap[7]
                         }
 
                         if is_complex:
                             awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
 
-                        pb.awg_pulse(**awg_kwargs)
+                        awg.awg_pulse(**awg_kwargs)
 
                         if ap[0] != 'BLANK':
                             name_list.append(f'P{2*i + 3}')
                             pb.pulser_pulse(
                                 name=f'P{2*i + 3}',
-                                channel='TRIGGER_AWG',
+                                channel='AWG',
                                 start=tp[0],
                                 length=tp[1],
                                 delta_start=f"{self.round_to_closest( nonlinear_time[0] * rel_shift[rs_idx], 3.2 )} ns"
@@ -5665,7 +5728,7 @@ class Worker():
             pb.pulser_open()
             pb.digitizer_number_of_averages(AVERAGES)
             data = np.zeros( ( 2, points_window, POINTS ) )
-            dec_calc = 0.4 * DEC_COEF / 1e9
+            dec_calc = t_res / 1e9
             x_axis_plot = x_axis / 1e9
             a = 0
 
@@ -5682,8 +5745,8 @@ class Worker():
 
                 for k in _scan_iter():
 
-                    sp = ls335.tc_setpoint()
-                    ct = ls335.tc_temperature('B')
+                    sp = ptc.tc_setpoint('Heater')
+                    ct = ptc.tc_temperature('3A')
 
                     if np.abs(sp - ct) > 0.8:
                         general.wait('8000 ms')
@@ -5709,7 +5772,7 @@ class Worker():
                                             text = f"Scan / Point: {k} / {j}"
                                         )
                                     elif iq_cor == 1:
-                                        data_x, data_y = pb.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                                        data_x, data_y = dig.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
                                         process = general.plot_1d(EXP_NAME, x_axis_plot, ( data_x, data_y ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Point: ' + str(k) + ' / ' + str(j), pr = process)
 
                             pb.awg_next_phase()
@@ -5755,8 +5818,12 @@ class Worker():
                 self.command = 'exit'
 
             if self.command == 'exit':
-                tb = round( pb.digitizer_window(), 1)
-                pb.pulser_close()
+                tb = round( dig.digitizer_window(), 1)
+                dig.digitizer_stop()
+                dig.digitizer_close()
+                awg.awg_stop()
+                awg.awg_close()
+                pb.pulser_stop()
 
                 if iq_cor == 0:
                     general.plot_2d(
@@ -5772,7 +5839,7 @@ class Worker():
                         text = f"Scan / Point: {k} / {j}"
                     )
                 elif iq_cor == 1:
-                    data_x, data_y = pb.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                    data_x, data_y = dig.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
                     general.plot_1d(EXP_NAME, x_axis_plot, ( data_x, data_y ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Point: ' + str(k) + ' / ' + str(j))
 
                 now = datetime.datetime.now().strftime("%d-%m-%Y %H-%M-%S")
@@ -5800,26 +5867,27 @@ class Worker():
                     f"{'Date:':<{w}} {now}\n"
                     f"{'Experiment:':<{w}} Pulsed EPR AWG Log Experiment\n"
                     f"{'Field:':<{w}} {FIELD} G\n"
-                    f"{general.fmt(mw.mw_bridge_rotary_vane(), w)}\n"
                     f"{general.fmt(mw.mw_bridge_att_prm(), w)}\n"
-                    f"{general.fmt(mw.mw_bridge_att2_prm(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_att1_prd(), w)}\n"
                     f"{general.fmt(mw.mw_bridge_att2_prd(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_fv_ctrl(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_fv_prm(), w)}\n"
                     f"{general.fmt(mw.mw_bridge_synthesizer(), w)}\n"
                     f"{'Repetition Rate:':<{w}} {pb.pulser_repetition_rate()}\n"
                     f"{'Number of Scans:':<{w}} {SCANS}\n"
                     f"{'Averages:':<{w}} {AVERAGES}\n"
                     f"{'Points:':<{w}} {POINTS}\n"
                     f"{'Window:':<{w}} {p1_exp[2]}\n"
-                    f"{'Horizontal Resolution:':<{w}} {0.4 * DEC_COEF:.1f} ns\n"
+                    f"{'Horizontal Resolution:':<{w}} {t_res:.1f} ns\n"
                     f"{'Vertical Resolution (ns):':<{w}} {v_res_formatted}\n"
                     f"{'Lg(X0/ns):':<{w}} {T_start}\n"
                     f"{'Lg(ΔX/ns):':<{w}} {T_end}\n"
-                    f"{'Temperature:':<{w}} {ls335.tc_temperature('A')} K\n"
-                    f"{'Temperature Cernox:':<{w}} {ls335.tc_temperature('B')} K\n"
+                    f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
+                    f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
                     f"{'-'*50}\n"
                     f"Pulse List:\n{pb.pulser_pulse_list()}"
                     f"{'-'*50}\n"
-                    f"AWG Pulse List:\n{pb.awg_pulse_list()}"
+                    f"AWG Pulse List:\n{awg.awg_pulse_list()}"
                     f"{'-'*50}\n"
                     f"2D Data"
                 )
@@ -5828,10 +5896,11 @@ class Worker():
                         f"{'Date:':<{w}} {now}\n"
                         f"{'Experiment:':<{w}} Pulsed EPR AWG Log Experiment\n"
                         f"{'Field:':<{w}} {FIELD} G\n"
-                        f"{general.fmt(mw.mw_bridge_rotary_vane(), w)}\n"
                         f"{general.fmt(mw.mw_bridge_att_prm(), w)}\n"
-                        f"{general.fmt(mw.mw_bridge_att2_prm(), w)}\n"
+                        f"{general.fmt(mw.mw_bridge_att1_prd(), w)}\n"
                         f"{general.fmt(mw.mw_bridge_att2_prd(), w)}\n"
+                        f"{general.fmt(mw.mw_bridge_fv_ctrl(), w)}\n"
+                        f"{general.fmt(mw.mw_bridge_fv_prm(), w)}\n"
                         f"{general.fmt(mw.mw_bridge_synthesizer(), w)}\n"
                         f"{'Repetition Rate:':<{w}} {pb.pulser_repetition_rate()}\n"
                         f"{'Number of Scans:':<{w}} {SCANS}\n"
@@ -5840,12 +5909,12 @@ class Worker():
                         f"{'Window:':<{w}} {tb} ns\n"
                         f"{'Lg(X0/ns):':<{w}} {T_start}\n"
                         f"{'Lg(ΔX/ns):':<{w}} {T_end}\n"
-                        f"{'Temperature:':<{w}} {ls335.tc_temperature('A')} K\n"
-                        f"{'Temperature Cernox:':<{w}} {ls335.tc_temperature('B')} K\n"
+                        f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
+                        f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
                         f"{'-'*50}\n"
                         f"Pulse List:\n{pb.pulser_pulse_list()}"
                         f"{'-'*50}\n"
-                        f"AWG Pulse List:\n{pb.awg_pulse_list()}"
+                        f"AWG Pulse List:\n{awg.awg_pulse_list()}"
                         f"{'-'*50}\n"
                         f"Time (ns), I (A.U.), Q (A.U.)"
                     )
@@ -5917,32 +5986,46 @@ class Worker():
             import atomize.general_modules.general_functions as general
             if script_test:
                 general.test_flag = 'test'
-            import atomize.device_modules.Insys_FPGA as pb_pro
-            import atomize.device_modules.Lakeshore_335 as ls
+            import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
+            import atomize.device_modules.Spectrum_M4I_6631_X8 as spectrum_awg
+            import atomize.device_modules.PB_ESR_500_pro as pb_pro
+            import atomize.device_modules.SR_PTC_10 as ls
             import atomize.device_modules.BH_15 as bh
-            import atomize.device_modules.Micran_X_band_MW_bridge_v2 as mwBridge
+            import atomize.device_modules.Mikran_X_band_MW_bridge as mwBridge
             import atomize.general_modules.csv_opener_saver as openfile
 
             file_handler = openfile.Saver_Opener()
-            pb = pb_pro.Insys_FPGA()
+            pb = pb_pro.PB_ESR_500_Pro()
+            dig = spectrum.Spectrum_M4I_4450_X8()
+            awg = spectrum_awg.Spectrum_M4I_6631_X8()
             bh15 = bh.BH_15()
-            ls335 = ls.Lakeshore_335()
-            mw = mwBridge.Micran_X_band_MW_bridge_v2()
+            ptc = ls.SR_PTC_10()
+            mw = mwBridge.Mikran_X_band_MW_bridge()
 
             iq_cor = iq_corr
-            pb.win_left = win_left
-            pb.win_right = win_right
+            dig.win_left = win_left
+            dig.win_right = win_right
             zp = zero_phase
 
             #p1_exp DETECTION
             iq_freq = -int( p1_exp[6].split(" MHz")[0] )
             
-            pb.phase_shift_ch1_seq_mode_awg = iq_phase
+            awg.phase_shift_ch1_seq_mode = iq_phase
 
             # correction from file
-            self._apply_awg_correction(pb, correction)
+            self._apply_awg_correction(awg, correction)
             
-            pb.awg_amplitude('CH0', str(ch0_ampl), 'CH1', str(ch1_ampl) )
+            # AWG channel + clock configuration (NIOCH Spectrum M4I-6631)
+            awg.awg_channel('CH0', 'CH1')
+            awg.awg_card_mode('Single Joined')
+            awg.awg_clock_mode('External')
+            awg.awg_reference_clock(100)
+            awg.awg_sample_rate(1000)
+            awg.awg_amplitude('CH0', str(ch0_ampl), 'CH1', str(ch1_ampl) )
+
+            # Master AWG-card trigger: one TRIGGER_AWG for the whole sequence;
+            # each AWG pulse is gated by its own 'AWG' channel marker.
+            pb.pulser_pulse(name='P0', channel='TRIGGER_AWG', start='0 ns', length='30 ns')
             
             POINTS = points
             STEP = step_ampl
@@ -6000,7 +6083,7 @@ class Worker():
                             'length': ap[3],
                             'sigma': ap[4],
                             'start': ap[5],
-                            'amplitude': ap[6],
+                            'd_coef': ap[6],
                             'phase_list': ap[7],
                             'length_increment': ap[9]
                         }
@@ -6008,12 +6091,12 @@ class Worker():
                         if is_complex:
                             awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
                             
-                        pb.awg_pulse(**awg_kwargs)
+                        awg.awg_pulse(**awg_kwargs)
 
                         if ap[0] != 'BLANK':
                             pb.pulser_pulse(
                                 name=f'P{2*i + 3}',
-                                channel='TRIGGER_AWG', 
+                                channel='AWG',
                                 start=tp[0], 
                                 length=tp[1], 
                                 delta_start=tp[2], 
@@ -6065,7 +6148,7 @@ class Worker():
                             'length': ap[3],
                             'sigma': ap[4],
                             'start': ap[5],
-                            'amplitude': ap[6],
+                            'd_coef': ap[6],
                             'phase_list': ap[7],
                             'length_increment': ap[9]
                         }
@@ -6073,12 +6156,12 @@ class Worker():
                         if is_complex:
                             awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
                             
-                        pb.awg_pulse(**awg_kwargs)
+                        awg.awg_pulse(**awg_kwargs)
 
                         if ap[0] != 'BLANK':
                             pb.pulser_pulse(
                                 name=f'P{2*i + 3}',
-                                channel='TRIGGER_AWG', 
+                                channel='AWG',
                                 start=tp[0], 
                                 length=tp[1], 
                                 delta_start=tp[2], 
@@ -6110,7 +6193,7 @@ class Worker():
             pb.digitizer_number_of_averages(AVERAGES)
 
             data = np.zeros( ( 2, points_window, POINTS ) )
-            dec_calc = 0.4 * DEC_COEF / 1e9
+            dec_calc = t_res / 1e9
 
             x_axis = f_delay + np.linspace(0, (POINTS - 1)*STEP, num = POINTS)
             x_axis_plot = x_axis
@@ -6129,8 +6212,8 @@ class Worker():
 
                 for k in _scan_iter():
 
-                    sp = ls335.tc_setpoint()
-                    ct = ls335.tc_temperature('B')
+                    sp = ptc.tc_setpoint('Heater')
+                    ct = ptc.tc_temperature('3A')
 
                     if np.abs(sp - ct) > 0.8:
                         general.wait('8000 ms')
@@ -6173,7 +6256,7 @@ class Worker():
                                                 pr = process
                                             )
                                     elif iq_cor == 1:
-                                        data_x, data_y = pb.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                                        data_x, data_y = dig.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
                                         if point_flag != 1:
                                             general.plot_1d(EXP_NAME, x_axis_plot, ( data_x, data_y ), xname = 'Amplitude', xscale = '%', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Amplitude: ' + str(k) + ' / ' + str(round(f_delay + j * STEP, 1)))
                                         else:
@@ -6219,8 +6302,12 @@ class Worker():
                 self.command = 'exit'
 
             if self.command == 'exit':
-                tb = round( pb.digitizer_window(), 1)
-                pb.pulser_close()
+                tb = round( dig.digitizer_window(), 1)
+                dig.digitizer_stop()
+                dig.digitizer_close()
+                awg.awg_stop()
+                awg.awg_close()
+                pb.pulser_stop()
 
                 if iq_cor == 0:
                     if point_flag != 1:
@@ -6252,7 +6339,7 @@ class Worker():
                             pr = process
                         )
                 elif iq_cor == 1:
-                    data_x, data_y = pb.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                    data_x, data_y = dig.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
                     if point_flag != 1:
                         general.plot_1d(EXP_NAME, x_axis_plot, ( data_x, data_y ), xname = 'Amplitude', xscale = '%', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Amplitude: ' + str(k) + ' / ' + str(round(f_delay + j * STEP, 1)))
                     else:
@@ -6267,25 +6354,26 @@ class Worker():
                     f"{'Date:':<{w}} {now}\n"
                     f"{'Experiment:':<{w}} Pulsed EPR AWG Experiment\n"
                     f"{'Field:':<{w}} {FIELD} G\n"
-                    f"{general.fmt(mw.mw_bridge_rotary_vane(), w)}\n"
                     f"{general.fmt(mw.mw_bridge_att_prm(), w)}\n"
-                    f"{general.fmt(mw.mw_bridge_att2_prm(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_att1_prd(), w)}\n"
                     f"{general.fmt(mw.mw_bridge_att2_prd(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_fv_ctrl(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_fv_prm(), w)}\n"
                     f"{general.fmt(mw.mw_bridge_synthesizer(), w)}\n"
                     f"{'Repetition Rate:':<{w}} {pb.pulser_repetition_rate()}\n"
                     f"{'Number of Scans:':<{w}} {SCANS}\n"
                     f"{'Averages:':<{w}} {AVERAGES}\n"
                     f"{'Points:':<{w}} {POINTS}\n"
                     f"{'Window:':<{w}} {p1_exp[2]}\n"
-                    f"{'Horizontal Resolution:':<{w}} {0.4 * DEC_COEF:.1f} ns\n"
+                    f"{'Horizontal Resolution:':<{w}} {t_res:.1f} ns\n"
                     f"{'Start Amplitude:':<{w}} {f_delay} %\n"
                     f"{'Vertical Resolution:':<{w}} {STEP} %\n"
-                    f"{'Temperature:':<{w}} {ls335.tc_temperature('A')} K\n"
-                    f"{'Temperature Cernox:':<{w}} {ls335.tc_temperature('B')} K\n"
+                    f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
+                    f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
                     f"{'-'*50}\n"
                     f"Pulse List:\n{pb.pulser_pulse_list()}"
                     f"{'-'*50}\n"
-                    f"AWG Pulse List:\n{pb.awg_pulse_list()}"
+                    f"AWG Pulse List:\n{awg.awg_pulse_list()}"
                     f"{'-'*50}\n"
                     f"2D Data"
                 )
@@ -6294,10 +6382,11 @@ class Worker():
                         f"{'Date:':<{w}} {now}\n"
                         f"{'Experiment:':<{w}} Pulsed EPR AWG Experiment\n"
                         f"{'Field:':<{w}} {FIELD} G\n"
-                        f"{general.fmt(mw.mw_bridge_rotary_vane(), w)}\n"
                         f"{general.fmt(mw.mw_bridge_att_prm(), w)}\n"
-                        f"{general.fmt(mw.mw_bridge_att2_prm(), w)}\n"
+                        f"{general.fmt(mw.mw_bridge_att1_prd(), w)}\n"
                         f"{general.fmt(mw.mw_bridge_att2_prd(), w)}\n"
+                        f"{general.fmt(mw.mw_bridge_fv_ctrl(), w)}\n"
+                        f"{general.fmt(mw.mw_bridge_fv_prm(), w)}\n"
                         f"{general.fmt(mw.mw_bridge_synthesizer(), w)}\n"
                         f"{'Repetition Rate:':<{w}} {pb.pulser_repetition_rate()}\n"
                         f"{'Number of Scans:':<{w}} {SCANS}\n"
@@ -6306,12 +6395,12 @@ class Worker():
                         f"{'Window:':<{w}} {tb} ns\n"
                         f"{'Start Amplitude:':<{w}} {f_delay} %\n"
                         f"{'Horizontal Resolution:':<{w}} {STEP} %\n"
-                        f"{'Temperature:':<{w}} {ls335.tc_temperature('A')} K\n"
-                        f"{'Temperature Cernox:':<{w}} {ls335.tc_temperature('B')} K\n"
+                        f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
+                        f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
                         f"{'-'*50}\n"
                         f"Pulse List:\n{pb.pulser_pulse_list()}"
                         f"{'-'*50}\n"
-                        f"AWG Pulse List:\n{pb.awg_pulse_list()}"
+                        f"AWG Pulse List:\n{awg.awg_pulse_list()}"
                         f"{'-'*50}\n"                        
                         f"Time (ns), I (A.U.), Q (A.U.)"
                     )

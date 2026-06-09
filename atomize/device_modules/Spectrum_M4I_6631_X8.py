@@ -9,6 +9,7 @@ from math import sin, pi, exp, log2
 from itertools import groupby, chain
 from copy import deepcopy
 import numpy as np
+import atomize.main.local_config as lconf
 import atomize.device_modules.config.config_utils as cutil
 import atomize.general_modules.general_functions as general
 
@@ -16,7 +17,7 @@ import atomize.general_modules.general_functions as general
 # (device, e.g. /dev/spcm0) are machine-specific and read from the device
 # config [SPECIFIC] section, so this module stays identical across installations.
 _spec_cfg = cutil.read_specific_parameters(
-    os.path.join( os.path.dirname(__file__), 'config', 'Spectrum_M4I_6631_X8_config.ini' ) )
+    os.path.join( lconf.load_config_device(), 'Spectrum_M4I_6631_X8_config.ini' ) )
 if _spec_cfg.get('header_dir'):
     sys.path.append( _spec_cfg['header_dir'] )
 
@@ -28,8 +29,8 @@ class Spectrum_M4I_6631_X8:
 
         #### Inizialization
         # setting path to *.ini file
-        self.path_current_directory = os.path.dirname(__file__)
-        self.path_config_file = os.path.join(self.path_current_directory, 'config', 'Spectrum_M4I_6631_X8_config.ini')
+        self.path_current_directory = lconf.load_config_device()
+        self.path_config_file = os.path.join(self.path_current_directory, 'Spectrum_M4I_6631_X8_config.ini')
 
         # configuration data
         #config = cutil.read_conf_util(self.path_config_file)

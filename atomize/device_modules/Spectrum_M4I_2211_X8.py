@@ -5,6 +5,7 @@ import os
 import sys
 import gc
 import numpy as np
+import atomize.main.local_config as lconf
 import atomize.device_modules.config.config_utils as cutil
 import atomize.general_modules.general_functions as general
 
@@ -12,7 +13,7 @@ import atomize.general_modules.general_functions as general
 # (device, e.g. /dev/spcm0) are machine-specific and read from the device
 # config [SPECIFIC] section, so this module stays identical across installations.
 _spec_cfg = cutil.read_specific_parameters(
-    os.path.join( os.path.dirname(__file__), 'config', 'Spectrum_M4I_2211_X8_config.ini' ) )
+    os.path.join( lconf.load_config_device(), 'Spectrum_M4I_2211_X8_config.ini' ) )
 if _spec_cfg.get('header_dir'):
     sys.path.append( _spec_cfg['header_dir'] )
 
@@ -23,8 +24,8 @@ class Spectrum_M4I_2211_X8:
     def __init__(self):
         #### Inizialization
         # setting path to *.ini file
-        self.path_current_directory = os.path.dirname(__file__)
-        self.path_config_file = os.path.join(self.path_current_directory, 'config', 'Spectrum_M4I_2211_X8_config.ini')
+        self.path_current_directory = lconf.load_config_device()
+        self.path_config_file = os.path.join(self.path_current_directory, 'Spectrum_M4I_2211_X8_config.ini')
 
         # configuration data
         #config = cutil.read_conf_util(self.path_config_file)
@@ -1392,6 +1393,52 @@ class Spectrum_M4I_2211_X8:
         Special function for reading integration window
         """
         return ( self.win_right - self.win_left ) * 1000 / self.sample_rate
+
+    def digitizer_iq(self, arr_i, arr_q, freq, ph, ph1, ph2, integral = False):
+        """
+        IQ demodulation + phase correction of the acquired data (ported from
+        Insys_FPGA.digitizer_iq, adapted to the NIOCH timebase: the sampling
+        frequency and time step come from self.sample_rate instead of the Insys
+        decimation coefficient).
+
+        arr_i / arr_q : in-phase / quadrature data (1D oscillogram or 2D
+                        points x delays); freq in MHz; ph/ph1/ph2 the zero/first/
+                        second order phase-correction coefficients.
+        Returns the demodulated (I, Q); with integral = True (2D input) returns
+        the windowed integral over [win_left:win_right] for each delay column.
+        """
+        if np.isnan(arr_i).any() or np.isnan(arr_q).any():
+            return arr_i, arr_q
+
+        signal = arr_i + 1j * arr_q
+        timeaxis = signal.shape[0]
+
+        fs = self.sample_rate * 1e6                 # sampling frequency, Hz
+        t = np.arange(timeaxis) / fs
+        f_offset = freq * 1e6
+
+        if (ph1 != 0.0) or (ph2 != 0.0):
+            correction = np.exp(-1j * (2 * np.pi * f_offset * t + ph + ph1 * t + ph2 * t**2) )
+        else:
+            correction = np.exp(-1j * (2 * np.pi * f_offset * t + ph) )
+
+        new_shape = (timeaxis,) + (1,) * (signal.ndim - 1)
+        corrected_signal = signal * correction.reshape(new_shape)
+
+        if not integral:
+            return corrected_signal.real, corrected_signal.imag
+        elif (integral) and len(signal.shape) == 2:
+
+            scale = 1000 / self.sample_rate         # ns per point
+            window = corrected_signal[self.win_left : self.win_right, :]
+
+            res_i = np.sum(window.real, axis=0) * scale
+            res_q = np.sum(window.imag, axis=0) * scale
+
+            return res_i, res_q
+
+        else:
+            raise ValueError("Incorrect dimension of the array")
 
     def digitizer_read_settings(self):
         """
