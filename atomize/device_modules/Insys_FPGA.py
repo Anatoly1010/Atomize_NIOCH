@@ -3,6 +3,7 @@
 
 import os
 import sys
+import re
 import math
 import time
 import ctypes
@@ -39,8 +40,8 @@ class Insys_FPGA:
     def __init__(self):
         #### Inizialization
         # setting path to *.ini file
-        self.path_current_directory = os.path.dirname(__file__)
-        self.path_config_file_pulser = os.path.join(self.path_current_directory, 'config', 'PB_Insys_pulser_config.ini')
+        self.path_current_directory = lconf.load_config_device()
+        self.path_config_file_pulser = os.path.join(self.path_current_directory, 'PB_Insys_pulser_config.ini')
 
         path_to_main_status = os.path.abspath( os.getcwd() )
         self.path_status_file = os.path.join(path_to_main_status, 'status')
@@ -2258,6 +2259,14 @@ class Insys_FPGA:
             self.win_right = 1 + int( text_from_file[7].split(' ')[2] )
 
             self.dec_coef = int( text_from_file[8].split(' ')[1] )
+
+            # phase corrections (worker units: rad, rad/s, rad/s^2). Guard for old
+            # param files written before these lines existed -> default to 0.0
+            self.zero_order, self.first_order, self.second_order = 0.0, 0.0, 0.0
+            if len( text_from_file ) > 9 and text_from_file[9].startswith('Zero order:'):
+                self.zero_order = float( text_from_file[9].split(' ')[2] )
+                self.first_order = float( text_from_file[10].split(' ')[2] )
+                self.second_order = float( text_from_file[11].split(' ')[2] )
             #self.digitizer_setup()
             return self.points
 
@@ -2297,6 +2306,14 @@ class Insys_FPGA:
             self.win_right = 1 + int( text_from_file[7].split(' ')[2] )
 
             self.dec_coef = int( text_from_file[8].split(' ')[1] )
+
+            # phase corrections (worker units: rad, rad/s, rad/s^2). Guard for old
+            # param files written before these lines existed -> default to 0.0
+            self.zero_order, self.first_order, self.second_order = 0.0, 0.0, 0.0
+            if len( text_from_file ) > 9 and text_from_file[9].startswith('Zero order:'):
+                self.zero_order = float( text_from_file[9].split(' ')[2] )
+                self.first_order = float( text_from_file[10].split(' ')[2] )
+                self.second_order = float( text_from_file[11].split(' ')[2] )
             return self.points
 
     def digitizer_sample_rate(self):
@@ -5923,7 +5940,17 @@ class Insys_FPGA:
     def number_adc_window_in_buffer(self):
         return int( self.nStrmBufSizeb_brd / ( self.adc_window * 64 + 32 ) )
 
-    def digitizer_iq(self, arr_i, arr_q, freq, ph, ph1, ph2, integral = False):
+    def digitizer_iq(self, arr_i, arr_q, freq, ph = None, ph1 = None, ph2 = None, integral = False):
+
+        # fall back to the phase corrections read from digitizer_insys.param by
+        # digitizer_read_settings() (worker units: rad, rad/s, rad/s^2) whenever a
+        # term is not passed explicitly; default 0.0 if read_settings was not run
+        if ph is None:
+            ph = getattr(self, 'zero_order', 0.0)
+        if ph1 is None:
+            ph1 = getattr(self, 'first_order', 0.0)
+        if ph2 is None:
+            ph2 = getattr(self, 'second_order', 0.0)
 
         if np.isnan(arr_i).any() or np.isnan(arr_q).any():
             return arr_i, arr_q

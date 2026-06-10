@@ -2566,6 +2566,9 @@ class MainWindow(QMainWindow):
                 self.timer.stop()
                 break
             except Exception as e:
+                # never swallow silently: surface the failure in the TextEdit
+                import traceback
+                self.errors.appendPlainText('GUI message-pump error:\n' + traceback.format_exc())
                 break
 
         if self.digitizer_process.is_alive() and not self.timer.isActive():
@@ -2580,14 +2583,28 @@ class MainWindow(QMainWindow):
 
             if getattr(self, 'is_testing', False):
                 self.is_testing = False
-                if not self.last_error:
-                    self.last_error = False 
+                exit_code = getattr(self.digitizer_process, 'exitcode', None)
+                # A clean preflight returns exitcode 0. If it died WITHOUT sending
+                # an 'Error' (hard crash in a ctypes device call, a kill, a non-zero
+                # sys.exit, a hang we just joined) last_error is still False but
+                # exitcode != 0 -- surface that instead of silently starting the
+                # real run, which would die the same way.
+                if (not self.last_error) and (exit_code in (0, None)):
+                    self.last_error = False
                     time.sleep(0.2)
                     if self.is_experiment == False:
                         self.run_main_experiment()
                     else:
                         self.run_experiment()
                 else:
+                    if not self.last_error:
+                        self.errors.appendPlainText(
+                            'Preflight process exited abnormally (exitcode ' + str(exit_code) +
+                            ') without reporting an error; experiment not started.')
+                        self.message('Preflight exited abnormally (exitcode ' + str(exit_code) + ')')
+                        self.button_blue()
+                        self.progress_bar.setValue(0)
+                        self.is_experiment = False
                     self.last_error = False
                     field_param.clear_lock()
             else:
@@ -3070,17 +3087,17 @@ class Worker():
                 general.test_flag = 'test'
             import atomize.device_modules.Spectrum_M4I_2211_X8 as spectrum
             import atomize.device_modules.PB_ESR_500_pro as pb_pro
-            import atomize.device_modules.SR_PTC_10 as ls
-            import atomize.device_modules.BH_15 as bh
-            import atomize.device_modules.Mikran_X_band_MW_bridge as mwBridge
+            # import atomize.device_modules.SR_PTC_10 as ls
+            # import atomize.device_modules.BH_15 as bh
+            # import atomize.device_modules.Micran_X_band_MW_bridge as mwBridge
             import atomize.general_modules.csv_opener_saver as openfile
 
             pb = pb_pro.PB_ESR_500_Pro()
             dig = spectrum.Spectrum_M4I_2211_X8()
             file_handler = openfile.Saver_Opener()
             #bh15 = bh.BH_15()
-            ptc = ls.SR_PTC_10()
-            mw = mwBridge.Mikran_X_band_MW_bridge()
+            # ptc = ls.SR_PTC_10()
+            # mw = mwBridge.Micran_X_band_MW_bridge()
 
             # integration window (point indices) for digitizer_get_curve(integral=True)
             dig.win_left = win_left
@@ -3214,6 +3231,11 @@ class Worker():
             x_axis_plot = x_axis / 1e9
             a = 0
 
+            # one phase-cycle buffer reused every point (all PHASES elements are
+            # overwritten each acquisition, so no need to re-allocate per point)
+            cyc_x = np.zeros( PHASES )
+            cyc_y = np.zeros( PHASES )
+
             def _scan_iter():
                 if script_test:
                     yield from general.scans(SCANS)
@@ -3226,11 +3248,11 @@ class Worker():
             while self.command != 'exit':
 
                 for k in _scan_iter():
-                    sp = ptc.tc_setpoint('Heater')
-                    ct = ptc.tc_temperature('3A')
+                    # sp = ptc.tc_setpoint('Heater')
+                    # ct = ptc.tc_temperature('3A')
 
-                    if np.abs(sp - ct) > 0.8:
-                        general.wait('8000 ms')
+                    # if np.abs(sp - ct) > 0.8:
+                        # general.wait('8000 ms')
 
                     if self.command == 'exit':
                         break
@@ -3238,8 +3260,6 @@ class Worker():
                     for j in range(POINTS):
                         # phase cycle for this tau point: one integral per phase,
                         # combined by the pulser, then averaged over scans (k)
-                        cyc_x = np.zeros( PHASES )
-                        cyc_y = np.zeros( PHASES )
                         for i in range(PHASES):
                             pb.pulser_next_phase()
                             cyc_x[i], cyc_y[i] = dig.digitizer_get_curve( integral = True )
@@ -3293,20 +3313,20 @@ class Worker():
                     f"{'Date:':<{w}} {now}\n"
                     f"{'Experiment:':<{w}} Pulsed EPR Experiment\n"
                     f"{'Field:':<{w}} {FIELD} G\n"
-                    f"{general.fmt(mw.mw_bridge_att_prm(), w)}\n"
-                    f"{general.fmt(mw.mw_bridge_att1_prd(), w)}\n"
-                    f"{general.fmt(mw.mw_bridge_att2_prd(), w)}\n"
-                    f"{general.fmt(mw.mw_bridge_fv_ctrl(), w)}\n"
-                    f"{general.fmt(mw.mw_bridge_fv_prm(), w)}\n"
-                    f"{general.fmt(mw.mw_bridge_synthesizer(), w)}\n"
+                    # f"{general.fmt(mw.mw_bridge_att_prm(), w)}\n"
+                    # f"{general.fmt(mw.mw_bridge_att1_prd(), w)}\n"
+                    # f"{general.fmt(mw.mw_bridge_att2_prd(), w)}\n"
+                    # f"{general.fmt(mw.mw_bridge_fv_ctrl(), w)}\n"
+                    # f"{general.fmt(mw.mw_bridge_fv_prm(), w)}\n"
+                    # f"{general.fmt(mw.mw_bridge_synthesizer(), w)}\n"
                     f"{'Repetition Rate:':<{w}} {pb.pulser_repetition_rate()}\n"
                     f"{'Number of Scans:':<{w}} {SCANS}\n"
                     f"{'Averages:':<{w}} {AVERAGES}\n"
                     f"{'Points:':<{w}} {POINTS}\n"
                     f"{'Window:':<{w}} {tb} ns\n"
                     f"{'Horizontal Resolution:':<{w}} {STEP} ns\n"
-                    f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
-                    f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
+                    # f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
+                    # f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
                     f"{'-'*50}\n"
                     f"Pulse List:\n{pb.pulser_pulse_list()}"
                     f"{'-'*50}\n"
@@ -3356,17 +3376,17 @@ class Worker():
                 general.test_flag = 'test'
             import atomize.device_modules.Spectrum_M4I_2211_X8 as spectrum
             import atomize.device_modules.PB_ESR_500_pro as pb_pro
-            import atomize.device_modules.SR_PTC_10 as ls
-            import atomize.device_modules.BH_15 as bh
-            import atomize.device_modules.Mikran_X_band_MW_bridge as mwBridge
+            # import atomize.device_modules.SR_PTC_10 as ls
+            # import atomize.device_modules.BH_15 as bh
+            # import atomize.device_modules.Micran_X_band_MW_bridge as mwBridge
             import atomize.general_modules.csv_opener_saver as openfile
 
             file_handler = openfile.Saver_Opener()
             pb = pb_pro.PB_ESR_500_Pro()
             dig = spectrum.Spectrum_M4I_2211_X8()
             #bh15 = bh.BH_15()
-            ptc = ls.SR_PTC_10()
-            mw = mwBridge.Mikran_X_band_MW_bridge()
+            # ptc = ls.SR_PTC_10()
+            # mw = mwBridge.Micran_X_band_MW_bridge()
 
             # integration window (point indices) for digitizer_get_curve(integral=True)
             dig.win_left = win_left
@@ -3473,6 +3493,11 @@ class Worker():
             x_axis = np.linspace(START_FIELD, END_FIELD, num = POINTS)
             a = 0
 
+            # one phase-cycle buffer reused every point: all PHASES elements are
+            # overwritten on each acquisition, so there is no need to re-allocate.
+            cyc_x = np.zeros( PHASES )
+            cyc_y = np.zeros( PHASES )
+
             def _scan_iter():
                 if script_test:
                     yield from general.scans(SCANS)
@@ -3489,11 +3514,11 @@ class Worker():
                     field = START_FIELD
                     #bh15.magnet_field(field)
 
-                    sp = ptc.tc_setpoint('Heater')
-                    ct = ptc.tc_temperature('3A')
+                    # sp = ptc.tc_setpoint('Heater')
+                    # ct = ptc.tc_temperature('3A')
 
-                    if np.abs(sp - ct) > 0.8:
-                        general.wait('8000 ms')
+                    # if np.abs(sp - ct) > 0.8:
+                        # general.wait('8000 ms')
 
                     if self.command == 'exit':
                         break
@@ -3502,9 +3527,14 @@ class Worker():
 
                         #bh15.magnet_field(field)#, calibration = 'True')
 
+                        # new field point: reset the pulser so each field starts a fresh
+                        # phase cycle. The field sweep has no pulser_shift (pulses are
+                        # static), and pulser_shift is what normally resets the phase
+                        # iterator, so without this the next field would index past the
+                        # phase_list.
+                        pb.pulser_pulse_reset()
+
                         # phase cycle at this field; combine phases, average scans (k)
-                        cyc_x = np.zeros( PHASES )
-                        cyc_y = np.zeros( PHASES )
                         for i in range(PHASES):
                             pb.pulser_next_phase()
                             cyc_x[i], cyc_y[i] = dig.digitizer_get_curve( integral = True )
@@ -3559,18 +3589,18 @@ class Worker():
                     f"{'Start Field:':<{w}} {START_FIELD} G\n"
                     f"{'End Field:':<{w}} {END_FIELD} G\n"
                     f"{'Field Step:':<{w}} {FIELD_STEP} G\n"
-                    f"{general.fmt(mw.mw_bridge_att_prm(), w)}\n"
-                    f"{general.fmt(mw.mw_bridge_att1_prd(), w)}\n"
-                    f"{general.fmt(mw.mw_bridge_att2_prd(), w)}\n"
-                    f"{general.fmt(mw.mw_bridge_fv_ctrl(), w)}\n"
-                    f"{general.fmt(mw.mw_bridge_fv_prm(), w)}\n"
-                    f"{general.fmt(mw.mw_bridge_synthesizer(), w)}\n"
+                    # f"{general.fmt(mw.mw_bridge_att_prm(), w)}\n"
+                    # f"{general.fmt(mw.mw_bridge_att1_prd(), w)}\n"
+                    # f"{general.fmt(mw.mw_bridge_att2_prd(), w)}\n"
+                    # f"{general.fmt(mw.mw_bridge_fv_ctrl(), w)}\n"
+                    # f"{general.fmt(mw.mw_bridge_fv_prm(), w)}\n"
+                    # f"{general.fmt(mw.mw_bridge_synthesizer(), w)}\n"
                     f"{'Repetition Rate:':<{w}} {pb.pulser_repetition_rate()}\n"
                     f"{'Number of Scans:':<{w}} {SCANS}\n"
                     f"{'Averages:':<{w}} {AVERAGES}\n"
                     f"{'Window:':<{w}} {tb} ns\n"
-                    f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
-                    f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
+                    # f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
+                    # f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
                     f"{'-'*50}\n"
                     f"Pulse List:\n{pb.pulser_pulse_list()}"
                     f"{'-'*50}\n"
@@ -3620,9 +3650,9 @@ class Worker():
                 general.test_flag = 'test'
             import atomize.device_modules.Spectrum_M4I_2211_X8 as spectrum
             import atomize.device_modules.PB_ESR_500_pro as pb_pro
-            import atomize.device_modules.SR_PTC_10 as ls
-            import atomize.device_modules.BH_15 as bh
-            import atomize.device_modules.Mikran_X_band_MW_bridge as mwBridge
+            # import atomize.device_modules.SR_PTC_10 as ls
+            # import atomize.device_modules.BH_15 as bh
+            # import atomize.device_modules.Micran_X_band_MW_bridge as mwBridge
             import atomize.general_modules.csv_opener_saver as openfile
 
             ### Nonlinear axis
@@ -3641,8 +3671,8 @@ class Worker():
             pb = pb_pro.PB_ESR_500_Pro()
             dig = spectrum.Spectrum_M4I_2211_X8()
             #bh15 = bh.BH_15()
-            ptc = ls.SR_PTC_10()
-            mw = mwBridge.Mikran_X_band_MW_bridge()
+            # ptc = ls.SR_PTC_10()
+            # mw = mwBridge.Micran_X_band_MW_bridge()
 
             # integration window (point indices) for digitizer_get_curve(integral=True)
             dig.win_left = win_left
@@ -3774,6 +3804,11 @@ class Worker():
             x_axis_plot = x_axis / 1e9
             a = 0
 
+            # one phase-cycle buffer reused every point (all PHASES elements are
+            # overwritten each acquisition, so no need to re-allocate per point)
+            cyc_x = np.zeros( PHASES )
+            cyc_y = np.zeros( PHASES )
+
             def _scan_iter():
                 if script_test:
                     yield from general.scans(SCANS)
@@ -3787,11 +3822,11 @@ class Worker():
 
                 for k in _scan_iter():
 
-                    sp = ptc.tc_setpoint('Heater')
-                    ct = ptc.tc_temperature('3A')
+                    # sp = ptc.tc_setpoint('Heater')
+                    # ct = ptc.tc_temperature('3A')
 
-                    if np.abs(sp - ct) > 0.8:
-                        general.wait('8000 ms')
+                    # if np.abs(sp - ct) > 0.8:
+                        # general.wait('8000 ms')
 
                     if self.command == 'exit':
                         break
@@ -3799,8 +3834,6 @@ class Worker():
                     for j in range(POINTS):
 
                         # phase cycle at this nonlinear-time point; combine + average
-                        cyc_x = np.zeros( PHASES )
-                        cyc_y = np.zeros( PHASES )
                         for i in range(PHASES):
                             pb.pulser_next_phase()
                             cyc_x[i], cyc_y[i] = dig.digitizer_get_curve( integral = True )
@@ -3854,12 +3887,12 @@ class Worker():
                     f"{'Date:':<{w}} {now}\n"
                     f"{'Experiment:':<{w}} Pulsed EPR Log Experiment\n"
                     f"{'Field:':<{w}} {FIELD} G\n"
-                    f"{general.fmt(mw.mw_bridge_att_prm(), w)}\n"
-                    f"{general.fmt(mw.mw_bridge_att1_prd(), w)}\n"
-                    f"{general.fmt(mw.mw_bridge_att2_prd(), w)}\n"
-                    f"{general.fmt(mw.mw_bridge_fv_ctrl(), w)}\n"
-                    f"{general.fmt(mw.mw_bridge_fv_prm(), w)}\n"
-                    f"{general.fmt(mw.mw_bridge_synthesizer(), w)}\n"
+                    # f"{general.fmt(mw.mw_bridge_att_prm(), w)}\n"
+                    # f"{general.fmt(mw.mw_bridge_att1_prd(), w)}\n"
+                    # f"{general.fmt(mw.mw_bridge_att2_prd(), w)}\n"
+                    # f"{general.fmt(mw.mw_bridge_fv_ctrl(), w)}\n"
+                    # f"{general.fmt(mw.mw_bridge_fv_prm(), w)}\n"
+                    # f"{general.fmt(mw.mw_bridge_synthesizer(), w)}\n"
                     f"{'Repetition Rate:':<{w}} {pb.pulser_repetition_rate()}\n"
                     f"{'Number of Scans:':<{w}} {SCANS}\n"
                     f"{'Averages:':<{w}} {AVERAGES}\n"
@@ -3867,8 +3900,8 @@ class Worker():
                     f"{'Window:':<{w}} {tb} ns\n"
                     f"{'Lg(X0/ns):':<{w}} {T_start}\n"
                     f"{'Lg(ΔX/ns):':<{w}} {T_end}\n"
-                    f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
-                    f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
+                    # f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
+                    # f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
                     f"{'-'*50}\n"
                     f"Pulse List:\n{pb.pulser_pulse_list()}"
                     f"{'-'*50}\n"
