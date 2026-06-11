@@ -913,9 +913,9 @@ class MainWindow(QMainWindow):
             file.write(self.textEdit.toPlainText())
 
         self.cached_stamp = os.stat(filename).st_mtime
-        self.script = filename
         self.path = os.path.dirname(filename)
         ldir.save('script', self.path)        # persist across relaunches
+        self.script = filename
 
     def open_file_dialog(self):
         """
@@ -1928,6 +1928,10 @@ def main():
         pass
 
     app = QApplication(sys.argv)
+    # Fusion + shared dark palette, so QComboBox / QSpinBox / QLineEdit render
+    # identically on Linux and Windows (AppUserModelID already set above).
+    from atomize.general_modules.gui_style import apply_app_style
+    apply_app_style(app)
     main = MainWindow()
 
     main.show()
