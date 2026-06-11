@@ -11,45 +11,58 @@ import atomize.main.local_config as lconf
 import atomize.device_modules.config.config_utils as cutil
 import atomize.general_modules.general_functions as general
 
-class Keysight_3000_Xseries:
+class Rigol_MSO8000_Series:
     #### Basic interaction functions
     def __init__(self):
 
         #### Inizialization
         # setting path to *.ini file
         self.path_current_directory = lconf.load_config_device()
-        self.path_config_file = os.path.join(self.path_current_directory, 'Keysight_3034t_config.ini')
+        self.path_config_file = os.path.join(self.path_current_directory, 'Rigol_mso8104_config.ini')
 
         # configuration data
         self.config = cutil.read_conf_util(self.path_config_file)
         self.specific_parameters = cutil.read_specific_parameters(self.path_config_file)
 
         # auxilary dictionaries
-        self.points_list = [100, 250, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000]
-        self.points_list_average = [100, 250, 500, 1000, 2000, 4000, 8000, 16000]
+        self.points_list = [1e3, 1e4, 1e5, 1e6, 1e7, 2.5e7, 5e7, 1e8, 1.25e8]
+        self.points_list_average = [1e3, 1e4, 1e5, 1e6, 1e7, 2.5e7]
         # Number of point is different for Average mode and three other modes
 
-        self.channel_dict = {'CH1': 'CHAN1', 'CH2': 'CHAN2', 'CH3': 'CHAN3', 'CH4': 'CHAN4',}
-        self.trigger_channel_dict = {'CH1': 'CHAN1', 'CH2': 'CHAN2', 'CH3': 'CHAN3', 'CH4': 'CHAN4','Ext': 'EXTernal', 'Line': 'LINE', 'WGen': 'WGEN',}
-        self.timebase_dict = {'s': 1, 'ms': 1000, 'us': 1000000, 'ns': 1000000000,};
-        self.scale_dict = {'V': 1, 'mV': 1000,};
+        self.channel_dict = {'CH1': 'CHAN1', 'CH2': 'CHAN2', 'CH3': 'CHAN3', 'CH4': 'CHAN4'}
+        self.trigger_channel_dict = {'CH1': 'CHAN1', 'CH2': 'CHAN2', 'CH3': 'CHAN3', 'CH4': 'CHAN4', \
+                                'Ext': 'EXT', 'Line': 'ACLine'}
+        self.timebase_dict = {'s': 1, 'ms': 1000, 'us': 1000000, 'ns': 1000000000};
+        self.scale_dict = {'V': 1, 'mV': 1000};
         self.frequency_dict = {'MHz': 1000000, 'kHz': 1000, 'Hz': 1, 'mHz': 0.001,};
-        self.wavefunction_dic = {'Sin': 'SIN', 'Sq': 'SQU', 'Ramp': 'RAMP', 'Pulse': 'PULS', 'DC': 'DC', 'Noise': 'NOIS', 'Sinc': 'SINC', 'ERise': 'EXPR', 'EFall': 'EXPF', 'Card': 'CARD', 'Gauss': 'GAUS', 'Arb': 'ARB'};
+        self.wavefunction_dic = {'Sin': 'SIN', 'Sq': 'SQU', 'Ramp': 'RAMP', 'Pulse': 'PULS',
+                            'DC': 'DC', 'Noise': 'NOIS', 'Sinc': 'SINC', 'ERise': 'EXPR',
+                            'EFall': 'EXPF', 'ECG': 'ECG', 'Gauss': 'GAUS',
+                            'Lorentz': 'LOR', 'Haversine': 'HAV'};
+
         self.ac_type_dic = {'Normal': "NORM", 'Average': "AVER", 'Hres': "HRES",'Peak': "PEAK"}
-        self.wave_gen_interpolation_dictionary = {'On': 1, 'Off': 0 }
-        
-        self.modulation_wavefunction_dict = {'Sin': 'SIN', 'Sq': 'SQU', 'Ramp': 'RAMP'}
+        self.mode_dict = {'Normal': "NORM", 'Raw': "RAW"}
+        self.wave_gen_interpolation_dictionary = {'On': 1, 'Off': 0}
+        self.number_average_list = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536]
+
+        self.modulation_wavefunction_dict = {'Sin': 'SIN', 'Sq': 'SQU', 'Ramp': 'RAMP', 'Noise': 'NOIS'}
+        self.carrier_wavefunction_dict = {'Sin': 'SIN', 'Sq': 'SQU', 'Ramp': 'RAMP'}
         self.status_dict = {'Off': 0, 'On': 1}
         self.modulation_type_dict = {'AM': 'AM', 'FM': 'FM', 'Freq-Shift': 'FSK'}
-        self.rate_freq_list = ['MHz', 'kHz', 'Hz', 'mHz']
 
-        self.func_type = 'SIN'
-        self.mod_type = 'AM'
+        self.func_type_1 = 'SIN'
+        self.mod_type_1 = 'AM'
+        self.freq_1 = 1e3
+        self.func_type_2 = 'SIN'
+        self.mod_type_2 = 'AM'
+        self.freq_2 = 1e3
 
         # Limits and Ranges (depends on the exact model):
         self.analog_channels = int(self.specific_parameters['analog_channels'])
         self.numave_min = 2
         self.numave_max = 65536
+        self.max_duty = 98
+        self.min_duty = 2
         self.ampl_50_max = 2.5
         self.ampl_50_min = 0.01
         self.ampl_hz_max = 5
@@ -61,20 +74,16 @@ class Keysight_3000_Xseries:
         self.wave_gen_freq_max = float(self.specific_parameters['wave_gen_freq_max'])
         self.wave_gen_freq_min = float(self.specific_parameters['wave_gen_freq_min'])
         self.wave_gen = str(self.specific_parameters['wave_gen'])
-        
-
-        self.max_freq_dict = {'SIN': 20e6, 'SQU': 10e6, 'RAMP': 200e3, 'PULS': 10e6, 'DC': 0, 'NOIS': 0, 'SINC': 1e6, 'EXPR': 5e6, 'EXPF': 5e6, 'CARD': 200e3, 'GAUS': 5e6, 'ARB': 12e6}
-
-        self.f_min = pg.siFormat( self.wave_gen_freq_min, suffix = 'Hz', precision = 3, allowUnicode = False)
-        self.f_max = pg.siFormat( self.wave_gen_freq_max, suffix = 'Hz', precision = 3, allowUnicode = False)
 
         #integration window
         self.win_left = 0
         self.win_right = 1
 
         self.wg_coupling_1 = '1 M'
+        self.wg_coupling_2 = '1 M'
 
         # Test run parameters
+        # These values are returned by the modules in the test run 
         if len(sys.argv) > 1:
             self.test_flag = sys.argv[1]
         else:
@@ -87,26 +96,41 @@ class Keysight_3000_Xseries:
                     self.status_flag = 1
                     self.device = rm.open_resource(self.config['ethernet_address'])
                     self.device.timeout = self.config['timeout'] # in ms
-                    self.device.read_termination = self.config['read_termination']  # for WORD (a kind of binary) format
+                    #self.device.read_termination = self.config['read_termination']  # for WORD (a kind of binary) format
                     try:
                         self.device_write('*CLS')
-                        self.status_flag = 1
+
+                        # enabling fine adjustment
+                        self.device_write(':TIMebase:VERNier')
+                        for i in range(self.analog_channels):
+                            self.device_write(f':CHANnel{i}:VERNier')
 
                         if self.wave_gen == 'True':
-                            self.wg_coupling_1 = self.device_query(":WGEN:OUTPut:LOAD?")
-                            
-                            if self.wg_coupling_1 == 'ONEM':
+                        
+                            self.wg_coupling_1 = self.device_query(":OUTPut1:IMPedance?")[:-1]
+                            self.wg_coupling_2 = self.device_query(":OUTPut2:IMPedance?")[:-1]
+                            if self.wg_coupling_1 == 'OMEG':
                                 self.wg_coupling_1 = '1 M'
-                            elif self.wg_coupling_1 == 'FIFTy':
+                            elif self.wg_coupling_1 == 'FIFT':
                                 self.wg_coupling_1 = '50'
+                            
+                            if self.wg_coupling_2 == 'OMEG':
+                                self.wg_coupling_2 = '1 M'
+                            elif self.wg_coupling_2 == 'FIFT':
+                                self.wg_coupling_2 = '50'
 
-                            self.func_type = str(self.device_query(':WGEN:FUNCtion?'))
-                            self.mod_type = str(self.device_query(':WGEN:MODulation:TYPE?'))
-                            self.freq = float(self.device_query(":WGEN:FREQuency?"))
+                            self.func_type_1 = str(self.device_query(':SOURce1:FUNCtion:SHAPe?'))
+                            self.mod_type_1 = str(self.device_query(':SOURce1:MODulation:TYPE?'))
+                            self.freq_1 = float(self.device_query(":SOURce1:FREQuency?"))
+
+                            self.func_type_2 = str(self.device_query(':SOURce2:FUNCtion:SHAPe?'))
+                            self.mod_type_2 = str(self.device_query(':SOURce2:MODulation:TYPE?'))
+                            self.freq_2 = float(self.device_query(":SOURce2:FREQuency?"))
 
                         else:
                             pass
                         
+                        self.status_flag = 1
                     except (pyvisa.VisaIOError, BrokenPipeError):
                         general.message(f"No connection {self.__class__.__name__}")
                         self.status_flag = 0
@@ -131,7 +155,7 @@ class Keysight_3000_Xseries:
             self.test_tr_channel = 'CH1'
             self.test_trigger_level = '1 mV'
             self.test_wave_gen_frequency = '500 Hz'
-            self.test_wave_gen_width = '350 us'
+            self.test_wave_gen_width = '5 %'
             self.test_wave_gen_function = 'Sin'
             self.test_wave_gen_amplitude = '500 mV'
             self.test_wave_gen_offset = '0 mV'
@@ -139,14 +163,11 @@ class Keysight_3000_Xseries:
             self.test_wave_gen_interpolation = 'Off'
             self.test_wave_gen_points = 10
             self.test_area = 0.001
+            self.test_phase = 15
 
             self.test_mod_function = 'Sin'
-            self.test_mod_status = 'Off'
             self.test_mod_type = 'AM'
             self.test_mod_depth = '100 %'
-            self.test_mod_hop = '1 kHz'
-            self.test_mod_rate = '100 Hz'
-            self.test_mod_span_frequency = '50 Hz'
 
     def close_connection(self):
         if self.test_flag != 'test':
@@ -184,7 +205,17 @@ class Keysight_3000_Xseries:
 
     def device_read_binary(self, command):
         if self.status_flag == 1:
-            answer = self.device.query_binary_values(command, 'H', is_big_endian=True, container=np.array)
+            answer = self.device.query_binary_values(command, 'h', is_big_endian=True, container=np.array)
+            # H for 3034T; h for 2012A
+            return answer
+        else:
+            general.message(f"No connection {self.__class__.__name__}")
+            self.status_flag = 0
+            sys.exit()
+
+    def device_read_binary_H(self, command):
+        if self.status_flag == 1:
+            answer = self.device.query_binary_values(command, 'H', is_big_endian=False, container=np.array)
             # H for 3034T; h for 2012A
             return answer
         else:
@@ -206,50 +237,29 @@ class Keysight_3000_Xseries:
             if len(points) == 1:
                 temp = int(points[0])
                 test_acq_type = self.oscilloscope_acquisition_type()
-                self.oscilloscope_run()
-
                 if test_acq_type == 'Average':
-                    poi = min(self.points_list_average, key = lambda x: abs(x - temp))
+                    poi = int(min(self.points_list_average, key = lambda x: abs(x - temp)))
                     if int(poi) != temp:
                         general.message(f"Desired record length cannot be set, the nearest available value of {poi} is used")
-                    self.device_write(":WAVeform:POINts " + str(poi))
+                    self.device_write(":ACQuire:MDEPth " + str(poi))
                 else:
-                    poi = min(self.points_list, key = lambda x: abs(x - temp))
+                    poi = int(min(self.points_list, key = lambda x: abs(x - temp)))
                     if int(poi) != temp:
                         general.message(f"Desired record length cannot be set, the nearest available value of {poi} is used")
-                    self.device_write(":WAVeform:POINts " + str(poi))
-
-                # 4000 / 3999
-                #answer = int(self.device_query(':WAVeform:POINts?'))
-                #tb_0 = pg.siEval(self.oscilloscope_timebase())
-                #i = 0
-                #st_time = time.time()
-                #while answer != poi:
-                #    mod_tb = pg.siEval(self.oscilloscope_timebase()) + 0.01 * tb_0
-                #    self.oscilloscope_timebase( pg.siFormat( mod_tb, suffix = 's', precision = 5, allowUnicode = False))
-                #    answer = int(self.device_query(':WAVeform:POINts?'))
-                #
-                #    if i == 0:
-                #        general.message('Incorrect number of points. Timebase will be changed')
-                #        i = 1
-                #
-                #    if (time.time() - st_time) > 30:
-                #        general.message(f'Correct timebase was not found. The number of point is {answer}')
-                #        self.oscilloscope_timebase( pg.siFormat( tb_0, suffix = 's', precision = 5, allowUnicode = False))
-                #        break
+                    self.device_write(":ACQuire:MDEPth " + str(poi))
 
             elif len(points) == 0:
-                answer = int(self.device_query(':WAVeform:POINts?'))
+                answer = int(float(self.device_query(':ACQuire:MDEPth?')))
                 return answer
 
         elif self.test_flag == 'test':
             if len(points) == 1:
                 temp = int(points[0])
                 if self.test_acquisition_type == 'Average':
-                    poi = min(self.points_list, key = lambda x: abs(x - temp))
+                    poi = int(min(self.points_list, key = lambda x: abs(x - temp)))
                     self.test_record_length = poi
                 else:
-                    poi = min(self.points_list_average, key = lambda x: abs(x - temp))
+                    poi = int(min(self.points_list_average, key = lambda x: abs(x - temp)))
                     self.test_record_length = poi
             elif len(points) == 0:
                 answer = self.test_record_length
@@ -263,11 +273,20 @@ class Keysight_3000_Xseries:
                 at = str(ac_type[0])
                 if at in self.ac_type_dic:
                     flag = self.ac_type_dic[at]
+
+                    # only when running
+                    self.oscilloscope_run()
                     self.device_write(":ACQuire:TYPE " + str(flag))
-                    general.wait('200 ms')
+                    # very long operation
+                    while True:
+                        ans = int( self.device_query("*OPC?") )
+                        if ans == 1:
+                            break
+                        else:
+                            general.wait('30 ms')
 
             elif len(ac_type) == 0:
-                raw_answer = str(self.device_query(":ACQuire:TYPE?"))
+                raw_answer = str(self.device_query(":ACQuire:TYPE?"))[:-1]
                 answer  = cutil.search_keys_dictionary(self.ac_type_dic, raw_answer)
                 return answer
 
@@ -287,26 +306,28 @@ class Keysight_3000_Xseries:
     def oscilloscope_number_of_averages(self, *number_of_averages):
         if self.test_flag != 'test':
             if len(number_of_averages) == 1:
-                numave = int(number_of_averages[0])
-                if numave >= self.numave_min and numave <= self.numave_max:
+                temp = int(number_of_averages[0])
+                numave = min(self.number_average_list, key = lambda x: abs(x - temp))
+                if int(numave) != temp:
+                    general.message(f"Desired number of averages cannot be set, the nearest available value of {numave} is used")
                     ac = self.oscilloscope_acquisition_type()
-                    if ac == "Average":
-                        self.device_write(":ACQuire:COUNt " + str(numave))
-                    elif ac == 'Normal':
-                        general.message("Your are in NORM mode")
-                    elif ac == 'Hres':
-                        general.message("Your are in HRES mode")
-                    elif ac == 'Peak':
-                        general.message("Your are in PEAK mode")
+                if ac == "Average":
+                    self.device_write(":ACQuire:AVERages " + str(numave))
+                elif ac == 'Normal':
+                    general.message("You are in NORM mode")
+                elif ac == 'Hres':
+                    general.message("You are in HRES mode")
+                elif ac == 'Peak':
+                    general.message("You are in PEAK mode")
             elif len(number_of_averages) == 0:
-                answer = int(self.device_query(":ACQuire:COUNt?"))
+                answer = int(self.device_query(":ACQuire:AVERages?"))
                 return answer
 
         elif self.test_flag == 'test':
             if len(number_of_averages) == 1:
                 numave = int(number_of_averages[0])
                 assert(numave >= self.numave_min and numave <= self.numave_max), \
-                    f'Incorrect number of averages. The available range is form {self.numave_min} to {self.numave_max}'
+                    f'Incorrect number of averages. The available range is from { self.numave_min} to { self.numave_max}'
             elif len(number_of_averages) == 0:
                 answer = self.test_num_aver
                 return answer
@@ -322,10 +343,10 @@ class Keysight_3000_Xseries:
                 if scaling in self.timebase_dict:
                     coef = self.timebase_dict[scaling]
                     if tb/coef >= self.timebase_min and tb/coef <= self.timebase_max:
-                        self.device_write(f":TIMebase:RANGe {tb/coef}")
+                        self.device_write(":TIMebase:MAIN:SCALe "+ str(tb/coef/10))
             elif len(timebase) == 0:
-                raw_answer = float(self.device_query(":TIMebase:RANGe?"))
-                answer = pg.siFormat( raw_answer, suffix = 's', precision = 4, allowUnicode = False)
+                raw_answer = 10*float(self.device_query(":TIMebase:MAIN:SCALe?"))
+                answer = pg.siFormat( raw_answer, suffix = 's', precision = 3, allowUnicode = False)
                 return answer
 
         elif self.test_flag == 'test':
@@ -349,23 +370,18 @@ class Keysight_3000_Xseries:
     def oscilloscope_time_resolution(self):
         if self.test_flag != 'test':
             points = int(self.oscilloscope_record_length())
-            raw_answer = float(self.device_query(":TIMebase:RANGe?")) / points
+            raw_answer = 10 * float(self.device_query(":TIMebase:MAIN:SCALe?")) / points
             answer = pg.siFormat( raw_answer, suffix = 's', precision = 9, allowUnicode = False)
             return answer
         elif self.test_flag == 'test':
             raw_answer = pg.siEval(self.test_timebase) / self.test_record_length
             answer = pg.siFormat( raw_answer, suffix = 's', precision = 9, allowUnicode = False)
             return answer
-
+    
     def oscilloscope_start_acquisition(self):
         if self.test_flag != 'test':
-            #start_time = datetime.now()
-            self.device_write(':WAVeform:FORMat WORD')
-            self.device_query('*ESR?;:DIGitize;*OPC?') # return 1, if everything is ok;
-            # the whole sequence is the following 1-binary format; 2-clearing; 3-digitizing; 4-checking of the completness
-            #end_time=datetime.now()
-            #general.message('Acquisition completed')
-            #print("Duration of Acquisition: {}".format(end_time - start_time))
+            self.device_write(':CLEar')
+            self.oscilloscope_run()
         elif self.test_flag == 'test':
             pass
 
@@ -409,27 +425,46 @@ class Keysight_3000_Xseries:
         elif self.test_flag == 'test':
             pass
 
-    def oscilloscope_get_curve(self, channel, integral = False):
+    def oscilloscope_get_curve(self, channel, integral = False, mode = 'Normal'):
         if self.test_flag != 'test':
             ch = str(channel)
             if ch in self.channel_dict:
                 flag = self.channel_dict[ch]
                 if flag[0] == 'C' and int(flag[-1]) <= self.analog_channels:
-                    self.device_write(':WAVeform:SOURce ' + str(flag))
-                    array_y = self.device_read_binary(':WAVeform:DATA?')
+
+                    if mode == 'Normal':
+                        self.device_write(':WAVeform:SOURce ' + str(flag))
+                        self.device_write(f':WAVeform:MODE {self.mode_dict[mode]}')
+                        self.device_write(':WAVeform:FORM WORD')
+                    elif mode == 'Raw':
+                        self.oscilloscope_stop()
+                        self.device_write(':WAVeform:SOURce ' + str(flag))
+                        self.device_write(f':WAVeform:MODE {self.mode_dict[mode]}')
+                        self.device_write(':WAVeform:FORM WORD')
+                        points = int(float(self.device_query(':ACQuire:MDEPth?')))
+                        self.device_write(f':WAVeform:POINTs {points}')
+
+                    ac_type = str(self.device_query(":ACQuire:TYPE?"))[:-1]
+                    if ac_type == 'NORM':
+                        array_y = self.device_read_binary(':WAVeform:DATA?')
+                    else:
+                        array_y = self.device_read_binary_H(':WAVeform:DATA?')
+
                     preamble = self.device_query_ascii(":WAVeform:PREamble?")
 
                     x_inc = preamble[4]
                     x_orig = preamble[5]
+                    #x_ref = preamble[6]
                     y_inc = preamble[7]
                     y_orig = preamble[8]
                     y_ref = preamble[9]
-                    #print(y_inc)
-                    #print(y_orig)
-                    #print(y_ref)
-                    array_y = (array_y - y_ref)*y_inc + y_orig
-                    #array_x = list(map(lambda x: resolution*(x+1) + 1000000*x_orig, list(range(points))))
-                    #final_data = list(zip(array_x,array_y))
+
+                    if ac_type == 'NORM':
+                        array_y = (array_y - 128) / 256 * y_inc * 65536
+                    else:
+                        array_y = (array_y - y_ref) * y_inc 
+                    #xs = x_orig + np.arange( len(array_y) ) * x_inc
+
                     if integral == False:
                         return array_y
                     elif integral == True:
@@ -447,7 +482,13 @@ class Keysight_3000_Xseries:
             if flag[0] == 'C' and int(flag[-1]) > self.analog_channels:
                 assert(1 == 2), f'Invalid channel is given; channel: {list(self.channel_dict.keys())}'
             else:
-                array_y = np.arange(self.test_record_length)
+                if mode == 'Normal':
+                    array_y = np.arange(1000)
+                    xs = np.arange(1000)
+                elif mode == 'Raw':
+                    array_y = np.arange(self.test_record_length)
+                    xs = np.arange(self.test_record_length)
+
                 if integral == False:
                     return array_y
                 elif integral == True:
@@ -457,14 +498,14 @@ class Keysight_3000_Xseries:
                     integ = np.sum( array_y[self.win_left:self.win_right] ) * ( pg.siEval(self.oscilloscope_time_resolution()) )
                     xs = np.arange( len(array_y) ) * ( pg.siEval(self.oscilloscope_time_resolution()) )
                     return xs, array_y, integ
-    
+
     def oscilloscope_area(self, channel):
         if self.test_flag != 'test':
             ch = str(channel)
             if ch in self.channel_dict:
                 flag = self.channel_dict[ch]
                 if flag[0] == 'C' and int(flag[-1]) <= self.analog_channels:
-                    area = float(self.device_query(':MEASure:AREa? DISPlay , ' + str(flag)))
+                    area = float(self.device_query(':MEASure:ITEM? MARea,' + str(flag)))
                     return area
 
         elif self.test_flag == 'test':
@@ -508,27 +549,28 @@ class Keysight_3000_Xseries:
                 scaling = str(temp[1])
                 if scaling in self.scale_dict:
                     coef = self.scale_dict[scaling]
+
                     min_sens = pg.siFormat( self.sensitivity_min, suffix = 'V', precision = 3, allowUnicode = False)
                     max_sens = pg.siFormat( self.sensitivity_max, suffix = 'V', precision = 3, allowUnicode = False)
                     assert(val/coef >= self.sensitivity_min and val/coef <= \
                         self.sensitivity_max), f"Incorrect sensitivity range. The available range is from {min_sens} to {max_sens}"
-                    assert(ch in self.channel_dict), f'Invalid channel is given; channel: {list(self.channel_dict.keys())}'        
+                    assert(ch in self.channel_dict), f'Invalid channel is given; channel: {list(self.channel_dict.keys())}'     
                     flag = self.channel_dict[ch]
                     if flag[0] == 'C' and int(flag[-1]) > self.analog_channels:
                         assert(1 == 2), f'Invalid channel is given; channel: {list(self.channel_dict.keys())}'
                 else:
-                    assert(1 == 2), f"Incorrect sensitivity argument; sensitivity: 'int + [' mV', ' V']; channel: {list(self.channel_dict.keys())}"
+                    assert(1 == 2), f"Incorrect sensitivity argument; sensitivity: int; channel: {list(self.channel_dict.keys())}"
             elif len(channel) == 1:
                 ch = str(channel[0])
-                assert(ch in self.channel_dict), f'Invalid channel is given; channel: {list(self.channel_dict.keys())}'
+                assert(ch in self.channel_dict),  f'Invalid channel is given; channel: {list(self.channel_dict.keys())}'
                 flag = self.channel_dict[ch]
                 if flag[0] == 'C' and int(flag[-1]) > self.analog_channels:
-                    assert(1 == 2), f'Invalid channel is given; channel: {list(self.channel_dict.keys())}'
+                    assert(1 == 2),  f'Invalid channel is given; channel: {list(self.channel_dict.keys())}'
                 else:
                     answer = self.test_sensitivity
                     return answer
             else:
-                assert(1 == 2), f"Incorrect sensitivity argument; sensitivity: 'int + [' mV', ' V']; channel: {list(self.channel_dict.keys())}"
+                assert(1 == 2), f"Incorrect sensitivity argument; sensitivity: int; channel: {list(self.channel_dict.keys())}"
 
     def oscilloscope_offset(self, *channel):
         if self.test_flag != 'test':
@@ -587,9 +629,11 @@ class Keysight_3000_Xseries:
                 scaling = temp[1]
                 if scaling in self.timebase_dict:
                     coef = self.timebase_dict[scaling]
-                    self.device_write(":TIMebase:DELay "+ str(offset/coef))
+                    # :TIMebase:DELay:SCALe <scale>
+                    self.device_write(":TIMebase:OFFSet "+ str(offset/coef))
+
             elif len(h_offset) == 0:
-                raw_answer = float(self.device_query(":TIMebase:DELay?"))
+                raw_answer = float(self.device_query(":TIMebase:OFFSet?"))
                 answer = pg.siFormat( raw_answer, suffix = 's', precision = 6, allowUnicode = False)
                 return answer
 
@@ -609,6 +653,9 @@ class Keysight_3000_Xseries:
                 assert(1 == 2), "Incorrect horizontal offset argument; h_offset: float + [' s', ' ms', ' us', ' ns']"
 
     def oscilloscope_coupling(self, *coupling):
+        """
+        AC only for 1 M impedance
+        """
         if self.test_flag != 'test':
             if len(coupling) == 2:
                 ch = str(coupling[0])
@@ -616,14 +663,21 @@ class Keysight_3000_Xseries:
                 if ch in self.channel_dict:
                     flag = self.channel_dict[ch]
                     if flag[0] == 'C' and int(flag[-1]) <= self.analog_channels:
-                        self.device_write(':' + str(flag) + ':COUPling ' + str(cpl))
+                        imp = self.device_query(":" + str(flag) + ":IMPedance?")[:-1]
+                        if cpl == 'AC':
+                            if imp == 'OMEG':
+                                self.device_write(':' + str(flag) + ':COUPling ' + str(cpl))
+                            elif imp == 'FIFT':
+                                general.message("AC couping is not available for '50' impedance")
+                        else:
+                            self.device_write(':' + str(flag) + ':COUPling ' + str(cpl))
 
             elif len(coupling) == 1:
                 ch = str(coupling[0])
                 if ch in self.channel_dict:
                     flag = self.channel_dict[ch]
                     if flag[0] == 'C' and int(flag[-1]) <= self.analog_channels:
-                        answer = self.device_query(":" + str(flag) + ":COUPling?")
+                        answer = self.device_query(":" + str(flag) + ":COUPling?")[:-1]
                         return answer
 
         elif self.test_flag == 'test':
@@ -652,7 +706,7 @@ class Keysight_3000_Xseries:
                 ch = str(impedance[0])
                 cpl = str(impedance[1])
                 if cpl == '1 M':
-                    cpl = 'ONEMeg'
+                    cpl = 'OMEG'
                 elif cpl == '50':
                     cpl = 'FIFTy'
                 if ch in self.channel_dict:
@@ -665,8 +719,8 @@ class Keysight_3000_Xseries:
                 if ch in self.channel_dict:
                     flag = self.channel_dict[ch]
                     if flag[0] == 'C' and int(flag[-1]) <= self.analog_channels:
-                        raw_answer = self.device_query(":" + str(flag) + ":IMPedance?")
-                        if raw_answer == 'ONEM':
+                        raw_answer = self.device_query(":" + str(flag) + ":IMPedance?")[:-1]
+                        if raw_answer == 'OMEG':
                             return '1 M'
                         elif raw_answer == 'FIFT':
                             return '50'
@@ -690,7 +744,7 @@ class Keysight_3000_Xseries:
                 return answer
             else:
                 assert(1 == 2), "Invalid impedance argument; impedance: ['1 M', '50']"
-
+    
     def oscilloscope_trigger_mode(self, *mode):
         if self.test_flag != 'test':
             if len(mode) == 1:
@@ -700,7 +754,7 @@ class Keysight_3000_Xseries:
                 elif md == 'Normal':
                     self.device_write(":TRIGger:SWEep " + 'NORMal')
             elif len(mode) == 0:
-                answer = self.device_query(":TRIGger:SWEep?")
+                answer = self.device_query(":TRIGger:SWEep?")[:-1]
                 return answer
 
         elif self.test_flag == 'test':
@@ -725,7 +779,7 @@ class Keysight_3000_Xseries:
                         self.device_write(':TRIGger:EDGE:SOURce ' + str(flag))
 
             elif len(channel) == 0:
-                answer = self.device_query(":TRIGger:EDGE:SOURce?")
+                answer = self.device_query(":TRIGger:EDGE:SOURce?")[:-1]
                 return answer
 
         if self.test_flag == 'test':        
@@ -744,22 +798,23 @@ class Keysight_3000_Xseries:
     def oscilloscope_trigger_low_level(self, *level):
         if self.test_flag != 'test':
             if len(level) == 2:
+                self.device_write(':TRIGger:MODE EDGE')
                 ch = str(level[0])
                 lvl = pg.siEval(level[1])
                 if ch in self.channel_dict:
                     flag = self.channel_dict[ch]
                     if flag[0] == 'C' and int(flag[-1]) <= self.analog_channels:
-                        self.device_write(':TRIGger:LEVel:LOW ' + str(lvl) + ', ' + str(flag))
+                        self.device_write(':TRIGger:EDGE:LEVel ' + str(lvl))
 
             elif len(level) == 1:
                 ch = str(level[0])
                 if ch in self.channel_dict:
                     flag = self.channel_dict[ch]
                     if flag[0] == 'C' and int(flag[-1]) <= self.analog_channels:
-                        raw_answer = float(self.device_query(':TRIGger:LEVel:LOW? ' + str(flag)))
+                        raw_answer = float(self.device_query(':TRIGger:EDGE:LEVel?'))
                         answer = pg.siFormat( raw_answer, suffix = 'V', precision = 3, allowUnicode = False)
                         return answer
-
+ 
         elif self.test_flag == 'test':
             if len(level) == 2:
                 ch = str(level[0])
@@ -858,7 +913,7 @@ class Keysight_3000_Xseries:
 
             self.win_left = int( text_from_file[6].split(' ')[2] )
             self.win_right = 1 + int( text_from_file[7].split(' ')[2] )
-            
+    
     #### Functions of waveform generator
     def wave_gen_name(self):
         if self.test_flag != 'test':
@@ -868,145 +923,151 @@ class Keysight_3000_Xseries:
             answer = self.config['name']
             return answer
 
-    def wave_gen_frequency(self, *frequency):
-        f_max = pg.siFormat( self.max_freq_dict[self.func_type], suffix = 'Hz', precision = 3, allowUnicode = False)
+    def wave_gen_frequency(self, *frequency, channel = '1'):
         if self.test_flag != 'test':
-            if len(frequency) == 1:
-                temp = frequency[0].split(" ")
-                freq = float(temp[0])
-                scaling = temp[1]
-                if scaling in self.frequency_dict:
-                    coef = self.frequency_dict[scaling]
-                    if freq*float(coef) >= self.wave_gen_freq_min and freq*float(coef) <= self.max_freq_dict[self.func_type]:
-                        self.device_write(":WGEN:FREQuency " + str(freq*coef))
-                        self.freq = freq * coef
-                    else:
-                        general.message(f"Incorrect frequency range for {cutil.search_keys_dictionary(self.wavefunction_dic, self.func_type)}. The available range is from {self.f_min} to {f_max}")
+            ch = channel
+            if ch == '1' or ch == '2':
+                if len(frequency) == 1:
+                    temp = frequency[0].split(" ")
+                    freq = float(temp[0])
+                    scaling = temp[1]
+                    if scaling in self.frequency_dict:
+                        coef = self.frequency_dict[scaling]
+                        if freq*float(coef) >= self.wave_gen_freq_min and freq*float(coef) <= self.wave_gen_freq_max:
+                            self.device_write( f":SOURce{ch}:FREQuency:FIXed {freq*coef}" )
 
-            elif len(frequency) == 0:
-                raw_answer = float(self.device_query(":WGEN:FREQuency?"))
-                self.freq = raw_answer
-                answer = pg.siFormat( raw_answer, suffix = 'Hz', precision = 6, allowUnicode = False)
-                return answer
+                elif len(frequency) == 0:
+                    raw_answer = float(self.device_query( f":SOURce{ch}:FREQuency:FIXed?" ) )
+                    answer = pg.siFormat( raw_answer, suffix = 'Hz', precision = 6, allowUnicode = False)
+                    return answer
 
         elif self.test_flag == 'test':
+            ch = channel
+            assert(ch == '1' or ch == '2'), "Incorrect waveform generator channel; channel: ['1', '2']"
             if len(frequency) == 1:
                 temp = frequency[0].split(" ")
                 freq = float(temp[0])
                 scaling = temp[1]
                 if scaling in self.frequency_dict:
                     coef = self.frequency_dict[scaling]
-
+                    f_min = pg.siFormat( self.wave_gen_freq_min, suffix = 'Hz', precision = 3, allowUnicode = False)
+                    f_max = pg.siFormat( self.wave_gen_freq_max, suffix = 'Hz', precision = 3, allowUnicode = False)
                     assert(freq*float(coef) >= self.wave_gen_freq_min and \
-                        freq*float(coef) <= self.max_freq_dict[self.func_type]), f"Incorrect frequency range for {cutil.search_keys_dictionary(self.wavefunction_dic, self.func_type)}. The available range is from {self.f_min} to {f_max}"
-                    self.freq = freq * coef
+                        freq*float(coef) <= self.wave_gen_freq_max), f"Incorrect frequency range. The available range is from {f_min} to {f_max}"
                 else:
-                    assert(1 == 2), "Incorrect argument; frequency: float + [' MHz', ' kHz', ' Hz', ' mHz']"
+                    assert(1 == 2), "Incorrect argument; frequency: float + [' MHz', ' kHz', ' Hz', ' mHz']; channel: ['1', '2']"
             elif len(frequency) == 0:
                 answer = self.test_wave_gen_frequency
                 return answer
             else:
-                assert(1 == 2), "Incorrect argument; frequency: float + [' MHz', ' kHz', ' Hz', ' mHz']"
+                assert(1 == 2), "Incorrect argument; frequency: float + [' MHz', ' kHz', ' Hz', ' mHz']; channel: ['1', '2']"
 
-    def wave_gen_pulse_width(self, *width):
+    def wave_gen_pulse_width(self, *width, channel = '1'):
         if self.test_flag != 'test':
-            answer = self.device_query(":WGEN:FUNCtion?")
-            if answer == 'PULS':
-                if len(width) == 1:
-                    temp = width[0].split(" ")
-                    wid = float(temp[0])
-                    scaling = temp[1];
-                    if scaling in self.timebase_dict:
-                        coef = self.timebase_dict[scaling]
-                        self.device_write(":WGEN:FUNCtion:PULSe:WIDTh " + str(wid/coef))
-                elif len(width) == 0:
-                    raw_answer = float(self.device_query(":WGEN:FUNCtion:PULSe:WIDTh?"))
-                    answer = pg.siFormat( raw_answer, suffix = 's', precision = 6, allowUnicode = False)
-                    return answer
-            else:
-                general.message(f"You are not using the pulsed function of the waveform generator {self.__class__.__name__}")
+            ch = channel
+            if ch == '1' or ch == '2':
+                answer = self.device_query(f":SOURce{ch}:FUNCtion:SHAPe?")[:-1]
+                if answer == 'PULS':
+                    if len(width) == 1:
+                        temp = width[0]
+                        wid = int(temp)
+                        self.device_write(f":SOURce{ch}:PULSe:DCYCle {wid}")
+
+                    elif len(width) == 0:
+                        raw_answer = float(self.device_query(f":SOURce{ch}:PULSe:DCYCle?"))
+                        return f"{raw_answer} %"
+                else:
+                    general.message(f"You are not using the pulsed function of the waveform generator {self.__class__.__name__}")
 
         elif self.test_flag == 'test':
+            ch = channel
+            assert(ch == '1' or ch == '2'), "Incorrect waveform generator channel; channel: ['1', '2']"
             if len(width) == 1:
-                temp = width[0].split(" ")
-                wid = float(temp[0])
-                scaling = temp[1]
-                if scaling in self.timebase_dict:
-                    coef = self.timebase_dict[scaling]
-                else:
-                    assert(1 == 2), "Incorrect argument; width: float + [' s', ' ms', ' us', ' ns']"
+                temp = width[0]
+                wid = int(temp)
+                assert( wid >= self.min_duty and \
+                        wid <= self.max_duty), f"Incorrect duty cycle. The available range is from {self.min_duty} to {self.max_duty}"
             elif len(width) == 0:
                 answer = self.test_wave_gen_width
                 return answer
             else:
-                assert(1 == 2), "Incorrect argument; width: float + [' s', ' ms', ' us', ' ns']"
+                assert(1 == 2), "Incorrect argument; duty_cycle: int; channel: ['1', '2']"
 
-    def wave_gen_function(self, *function):
+    def wave_gen_function(self, *function, channel = '1'):
         if self.test_flag != 'test':
-            if  len(function) == 1:
+            ch = channel
+            if ch == '1' or ch == '2':
+                if len(function) == 1:
+                    func = str(function[0])
+                    if func in self.wavefunction_dic:
+                        flag = self.wavefunction_dic[func]
+                        self.device_write(f":SOURce{ch}:FUNCtion:SHAPe {flag}")
+
+                elif len(function) == 0:
+                    raw_answer = str(self.device_query(f":SOURce{ch}:FUNCtion:SHAPe?"))[:-1]
+                    answer = cutil.search_keys_dictionary(self.wavefunction_dic, raw_answer)
+                    return answer
+
+        if self.test_flag == 'test':
+            ch = channel
+            assert(ch == '1' or ch == '2'), "Incorrect waveform generator channel; channel: ['1', '2']"
+            if len(function) == 1:
                 func = str(function[0])
                 if func in self.wavefunction_dic:
                     flag = self.wavefunction_dic[func]
-                    f_max = pg.siFormat( self.max_freq_dict[flag], suffix = 'Hz', precision = 3, allowUnicode = False)
-
-                    if self.freq >= self.wave_gen_freq_min and self.freq <= self.max_freq_dict[self.func_type]:
-                        self.device_write(":WGEN:FUNCtion " + str(flag))
-                        self.func_type = flag
-                    else:
-                        general.message(f"Incorrect frequency range for {cutil.search_keys_dictionary(self.wavefunction_dic, flag)}. The available range is from {self.f_min} to {f_max}")
-
-            elif len(function) == 0:
-                raw_answer = str(self.device_query(':WGEN:FUNCtion?'))
-                answer = cutil.search_keys_dictionary(self.wavefunction_dic, raw_answer)
-                self.func_type = raw_answer
-                return answer
-
-        elif self.test_flag == 'test':
-            if  len(function) == 1:
-                func = str(function[0])
-                if func in self.wavefunction_dic:
-                    flag = self.wavefunction_dic[func]
-                    f_max = pg.siFormat( self.max_freq_dict[flag], suffix = 'Hz', precision = 3, allowUnicode = False)
                 else:
                     assert(1 == 2), f"Invalid waveform generator function. Available options are {list(self.wavefunction_dic.keys())}"
-
-                assert( self.freq >= self.wave_gen_freq_min and self.freq <= self.max_freq_dict[flag]), f"Incorrect frequency range for {cutil.search_keys_dictionary(self.wavefunction_dic, flag)}. The available range is from {self.f_min} to {f_max}"
-
-                self.func_type = flag
-
             elif len(function) == 0:
                 answer = self.test_wave_gen_function
                 return answer
             else:
-                assert(1 == 2), f"Invalid argument; function: {list(self.wavefunction_dic.keys())}"
+                assert(1 == 2), f"Invalid argument; function: {list(self.wavefunction_dic.keys())}; channel: ['1', '2']"
 
-    def wave_gen_amplitude(self, *amplitude):
+    def wave_gen_amplitude(self, *amplitude, channel = '1'):
         if self.test_flag != 'test':
-            if len(amplitude) == 1:
-                temp = amplitude[0]
-                val = pg.siEval(temp)
-                ampl_50_max = pg.siFormat( self.ampl_50_max, suffix = 'V', precision = 3, allowUnicode = False)
-                ampl_50_min = pg.siFormat( self.ampl_50_min, suffix = 'V', precision = 3, allowUnicode = False)
-                ampl_hz_max = pg.siFormat( self.ampl_hz_max, suffix = 'V', precision = 3, allowUnicode = False)
-                ampl_hz_min = pg.siFormat( self.ampl_hz_min, suffix = 'V', precision = 3, allowUnicode = False)
+            ch = channel
+            if ch == '1' or ch == '2':
+                if len(amplitude) == 1:
+                    temp = amplitude[0]
+                    val = pg.siEval(temp)
+                    ampl_50_max = pg.siFormat( self.ampl_50_max, suffix = 'V', precision = 3, allowUnicode = False)
+                    ampl_50_min = pg.siFormat( self.ampl_50_min, suffix = 'V', precision = 3, allowUnicode = False)
+                    ampl_hz_max = pg.siFormat( self.ampl_hz_max, suffix = 'V', precision = 3, allowUnicode = False)
+                    ampl_hz_min = pg.siFormat( self.ampl_hz_min, suffix = 'V', precision = 3, allowUnicode = False)
 
-                if self.wg_coupling_1 == '1 M':
-                    if (val >= self.ampl_hz_min and val <= self.ampl_hz_max):
-                        self.device_write(f":WGEN:VOLTage {val}")
-                    else:    
-                        f"Invalid amplitude range. Available ranges are (i) '1 M' {ampl_hz_min} - {ampl_hz_max}; (ii) '50' {ampl_50_min} - {ampl_50_max}"
-                elif self.wg_coupling_1 == '50':
-                    if (val >= self.ampl_50_min and val <= self.ampl_50_max):
-                        self.device_write(f":WGEN:VOLTage {val}")
-                    else:
-                        f"Invalid amplitude range. Available ranges are (i) '1 M' {ampl_hz_min} - {ampl_hz_max}; (ii) '50' {ampl_50_min} - {ampl_50_max}"
-            
-            elif len(amplitude) == 0:
-                raw_answer = float(self.device_query( f":WGEN:VOLTage?" ) )
-                answer = pg.siFormat( raw_answer, suffix = 'V', precision = 3, allowUnicode = False)
-                return answer
+                    if ch == '1':
+                        if self.wg_coupling_1 == '1 M':
+                            if (val >= self.ampl_hz_min and val <= self.ampl_hz_max):
+                                self.device_write(f":SOURce{ch}:VOLTage:LEVel:IMMediate:AMPLitude {val}")
+                            else:    
+                                f"Invalid amplitude range. Available ranges are (i) '1 M' {ampl_hz_min} - {ampl_hz_max}; (ii) '50' {ampl_50_min} - {ampl_50_max}"
+                        elif self.wg_coupling_1 == '50':
+                            if (val >= self.ampl_50_min and val <= self.ampl_50_max):
+                                self.device_write(f":SOURce{ch}:VOLTage:LEVel:IMMediate:AMPLitude {val}")
+                            else:    
+                                f"Invalid amplitude range. Available ranges are (i) '1 M' {ampl_hz_min} - {ampl_hz_max}; (ii) '50' {ampl_50_min} - {ampl_50_max}"
+                    
+                    elif ch == '2':
+    
+                        if self.wg_coupling_2 == '1 M':
+                            if (val >= self.ampl_hz_min and val <= self.ampl_hz_max):
+                                self.device_write(f":SOURce{ch}:VOLTage:LEVel:IMMediate:AMPLitude {val}")
+                            else:    
+                                f"Invalid amplitude range. Available ranges are (i) '1 M' {ampl_hz_min} - {ampl_hz_max}; (ii) '50' {ampl_50_min} - {ampl_50_max}"
+                        elif self.wg_coupling_2 == '50':
+                            if (val >= self.ampl_50_min and val <= self.ampl_50_max):
+                                self.device_write(f":SOURce{ch}:VOLTage:LEVel:IMMediate:AMPLitude {val}")
+                            else:    
+                                f"Invalid amplitude range. Available ranges are (i) '1 M' {ampl_hz_min} - {ampl_hz_max}; (ii) '50' {ampl_50_min} - {ampl_50_max}"
+
+                elif len(amplitude) == 0:
+                    raw_answer = float(self.device_query( f":SOURce{ch}:VOLTage:LEVel:IMMediate:AMPLitude?" ) )
+                    answer = pg.siFormat( raw_answer, suffix = 'V', precision = 3, allowUnicode = False)
+                    return answer
 
         elif self.test_flag == 'test':
+            ch = channel
+            assert(ch == '1' or ch == '2'), "Incorrect waveform generator channel; channel: ['1', '2']"
             if len(amplitude) == 1:
                 temp = amplitude[0]
                 val = pg.siEval(temp)
@@ -1014,33 +1075,43 @@ class Keysight_3000_Xseries:
                 ampl_50_min = pg.siFormat( self.ampl_50_min, suffix = 'V', precision = 3, allowUnicode = False)
                 ampl_hz_max = pg.siFormat( self.ampl_hz_max, suffix = 'V', precision = 3, allowUnicode = False)
                 ampl_hz_min = pg.siFormat( self.ampl_hz_min, suffix = 'V', precision = 3, allowUnicode = False)
-                if self.wg_coupling_1 == '1 M':
-                    assert(val >= self.ampl_hz_min and val <= self.ampl_hz_max), f"Invalid amplitude range. Available ranges are (i) '1 M' {ampl_hz_min} - {ampl_hz_max}; (ii) '50' {ampl_50_min} - {ampl_50_max}"
-                elif self.wg_coupling_1 == '50':
-                    assert(val >= self.ampl_50_min and val <= self.ampl_50_max), f"Invalid amplitude range. Available ranges are (i) '1 M' {ampl_hz_min} - {ampl_hz_max}; (ii) '50' {ampl_50_min} - {ampl_50_max}"
+                if ch == '1':
+                    if self.wg_coupling_1 == '1 M':
+                        assert(val >= self.ampl_hz_min and val <= self.ampl_hz_max), f"Invalid amplitude range. Available ranges are (i) '1 M' {ampl_hz_min} - {ampl_hz_max}; (ii) '50' {ampl_50_min} - {ampl_50_max}"
+                    elif self.wg_coupling_1 == '50':
+                        assert(val >= self.ampl_50_min and val <= self.ampl_50_max), f"Invalid amplitude range. Available ranges are (i) '1 M' {ampl_hz_min} - {ampl_hz_max}; (ii) '50' {ampl_50_min} - {ampl_50_max}"
+                elif ch == '2':
+                    if self.wg_coupling_2 == '1 M':
+                        assert(val >= self.ampl_hz_min and val <= self.ampl_hz_max), f"Invalid amplitude range. Available ranges are (i) '1 M' {ampl_hz_min} - {ampl_hz_max}; (ii) '50' {ampl_50_min} - {ampl_50_max}"
+                    elif self.wg_coupling_2 == '50':
+                        assert(val >= self.ampl_50_min and val <= self.ampl_50_max), f"Invalid amplitude range. Available ranges are (i) '1 M' {ampl_hz_min} - {ampl_hz_max}; (ii) '50' {ampl_50_min} - {ampl_50_max}"
 
             elif len(amplitude) == 0:
                 answer = self.test_wave_gen_amplitude
                 return answer
             else:
-                assert(1 == 2), f"Invalid argument; amplitude: float + [' V', ' mV']"
+                assert(1 == 2), f"Invalid argument; amplitude: float + [' V', ' mV']; channel: ['1', '2']"
 
-    def wave_gen_offset(self, *offset):
+    def wave_gen_offset(self, *offset, channel = '1'):
         if self.test_flag != 'test':
-            if len(offset) == 1:
-                temp = offset[0].split(" ")
-                val = float(temp[0])
-                scaling = temp[1]
-                if scaling in self.scale_dict:
-                    coef = self.scale_dict[scaling]
-                    self.device_write(":WGEN:VOLTage:OFFSet " + str(val/coef))
+            ch = channel
+            if ch == '1' or ch == '2':
+                if len(offset) == 1:
+                    temp = offset[0].split(" ")
+                    val = float(temp[0])
+                    scaling = temp[1]
+                    if scaling in self.scale_dict:
+                        coef = self.scale_dict[scaling]
+                        self.device_write(f":SOURce{ch}:VOLTage:LEVel:IMMediate:OFFSet {val/coef}")
 
-            elif len(offset) == 0:
-                raw_answer = float(self.device_query( ":WGEN:VOLTage:OFFSet?" ) )
-                answer = pg.siFormat( raw_answer, suffix = 'V', precision = 3, allowUnicode = False)
-                return answer
+                elif len(offset) == 0:
+                    raw_answer = float(self.device_query( f":SOURce{ch}:VOLTage:LEVel:IMMediate:OFFSet?" ) )
+                    answer = pg.siFormat( raw_answer, suffix = 'V', precision = 3, allowUnicode = False)
+                    return answer
 
         elif self.test_flag == 'test':
+            ch = channel
+            assert(ch == '1' or ch == '2'), "Incorrect waveform generator channel; channel: ['1', '2']"
             if len(offset) == 1:
                 temp = offset[0].split(" ")
                 val = float(temp[0])
@@ -1048,351 +1119,206 @@ class Keysight_3000_Xseries:
                 if scaling in self.scale_dict:
                     coef = self.scale_dict[scaling]
                 else:
-                    assert(1 == 2), "Incorrect argument; offset: float + [' V', ' mV']"
+                    assert(1 == 2), "Incorrect argument; offset: float + [' V', ' mV']; channel: ['1', '2']"
             elif len(offset) == 0:
                 answer = self.test_wave_gen_offset
                 return answer
             else:
-                assert(1 == 2), "Incorrect argument; offset: float + [' V', ' mV']"
+                assert(1 == 2), "Incorrect argument; offset: float + [' V', ' mV']; channel: ['1', '2']"
 
-    def wave_gen_impedance(self, *impedance):
+    def wave_gen_impedance(self, *impedance, channel = '1'):
         if self.test_flag != 'test':
-            if len(impedance) == 1:
-                cpl = str(impedance[0])
+            ch = channel
+            if ch == '1' or ch == '2':
+                if len(impedance) == 1:
+                    cpl = str(impedance[0])
 
-                self.wg_coupling_1 = cpl
+                    if ch == '1':
+                        self.wg_coupling_1 = cpl
+                    elif ch == '2':
+                        self.wg_coupling_2 = cpl
 
-                if cpl == '1 M':
-                    cpl = 'ONEMeg'
-                    self.device_write(":WGEN:OUTPut:LOAD " + str(cpl))
-                elif cpl == '50':
-                    cpl = 'FIFTy'
-                    self.device_write(":WGEN:OUTPut:LOAD " + str(cpl))
+                    if cpl == '1 M':
+                        cpl = 'OMEG'
+                        self.device_write( f":OUTPut{ch}:IMPedance {cpl}" )
+                    elif cpl == '50':
+                        cpl = 'FIFTy'
+                        self.device_write( f":OUTPut{ch}:IMPedance {cpl}" )
 
-            elif len(impedance) == 0:
-                answer = str(self.device_query(":WGEN:OUTPut:LOAD?"))
-                return answer
+                elif len(impedance) == 0:
+                    answer = str(self.device_query( f":OUTPut{ch}:IMPedance?" ) )[:-1]
+                    return answer
 
         elif self.test_flag == 'test':
+            ch = channel
+            assert(ch == '1' or ch == '2'), "Incorrect waveform generator channel; channel: ['1', '2']"
             if len(impedance) == 1:
                 cpl = str(impedance[0])
-                assert(cpl == '1 M' or cpl == '50'), "Invalid impedance argument; impedance: ['1 M', '50']; channel: ['1', '2']"
-                
-                self.wg_coupling_1 = cpl
 
+                if ch == '1':
+                    self.wg_coupling_1 = cpl
+                elif ch == '2':
+                    self.wg_coupling_2 = cpl
+
+                assert(cpl == '1 M' or cpl == '50'), "Invalid impedance argument; impedance: ['1 M', '50']; channel: ['1', '2']"
             elif len(impedance) == 0:
                 answer = self.test_wave_gen_impedance
                 return answer
             else:
                 assert(1 == 2), "Invalid impedance argument; impedance: ['1 M', '50']; channel: ['1', '2']"
 
-    def wave_gen_start(self):
+    def wave_gen_start(self, channel = '1'):
         if self.test_flag != 'test':
-            self.device_write(":WGEN:OUTPut 1")
+            ch = channel
+            if ch == '1' or ch == '2':
+                self.device_write( f":SOURce{ch}:OUTPut{ch}:STATe 1" )
         elif self.test_flag == 'test':
-            pass
+            ch = channel
+            assert(ch == '1' or ch == '2'), "Incorrect waveform generator channel; channel: ['1', '2']"
 
-    def wave_gen_stop(self):
+    def wave_gen_stop(self, channel = '1'):
         if self.test_flag != 'test':
-            self.device_write(":WGEN:OUTPut 0")
+            ch = channel
+            if ch == '1' or ch == '2':
+                self.device_write( f":SOURce{ch}:OUTPut{ch}:STATe 0" )
+
         elif self.test_flag == 'test':
-            pass
+            ch = channel
+            assert(ch == '1' or ch == '2'), "Incorrect waveform generator channel; channel: ['1', '2']"
 
+    def wave_gen_phase(self, *phase, channel = '1'):
+        ch = channel
+        if self.test_flag != 'test':
+            if len(phase) == 1:
+                ph = int(phase[0])
+                if self.test_flag != 'test':
+                    self.device_write( f":SOURce{ch}:PHASe:ADJust {ph}" )
+                elif self.test_flag == 'test':
+                    assert( ph >= 0 and ph <= 360 ), f"Incorrect phase. Available phase range is from 0 deg to 360 deg"
+            elif len(phase) == 0:
+                if self.test_flag != 'test':
+                    raw_answer = float( self.device_query(f":SOURce{ch}:PHASe:ADJust?") )
+                elif self.test_flag == 'test':
+                    raw_answer = self.test_phase
+                
+                return f"{raw_answer} deg"
 
-    def wave_gen_modulation_type(self, *type):
+        elif self.test_flag == 'test':
+            assert( ch == '1' or ch == '2' ), "Incorrect waveform generator channel; phase: int; channel: ['1', '2']"
+
+    # MODULATION
+    def wave_gen_modulation_function(self, *function, channel = '1'):
+        """
+        :MOD:AM:INTernal:FUNCtion
+        [Sine', 'Sq', 'Ramp', 'Noise'] for AM and FM modulation
+        """
+        ch = channel
+        if len(function) == 1:
+            func = str(function[0])
+            flag = self.modulation_wavefunction_dict[func]
+            if self.test_flag != 'test':
+                if ch == '1':
+                    mod_type = self.mod_type_1
+                elif ch == '2':
+                    mod_type = self.mod_type_2
+
+                if mod_type == 'AM' or mod_type == 'FM':
+                    self.device_write(f":SOURce{ch}:MOD:{mod_type}:INTernal:FUNCtion {flag}")
+                else:
+                    general.message(f"Setting modulation function is available only for ['AM', 'FM'] modulation type. The current type is {mod_type}")
+
+            elif self.test_flag == 'test':
+                assert(ch == '1' or ch == '2'), "Incorrect waveform generator channel; channel: ['1', '2']"
+                assert(func in self.modulation_wavefunction_dict), f"Invalid modulation function. Available options are {list(self.modulation_wavefunction_dict.keys())}"
+
+        elif len(function) == 0:
+            if self.test_flag != 'test':
+                if ch == '1':
+                    mod_type = self.mod_type_1
+                elif ch == '2':
+                    mod_type = self.mod_type_2
+                
+                if mod_type == 'AM' or mod_type == 'FM':
+                    raw_answer = str(self.device_query(f":SOURce{ch}:MOD:{mod_type}:INTernal:FUNCtion?"))
+                    answer = cutil.search_keys_dictionary(self.modulation_wavefunction_dict, raw_answer)
+                    return answer
+                else:
+                    general.message(f"Querying modulation function is available only for ['AM', 'FM'] modulation type. The current type is {mod_type}")
+                    return 'Incorrect modulation type' 
+
+            elif self.test_flag == 'test':
+                assert(ch == '1' or ch == '2'), "Incorrect waveform generator channel; channel: ['1', '2']"
+                answer = self.test_mod_function
+                return answer
+
+        else:
+            if self.test_flag == 'test':
+                raise ValueError(f"Incorrect argument; function: {list(self.modulation_wavefunction_dict.keys())}; channel = ['1', '2']")
+
+    def wave_gen_modulation_type(self, *type, channel = '1'):
         """
         [AM', 'FM', 'Freq-Shift']
         """
+        ch = channel
         if len(type) == 1:
             func = str(type[0])
             flag = self.modulation_type_dict[func]
             if self.test_flag != 'test':
-                self.device_write(f":WGEN:MODulation:TYPE {flag}")
-                self.mod_type = flag
+                self.device_write(f":SOURce{ch}:MODulation:TYPE {flag}")
+                if ch == '1':
+                    self.mod_type_1 = flag
+                elif ch == '2':
+                    self.mod_type_2 = flag
             elif self.test_flag == 'test':
-                assert(func in self.modulation_type_dict), f"Invalid modulation function. Available options are {list(self.modulation_type_dict.keys())}"
+                assert(ch == '1' or ch == '2'), "Incorrect waveform generator channel; channel: ['1', '2']"
+                assert(func in self.modulation_type_dict), f"Invalid modulation type. Available options are {list(self.modulation_type_dict.keys())}"
 
         elif len(type) == 0:
             if self.test_flag != 'test':            
-                raw_answer = str(self.device_query(':WGEN:MODulation:TYPE?'))
-                self.mod_type = raw_answer
+                raw_answer = str(self.device_query(f':SOURce{ch}:MODulation:TYPE?'))
+                if ch == '1':
+                    self.mod_type_1 = raw_answer
+                elif ch == '2':
+                    self.mod_type_2 = raw_answer
                 answer = cutil.search_keys_dictionary(self.modulation_type_dict, raw_answer)
                 return answer
             elif self.test_flag == 'test':
+                assert(ch == '1' or ch == '2'), "Incorrect waveform generator channel; channel: ['1', '2']"
                 answer = self.test_mod_type
                 return answer
 
         else:
             if self.test_flag == 'test':
-                assert( 1 == 2 ), f"Incorrect argument; type: {list(self.modulation_type_dict.keys())}"
+                raise ValueError(f"Incorrect argument; type: {list(self.modulation_type_dict.keys())}; channel = ['1', '2']")
 
-    def wave_gen_modulation_function(self, *function):
+    def wave_gen_modulation_depth(self, *depth, channel = '1'):
         """
-        ['Sin', 'Sq', 'Ramp']
+        [:SOURce[<n>]]:MOD:AM[:DEPTh] <depth>
+        0 - 100
         """
-        if len(function) == 1:
-            func = str(function[0])
-            flag = self.modulation_wavefunction_dict[func]
-            if self.test_flag != 'test':
-                self.device_write(f":WGEN:MODulation:FUNCtion {flag}")
-            elif self.test_flag == 'test':
-                assert(func in self.modulation_wavefunction_dict), f"Invalid modulation function. Available options are {list(self.modulation_wavefunction_dict.keys())}"
-
-        elif len(function) == 0:
-            if self.test_flag != 'test':            
-                raw_answer = str(self.device_query(':WGEN:MODulation:FUNCtion?'))
-                answer = cutil.search_keys_dictionary(self.modulation_wavefunction_dict, raw_answer)
-                return answer
-            elif self.test_flag == 'test':
-                answer = self.test_mod_function
-                return answer
-        else:
-            if self.test_flag == 'test':
-                assert( 1 == 2 ), f"Incorrect argument; function: {list(self.modulation_wavefunction_dict.keys())}"
-
-    def wave_gen_modulation_depth(self, *depth):
-        """
-        sets the AM modulation depth to i percent ( 0 to 100%).
-        """
+        ch = channel
         if len(depth) == 1:
             val = int(depth[0])
             if self.test_flag != 'test':
-                self.device_write(f":WGEN:MODulation:AM:DEPTh {val}")
+                self.device_write(f":SOURce{ch}:MOD:AM:DEPTh {val}")
             elif self.test_flag == 'test':
+                assert(ch == '1' or ch == '2'), "Incorrect waveform generator channel; channel: ['1', '2']"
                 assert( (val >= 0) and (val <= 100) ), f"Invalid modulation depth range. The available range is from 0 % to 100 %"
 
         elif len(depth) == 0:
             if self.test_flag != 'test':            
-                raw_answer = int(self.device_query(':WGEN:MODulation:AM:DEPTh?'))
+                raw_answer = int(self.device_query(f":SOURce{ch}:MOD:AM:DEPTh?"))
                 return f"{raw_answer} %"
             elif self.test_flag == 'test':
+                assert(ch == '1' or ch == '2'), "Incorrect waveform generator channel; channel: ['1', '2']"
                 answer = self.test_mod_depth
                 return answer
 
         else:
             if self.test_flag == 'test':
-                assert( 1 == 2 ), f"Incorrect argument; depth: int [0 - 100]"
-
-    def wave_gen_modulation_status(self, *status):
-        """
-        except pulse, DC, and noise.
-        """
-        if len(status) == 1:
-            func = str(status[0])
-            flag = self.status_dict[func]
-            if self.test_flag != 'test':
-                if (self.func_type != 'PULS') or (self.func_type != 'DC') or (self.func_type != 'NOIS'):
-                    self.device_write(f":WGEN:MODulation:STATe {flag}")
-                else:
-                    general.message(f"Modulation is not available for ['Pulse', 'DC', 'Noise']. The current function is {cutil.search_keys_dictionary(self.wavefunction_dic, self.func_type)}")
-
-            elif self.test_flag == 'test':
-                assert(func in self.status_dict), f"Invalid modulation regime. Available options are {list(self.status_dict.keys())}"
-
-        elif len(status) == 0:
-            if self.test_flag != 'test':            
-                raw_answer = int(self.device_query(':WGEN:MODulation:STATe?'))
-                answer = cutil.search_keys_dictionary(self.status_dict, raw_answer)
-                return answer
-            elif self.test_flag == 'test':
-                answer = self.test_mod_status
-                return answer
-
-        else:
-            if self.test_flag == 'test':
-                assert( 1 == 2 ), f"Incorrect argument; status: {list(self.status_dict.keys())}"
-
-    def wave_gen_modulation_rate(self, *rate):
-        """
-        The :WGEN:MODulation:FM:FREQuency command specifies the frequency of the modulating signal
-        The :WGEN:MODulation:AM:FREQuency command specifies the frequency of the modulating signal
-        self.mod_type: ['AM', 'FM']
-        """
-        if len(rate) == 1:
-            freq = pg.siEval( rate[0] )
-
-            if self.test_flag != 'test':
-                if self.mod_type == 'AM':
-                    self.device_write( f":WGEN:MODulation:AM:FREQuency {freq}" )
-                elif self.mod_type == 'FM':
-                    self.device_write( f":WGEN:MODulation:FM:FREQuency {freq}" )
-                else:
-                    general.message(f"Frequency of the modulating signal can be set only for ['AM', 'FM'] modulation type. The current type is {cutil.search_keys_dictionary(self.modulation_type_dict, self.mod_type)}")
-
-            elif self.test_flag == 'test':
-                temp = rate[0].split(" ")
-                scaling = temp[1]
-                assert(scaling in self.rate_freq_list), f"Incorrect SI suffix. Available options are {self.rate_freq_list}"
-                # there is no limit indication in the programming guide 
-                #assert( freq >= 0.001 and freq <= 10e3 ), f"Incorrect frequency rate range. The available range is from 1 mHz to 10 kHz"
-
-        elif len(rate) == 0:
-            if self.test_flag != 'test':
-                if self.mod_type == 'AM':
-                    raw_answer = self.device_query( f":WGEN:MODulation:AM:FREQuency?" )
-                elif self.mod_type == 'FM':
-                    raw_answer = self.device_query( f":WGEN:MODulation:FM:FREQuency?" )
-                else:
-                    general.message(f"Frequency of the modulating signal can be get only for ['AM', 'FM'] modulation type. The current type is {cutil.search_keys_dictionary(self.modulation_type_dict, self.mod_type)}")
-
-                answer = pg.siFormat( raw_answer, suffix = 'Hz', precision = 7, allowUnicode = False)
-                return answer
-            elif self.test_flag == 'test':
-                return self.test_mod_rate
-
-        else:
-            if self.test_flag == 'test':
-                assert(1 == 2), "Incorrect argument; rate: float + [' MHz', ' kHz', ' Hz', ' mHz']"
-
-    def wave_gen_modulation_frequency_span(self, *span):
-        """
-        :WGEN:MODulation:FM:DEViation <frequency>
-        The frequency deviation cannot be greater than the original carrier signal
-        frequency.
-        Also, the sum of the original carrier signal frequency and the frequency deviation
-        must be less than or equal to the maximum frequency for the selected waveform
-        generator function plus 100 kHz
-        """
-        f_max = pg.siFormat( self.max_freq_dict[self.func_type], suffix = 'Hz', precision = 3, allowUnicode = False)
-        if len(span) == 1:
-            freq = pg.siEval( span[0] ) / 2
-
-            if self.test_flag != 'test':
-                if (self.freq - freq) >= self.wave_gen_freq_min and (self.freq + freq) <= self.max_freq_dict[self.func_type]:
-                    self.device_write(":WGEN:MODulation:FM:DEViation " + str(freq))
-                else:
-                    general.message(f"Incorrect frequency range for {cutil.search_keys_dictionary(self.wavefunction_dic, self.func_type)}. The available range is from {self.f_min} to {f_max}")
-
-            elif self.test_flag == 'test':
-                temp = span[0].split(" ")
-                scaling = temp[1]
-                assert(scaling in self.freq_list), f"Incorrect SI suffix. Available options are {self.freq_list}"
-                #assert( (self.freq - freq) >= self.wave_gen_freq_min and (self.freq + freq) <= self.max_freq_dict[self.func_type] ), f"Incorrect frequency range for {cutil.search_keys_dictionary(self.wavefunction_dic, self.func_type)}. The available range is from {self.f_min} to {f_max}"
-
-        elif len(span) == 0:
-            if self.test_flag != 'test':
-                raw_answer = float(self.device_query(":WGEN:MODulation:FM:DEViation?"))
-                answer = pg.siFormat( raw_answer, suffix = 'Hz', precision = 8, allowUnicode = False)
-                return answer
-            elif self.test_flag == 'test':
-                return self.test_mod_span_frequency
-
-        else:
-            if self.test_flag == 'test':
-                assert(1 == 2), "Incorrect argument; span: float + [' MHz', ' kHz', ' Hz', ' mHz', ' uHz']"
-
-    def wave_gen_modulation_hop_frequency(self, *frequency):
-        """
-        The :WGEN:MODulation:FSKey:FREQuency command specifies the "hop frequency".
-        The output frequency "shifts" between the original carrier frequency and this "hop frequency".
-        """
-        if len(frequency) == 1:
-            freq = pg.siEval( frequency[0] )
-
-            if self.test_flag != 'test':
-                self.device_write( f":WGEN:MODulation:FSKey:FREQuency {freq}" )
-
-            elif self.test_flag == 'test':
-                temp = frequency[0].split(" ")
-                scaling = temp[1]
-                assert(scaling in self.rate_freq_list), f"Incorrect SI suffix. Available options are {self.rate_freq_list}"
-                assert( self.mod_type == 'FSK' ), f"This function is available only for 'Freq-Shift' modulation type. Current type is {cutil.search_keys_dictionary(self.modulation_type_dict, self.mod_type)}"
-
-        elif len(rate) == 0:
-            if self.test_flag != 'test':
-                raw_answer = self.device_query( f":WGEN:MODulation:FSKey:FREQuency?" )
-                answer = pg.siFormat( raw_answer, suffix = 'Hz', precision = 7, allowUnicode = False)
-                return answer
-            elif self.test_flag == 'test':
-                return self.test_mod_hop
-
-        else:
-            if self.test_flag == 'test':
-                assert(1 == 2), "Incorrect argument; rate: float + [' MHz', ' kHz', ' Hz', ' mHz']"
-
-    def wave_gen_modulation_hop_rate(self, *rate):
-        """
-        The :WGEN:MODulation:FSKey:RATE command specifies the rate at which the
-        output frequency "shifts".
-        The FSK rate specifies a digital square wave modulating signal.
-        """
-        if len(rate) == 1:
-            rt = pg.siEval( rate[0] )
-
-            if self.test_flag != 'test':
-                self.device_write( f":WGEN:MODulation:FSKey:RATE {rt}" )
-
-            elif self.test_flag == 'test':
-                temp = rate[0].split(" ")
-                scaling = temp[1]
-                assert(scaling in self.rate_freq_list), f"Incorrect SI suffix. Available options are {self.rate_freq_list}"
-                assert( self.mod_type == 'FSK' ), f"This function is available only for 'Freq-Shift' modulation type. Current type is {cutil.search_keys_dictionary(self.modulation_type_dict, self.mod_type)}"
-
-        elif len(rate) == 0:
-            if self.test_flag != 'test':
-                raw_answer = self.device_query( f":WGEN:MODulation:FSKey:RATE?" )
-                answer = pg.siFormat( raw_answer, suffix = 'Hz', precision = 7, allowUnicode = False)
-                return answer
-            elif self.test_flag == 'test':
-                return self.test_mod_rate
-
-        else:
-            if self.test_flag == 'test':
-                assert(1 == 2), "Incorrect argument; rate: float + [' MHz', ' kHz', ' Hz', ' mHz']"
+                assert( 1 == 2 ), f"Incorrect argument; depth: int [0 - 100]; channel = ['1', '2']"
 
 
-    def wave_gen_arbitrary_function_data(self, p_list):
-        if self.test_flag != 'test':
-            if len(p_list) > 0:
-                if all(element >= -1.0 and element <= 1.0 for element in p_list) == True:
-                    str_to_general = ", ".join(str(x) for x in p_list)
-                    self.device_write(":WGEN:ARBitrary:DATA " + str(str_to_general))
-
-        elif self.test_flag == 'test':
-            if len(p_list) > 0:
-                if all(element >= -1.0 and element <= 1.0 for element in p_list) == True:
-                    str_to_general = ", ".join(str(x) for x in p_list)
-                else:
-                    assert(1 == 2), f"Incorrect points are used. Available range for points is from -1.0 to 1.0"
-            else:
-                assert(1 == 2), 'Incorrect list of points; p_list: list(p); p: float from -1.0 to 1.0'
-
-    def wave_gen_arbitrary_interpolation(self, *mode):
-        if self.test_flag != 'test':
-            if len(mode) == 1:
-                md = str(mode[0])
-                if md == 'On':
-                    self.device_write(":WGEN:ARBitrary:INTerpolate 1")
-                elif md == 'Off':
-                    self.device_write(":WGEN:ARBitrary:INTerpolate 0")
-            elif len(mode) == 0:
-                raw_answer = int(self.device_query(":WGEN"+str(ch) + ":ARBitrary:INTerpolate?"))
-                answer = cutil.search_keys_dictionary(self.wave_gen_interpolation_dictionary, raw_answer)
-                return answer
-
-        elif self.test_flag == 'test':
-            if len(mode) == 1:
-                md = str(mode[0])
-                assert(md == 'On' or md == 'Off'), "Invalid interpolation argument; mode: ['On', 'Off']"
-            elif len(mode) == 0:
-                answer = self.test_wave_gen_interpolation
-                return answer
-            else:
-                assert(1 == 2), "Invalid interpolation argument; mode: ['On', 'Off']"
-
-    def wave_gen_arbitrary_clear(self):
-        if self.test_flag != 'test':
-            self.device_write(":WGEN:ARBitrary:DATA:CLEar")
-        elif self.test_flag == 'test':
-            pass
-
-    def wave_gen_arbitrary_number_of_points(self):
-        if self.test_flag != 'test':
-            answer = int(self.device_query(":WGEN:ARBitrary:DATA:ATTRibute:POINts?"))
-            return answer
-        elif self.test_flag == 'test':
-            answer = self.test_wave_gen_points
-            return answer
 
     def wave_gen_command(self, command):
         if self.test_flag != 'test':

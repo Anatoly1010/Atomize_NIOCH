@@ -1,28 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import os
-import gc
 import sys
-import pyvisa
-from pyvisa.constants import StopBits, Parity
+import atomize.device_modules.base_device as base
 import atomize.device_modules.config.config_utils as cutil
 import atomize.general_modules.general_functions as general
 
-class Lakeshore_335:
+class Lakeshore_335(base.BaseDevice):
+    config_file = 'Lakeshore_335_config.ini'
+
     #### Basic interaction functions
     def __init__(self):
-
-        #### Inizialization
-        # setting path to *.ini file
-        self.path_current_directory = os.path.dirname(__file__)
-        self.path_config_file = os.path.join(self.path_current_directory, 'config','Lakeshore_335_config.ini')
-
-        # configuration data
-        self.config = cutil.read_conf_util(self.path_config_file)
-        self.specific_parameters = cutil.read_specific_parameters(self.path_config_file)
-        self.loop_config = int(self.specific_parameters['loop']) # information about the loop used
-
         # auxilary dictionaries
         self.heater_dict = {'50 W': 3, '5 W': 2, '0.5 W': 1, 'Off': 0,};
         self.lock_dict = {'Local-Locked': 0, 'Remote-Locked': 1, 'Local-Unlocked': 2, 'Remote-Unlocked': 3,}
@@ -33,109 +21,25 @@ class Lakeshore_335:
         self.temperature_max = 320
         self.temperature_min = 0.3
 
-        # Test run parameters
-        # These values are returned by the modules in the test run 
-        if len(sys.argv) > 1:
-            self.test_flag = sys.argv[1]
-        else:
-            self.test_flag = 'None'
+        # config loading, test_flag, and connection are handled by BaseDevice
+        super().__init__()
 
-        if self.test_flag != 'test':
-            if self.config['interface'] == 'gpib':
-                try:
-                    import Gpib
-                    self.status_flag = 1
-                    self.device = Gpib.Gpib(self.config['board_address'], self.config['gpib_address'], \
-                                            timeout = self.config['timeout'])
-                    try:
-                        # test should be here
-                        self.device_write('*CLS')
-                        answer = int(self.device_query('*TST?'))
-                        if answer == 0:
-                            self.status_flag = 1
-                        else:
-                            general.message('During internal device test errors are found')
-                            self.status_flag = 0
-                            sys.exit()
-                    except BrokenPipeError:
-                        general.message("No connection")
-                        self.status_flag = 0;
-                        sys.exit()
-                except BrokenPipeError:        
-                    general.message("No connection")
-                    self.status_flag = 0
-                    sys.exit()
+        # information about the loop used
+        self.loop_config = int(self.specific_parameters['loop'])
 
-            elif self.config['interface'] == 'rs232':
-                try:
-                    self.status_flag = 1
-                    rm = pyvisa.ResourceManager()
-                    self.device = rm.open_resource(self.config['serial_address'], read_termination=self.config['read_termination'],
-                    write_termination=self.config['write_termination'], baud_rate=self.config['baudrate'],
-                    data_bits=self.config['databits'], parity=self.config['parity'], stop_bits=self.config['stopbits'])
-                    self.device.timeout = self.config['timeout'] # in ms
-                    try:
-                        # test should be here
-                        self.device_write('*CLS')
-                        answer = self.device_query('*TST?')
-                        if answer == 0:
-                            self.status_flag = 1
-                        else:
-                            general.message('During internal device test errors are found')
-                            self.status_flag = 0
-                            sys.exit()
-                    except pyvisa.VisaIOError:
-                        self.status_flag = 0
-                        general.message("No connection")
-                        sys.exit()
-                    except BrokenPipeError:
-                        general.message("No connection")
-                        self.status_flag = 0
-                        sys.exit()
-                except pyvisa.VisaIOError:
-                    general.message("No connection")
-                    self.status_flag = 0
-                    sys.exit()
-                except BrokenPipeError:
-                    general.message("No connection")
-                    self.status_flag = 0
-                    sys.exit()
+    def _init_test_values(self):
+        # These values are returned by the module in the test run
+        self.test_temperature = 200.
+        self.test_set_point = 298.
+        self.test_lock = 'Remote-Locked'
+        self.test_heater_range = '5 W'
+        self.test_heater_percentage = 1.
+        self.test_sensor = 'A'
 
-        elif self.test_flag == 'test':
-            self.test_temperature = 200.
-            self.test_set_point = 298.
-            self.test_lock = 'Remote-Locked'
-            self.test_heater_range = '5 W'
-            self.test_heater_percentage = 1.
-            self.test_sensor = 'A'
-
-    def close_connection(self):
-        if self.test_flag != 'test':
-            self.status_flag = 0
-            gc.collect()
-        elif self.test_flag == 'test':
-            pass
-
-    def device_write(self, command):
-        if self.status_flag == 1:
-            command = str(command)
-            self.device.write(command)
-        else:
-            general.message("No Connection")
-            self.status_flag = 0
-            sys.exit()
-
-    def device_query(self, command):
-        if self.status_flag == 1:
-            if self.config['interface'] == 'gpib':
-                self.device.write(command)
-                general.wait('50 ms')
-                answer = self.device.read()
-            elif self.config['interface'] == 'rs232':
-                answer = self.device.query(command)
-            return answer
-        else:
-            general.message("No Connection")
+    def _self_test(self):
+        self.device_write('*CLS')
+        if int(self.device_query('*TST?')) != 0:
+            general.message(f'During internal device test errors were found {self.__class__.__name__}')
             self.status_flag = 0
             sys.exit()
 
@@ -161,12 +65,9 @@ class Lakeshore_335:
             elif channel == 'B':
                 answer = float(self.device_query('KRDG? B'))
                 return answer
-            else:
-                general.message("Invalid argument")
-                sys.exit()
-        
+
         elif self.test_flag == 'test':
-            assert(channel == 'A' or channel == 'B'), "Incorrect channel"
+            assert(channel == 'A' or channel == 'B'), "Incorrect channel; channel: ['A', 'B']"
             answer = self.test_temperature
             return answer
 
@@ -177,27 +78,24 @@ class Lakeshore_335:
                     temp = float(temp[0])
                     if temp <= self.temperature_max and temp >= self.temperature_min:
                         self.device.write('SETP ' + str(self.loop_config) + ',' + str(temp))
-                    else:
-                        general.message("Incorrect set point temperature")
-                        sys.exit()
+
                 elif len(temp) == 0:
                     answer = float(self.device_query('SETP? ' + str(self.loop_config)))
-                    return answer   
-                else:
-                    general.message("Invalid argument")
-                    sys.exit()
-            else:
-                general.message("Invalid loop")
-                sys.exit()              
+                    return answer
 
         elif self.test_flag == 'test':
             if len(temp) == 1:
                 temp = float(temp[0])
-                assert(temp <= self.temperature_max and temp >= self.temperature_min), 'Incorrect set point temperature is reached'
-                assert(int(self.loop_config) in self.loop_list), 'Invalid loop argument'
+                assert(temp <= self.temperature_max and temp >= self.temperature_min),\
+                    f'Incorrect set point temperature is reached. The available range is from {self.temperature_min} to {self.temperature_max}'
+                assert(int(self.loop_config) in self.loop_list), f'Invalid loop argument. Check the configuration file; loop: {self.loop_list}'
+                self.test_set_point = temp
+                self.test_temperature = temp + 0.05
             elif len(temp) == 0:
                 answer = self.test_set_point
                 return answer
+            else:
+                assert(1 == 2), f"Invalid set point argument; temp: float; channel: ['A', 'B']"
 
     def tc_heater_range(self, *heater):
         if self.test_flag != 'test':
@@ -207,33 +105,25 @@ class Lakeshore_335:
                     flag = self.heater_dict[hr]
                     if int(self.loop_config) in self.loop_list:
                         self.device_write("RANGE " + str(self.loop_config) + ',' + str(flag))
-                    else:
-                        general.message('Invalid loop')
-                        sys.exit()
-                else:
-                    general.message("Invalid heater range")
-                    sys.exit()
+
             elif len(heater) == 0:
                 raw_answer = int(self.device_query("RANGE? " + str(self.loop_config)))
                 answer = cutil.search_keys_dictionary(self.heater_dict, raw_answer)
                 return answer
-            else:
-                general.message("Invalid argument")
-                sys.exit()
 
-        elif self.test_flag == 'test':                           
+        elif self.test_flag == 'test':
             if  len(heater) == 1:
                 hr = str(heater[0])
                 if hr in self.heater_dict:
                     flag = self.heater_dict[hr]
-                    assert(int(self.loop_config) in self.loop_list), 'Invalid loop argument'
+                    assert(int(self.loop_config) in self.loop_list), f'Invalid loop argument. Check the configuration file; loop: {self.loop_list}'
                 else:
-                    assert(1 == 2), "Invalid heater range"
+                    assert(1 == 2), f"Invalid heater range; heater: {list(self.heater_dict.keys())}"
             elif len(heater) == 0:
                 answer = self.test_heater_range
                 return answer
             else:
-                assert(1 == 2), "Invalid heater range"
+                assert(1 == 2), f"Invalid heater range; heater: {list(self.heater_dict.keys())}"
 
     def tc_heater_power(self):
         if self.test_flag != 'test':
@@ -242,31 +132,21 @@ class Lakeshore_335:
                 answer = float(self.device_query('HTR? ' + str(self.loop_config)))
                 full_answer = [answer, answer1]
                 return full_answer
-            else:
-                general.message('Invalid loop')
-                sys.exit()              
 
         elif self.test_flag == 'test':
-            assert(int(self.loop_config) in self.loop_list), 'Invalid loop argument'
+            assert(int(self.loop_config) in self.loop_list), f'Invalid loop argument. Check the configuration file; loop: {self.loop_list}'
             answer1 = self.test_heater_range
             answer = self.test_heater_percentage
             full_answer = [answer, answer1]
             return full_answer
 
-    def tc_sensor(self, *sensor): 
+    def tc_sensor(self, *sensor):
         if self.test_flag != 'test':
             if len(sensor) == 1:
                 sens = int(sensor[0])
-                if self.loop_config in self.loop_list:
-                    pass
-                else:
-                    general.message('Invalid loop')
-                    sys.exit()
+
                 if sens in self.sens_dict:
                     self.device_write('OUTMODE '+ str(self.loop_config) + ',' + '1,' + str(sens) +',0')
-                else:
-                    general.message('Invalid sensor')
-                    sys.exit()
 
             elif len(sensor) == 0:
                 # check whether using rs-232 we have the same
@@ -280,14 +160,13 @@ class Lakeshore_335:
                     answer = self.sens_dict[raw_answer2]
                     return answer
                 else:
-                    general.message('Invalid response of the device')
-                    sys.exit()
+                    general.message(f'Invalid response of the device {self.__class__.__name__}')
 
         elif self.test_flag == 'test':
             if len(sensor) == 1:
                 sens = int(sensor[0])
-                assert(self.loop_config in self.loop_list), 'Invalid loop argument'
-                assert(sens in self.sens_dict), 'Invalid sensor'
+                assert(self.loop_config in self.loop_list), f'Invalid loop argument. Check the configuration file; loop: {self.loop_list}'
+                assert(sens in self.sens_dict), f'Invalid sensor argument; sensor: {list(self.sens_dict.keys())}'
             elif len(sensor) == 0:
                 answer = self.test_sensor
                 return answer
@@ -310,9 +189,7 @@ class Lakeshore_335:
                     elif flag == 3:
                         self.device_write('LOCK 0,123')
                         self.device_write('MODE 1')
-                else:
-                    general.message("Invalid argument")
-                    sys.exit()
+
             elif len(lock) == 0:
                 raw_answer1 = self.device_query('LOCK?')
                 # check whether using rs-232 we have the same
@@ -338,9 +215,6 @@ class Lakeshore_335:
                     answer_flag = 3
                     answer = cutil.search_keys_dictionary(self.lock_dict, answer_flag)
                     return answer
-            else:
-                general.message("Invalid argument")
-                sys.exit()                      
 
         elif self.test_flag == 'test':
             if len(lock) == 1:
@@ -348,12 +222,12 @@ class Lakeshore_335:
                 if lk in self.lock_dict:
                     flag = self.lock_dict[lk]
                 else:
-                    assert(1 == 2), "Invalid lock argument"
+                    assert(1 == 2), f"Invalid lock argument; lock: {list( self.lock_dict.keys() )}"
             elif len(lock) == 0:
                 answer = self.test_lock
-                return answer    
+                return answer
             else:
-                assert(1 == 2), "Invalid argument"
+                assert(1 == 2), f"Invalid lock argument; lock: {list( self.lock_dict.keys() )}"
 
     def tc_command(self, command):
         if self.test_flag != 'test':

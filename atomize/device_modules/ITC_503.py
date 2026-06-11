@@ -19,8 +19,8 @@ class ITC_503:
 
         #### Inizialization
         # setting path to *.ini file
-        self.path_current_directory = os.path.dirname(__file__)
-        self.path_config_file = os.path.join(self.path_current_directory, 'config', 'ITC_503_config.ini')
+        self.path_current_directory = lconf.load_config_device()
+        self.path_config_file = os.path.join(self.path_current_directory, 'ITC_503_config.ini')
 
         # configuration data
         self.config = cutil.read_conf_util(self.path_config_file)

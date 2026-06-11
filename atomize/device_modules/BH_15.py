@@ -5,6 +5,12 @@ import os
 import gc
 import sys
 import math
+import time
+import atomize.main.local_config as lconf
+try:
+    import atomize.control_center.field_param as field_param
+except ImportError:
+    field_param = None
 import atomize.device_modules.config.config_utils as cutil
 import atomize.general_modules.general_functions as general
 
@@ -32,8 +38,8 @@ class BH_15:
 
         #### Inizialization
         # setting path to *.ini file
-        self.path_current_directory = os.path.dirname(__file__)
-        self.path_config_file = os.path.join(self.path_current_directory, 'config','BH_15_config.ini')
+        self.path_current_directory = lconf.load_config_device()
+        self.path_config_file = os.path.join(self.path_current_directory, 'BH_15_config.ini')
 
         # configuration data
         self.config = cutil.read_conf_util(self.path_config_file)
@@ -68,6 +74,14 @@ class BH_15:
         """
         self.max_set_retries = 2
 
+        # fc_test_leds throttle: in a tight magnet_field() loop the LED GPIB
+        # query dominates per-call latency, so the routine skips it when the
+        # previous check was less than this many seconds ago. One-shot paths
+        # (init, sweep start) pass force=True to bypass the throttle. Set
+        # to 0 to disable throttling and always query.
+        self.fc_test_leds_min_interval = 0.5
+        self._fc_test_leds_last_t = 0.0
+
         self.max_sweep_width = 16000.0
         self.min_field = -50.0
         self.max_field = 23000.0
@@ -101,12 +115,12 @@ class BH_15:
                         # The device seems to need a bit of time after being switched to remote mode
                         general.wait('1 s')
                     except BrokenPipeError:
-                        general.message("No connection")
+                        general.message(f"No connection {self.__class__.__name__}")
                         self.device.close()
                         self.status_flag = 0
                         sys.exit()              
                 except BrokenPipeError:
-                        general.message("No connection")
+                        general.message(f"No connection {self.__class__.__name__}")
                         self.device.close()
                         self.status_flag = 0
                         sys.exit()
@@ -132,6 +146,18 @@ class BH_15:
         if self.max_sw > self.max_field - self.min_field:
             self.max_sw = self.max_field - self.min_field
 
+
+        self.path_status_file = field_param.path() if field_param is not None else None
+
+        if field_param is not None:
+            try:
+                if os.path.exists(self.path_status_file):
+                    cur_field = field_param.current_field()
+                    self.magnet_setup(cur_field, 1)
+                    self.magnet_field(cur_field)
+            except (FileNotFoundError, IndexError, ValueError):
+                pass
+
     def magnet_name(self):
         if self.test_flag != 'test':
             answer = self.config['name']
@@ -154,8 +180,7 @@ class BH_15:
         # given setting for the sweep width resolution of 0.1 G)
 
         if field_step < self.min_field_step:
-            general.message(f"Field sweep step size {field_step} G too small \
-                , minimum is {self.min_field_step} G.")
+            general.message(f"Field sweep step size {field_step} G too small, minimum is {self.min_field_step} G.")
             sys.exit()
 
         field_step = round(self.max_swa*field_step/self.fc_sw_resolution)*self.fc_sw_resolution/self.max_swa;
@@ -242,8 +267,8 @@ class BH_15:
             self.fc_set_swa(self.swa)
             self.cf = fc_set_cf(new_cf)
 
- 
-        self.fc_test_leds()
+
+        self.fc_test_leds(force=True)
 
         self.fc_deviation(self.act_field + self.field_step)
         self.act_field = self.cf + (self.swa - self.center_swa )*self.swa_step
@@ -296,7 +321,7 @@ class BH_15:
             self.fc_set_swa(self.swa)
             self.cf = self.fc_set_cf(new_cf)
 
-        self.fc_test_leds()
+        self.fc_test_leds(force=True)
 
         self.fc_deviation(self.act_field - self.field_step)
         self.act_field = self.cf + (self.swa - self.center_swa )*self.swa_step
@@ -314,13 +339,12 @@ class BH_15:
     def magnet_field(self, *field):
         if self.test_flag != 'test':
             if len(field) == 1:
+                self._write_field_status(field[0])
+
                 self.set_field(field[0])
                 return self.get_field()
             elif len(field) == 0:
                 return self.get_field()
-            else:
-                general.message("Incorrect argument")
-                sys.exit()
 
         elif self.test_flag == 'test':
             if len(field) == 1:
@@ -329,7 +353,7 @@ class BH_15:
             elif len(field) == 0:
                 return self.get_field()
             else:
-                assert(1 == 2), "Incorrect argument"
+                assert(1 == 2), "Incorrect argument; field: float"
 
     def magnet_field_step_size(self, *step):
         """
@@ -350,9 +374,6 @@ class BH_15:
                     steps += 1
 
                 return steps*self.fc_resolution
-            else:
-                general.message("Invalid argument")
-                sys.exit()
 
         elif self.test_flag == 'test':
             if len(step) == 0:
@@ -364,6 +385,8 @@ class BH_15:
                 if steps == 0:
                     steps += 1
                 return steps*self.fc_resolution
+            else:
+                assert( 1 == 2 ) , "Invalid argument; step: float"
 
     # Auxiliary functions
     def get_field(self):
@@ -410,7 +433,7 @@ class BH_15:
             self.fc_set_swa(self.swa)
             self.sw = self.fc_set_sw(self.max_swa*rem)
 
-        self.fc_test_leds()
+        self.fc_test_leds(force=True)
 
         self.fc_deviation(self.act_field)
 
@@ -544,7 +567,7 @@ class BH_15:
         self.fc_set_swa(self.swa)
         self.fc_set_sw(self.sw)
 
-        self.fc_test_leds()
+        self.fc_test_leds(force=True)
 
         self.is_sw = True
         self.fc_deviation(self.start_field)
@@ -847,11 +870,19 @@ class BH_15:
 
         return True
 
-    def fc_test_leds(self):
+    def fc_test_leds(self, force=False):
         """
         Function for testing LED indicators.
+
+        Throttled by self.fc_test_leds_min_interval: in tight magnet_field()
+        loops the GPIB query for LE dominates per-call latency, so successive
+        calls within the throttle window are skipped. Pass force=True to
+        bypass the throttle (used by init / sweep-start paths).
         """
         if self.test_flag != 'test':
+            if not force and (time.monotonic() - self._fc_test_leds_last_t) < self.fc_test_leds_min_interval:
+                return
+            self._fc_test_leds_last_t = time.monotonic()
             while True:
                 is_overload = is_remote = False
                 answer = self.device_query('LE')
@@ -904,6 +935,23 @@ class BH_15:
         if d > self.max_field_dev:
             self.max_field_dev = d
 
+    def _write_field_status(self, field):
+        if self.test_flag == 'test' or field_param is None:
+            return
+        try:
+            field_param.write_field(field)
+        except OSError:
+            pass
+
+    def close_connection(self):
+        if self.test_flag != 'test' and getattr(self, 'status_flag', 0) == 1:
+            try:
+                self.device.close()
+            except (AttributeError, OSError):
+                pass
+            self.status_flag = 0
+            gc.collect()
+
     def field_check(self, field):
         field = float(field)
         if self.test_flag != 'test':
@@ -923,10 +971,10 @@ class BH_15:
                 #print(command)
                 self.device.write(command)
             except gpib.GpibError:
-                general.message("No answer")
+                general.message(f"No answer {self.__class__.__name__}")
                 sys.exit()
         else:
-            general.message("No connection")
+            general.message(f"No connection {self.__class__.__name__}")
             sys.exit()
 
     def device_query(self, command):
@@ -939,10 +987,10 @@ class BH_15:
                 answer = self.device.read().decode("utf-8")
                 return answer
             except gpib.GpibError:
-                general.message("No answer")
+                general.message(f"No answer {self.__class__.__name__}")
                 sys.exit()
         else:
-            general.message("No connection")
+            general.message(f"No connection {self.__class__.__name__}")
             sys.exit()
 
 def main():

@@ -19,7 +19,8 @@ class ITC_FC:
         #### Inizialization
         # setting path to *.ini file
         self.path_current_directory = os.path.dirname(__file__)
-        self.path_config_file = os.path.join(self.path_current_directory, 'config', 'ITC_FC_config.ini')
+        self.path_current_directory_local = lconf.load_config_device()
+        self.path_config_file = os.path.join(self.path_current_directory_local, 'ITC_FC_config.ini')
         path_calib_file = os.path.join(self.path_current_directory, 'config', 'Calibration_curve_08_2024_Sibir_magnet.csv')
 
         temp = np.genfromtxt(path_calib_file, dtype = float, delimiter = ',', skip_header = 1, comments = '#') 
