@@ -180,6 +180,53 @@ def resonator_transfer(freqs, nu0, Q, detuning=0.0):
     return 1.0 / (1.0 + 1j * Q * (x - 1.0 / x))
 
 
+def measured_transfer(freqs, freq_meas, H_meas, carrier):
+    """Measured complex transfer function interpolated onto rotating-frame freqs.
+
+    Use this instead of :func:`resonator_transfer` when a *measured* resonator
+    response (e.g. a VNA S21 sweep) is available, so the real, non-Lorentzian
+    magnitude ripple and phase are modelled rather than an ideal RLC.
+
+    Parameters
+    ----------
+    freqs : ndarray
+        Rotating-frame frequencies (GHz), e.g. ``np.fft.fftfreq(n, dt)``.
+    freq_meas : ndarray
+        Absolute microwave frequency (GHz) of the measurement points.
+    H_meas : ndarray (complex)
+        Measured complex transfer at each ``freq_meas`` (e.g. S21).
+    carrier : float
+        Carrier frequency (GHz): a rotating-frame component at ``f`` maps to the
+        absolute frequency ``nu = carrier + f``.
+
+    Returns
+    -------
+    ndarray (complex)
+        ``H`` interpolated onto ``freqs``, normalised to **unit peak magnitude**
+        and **zero phase at the carrier** (the same convention as
+        :func:`resonator_transfer`: ``|H| = 1`` at centre, phase referenced to the
+        pulse start), so only the relative across-band distortion is applied.
+        Magnitude and *unwrapped* phase are interpolated separately (a linear
+        interp of the raw complex values would chord across phase wraps).
+        Out-of-band frequencies clamp to the nearest measured point.
+    """
+    fm = np.asarray(freq_meas, dtype=float)
+    Hm = np.asarray(H_meas, dtype=complex)
+    order = np.argsort(fm)
+    fm, Hm = fm[order], Hm[order]
+    mag_m = np.abs(Hm)
+    ph_m = np.unwrap(np.angle(Hm))
+    nu = carrier + np.asarray(freqs, dtype=float)
+    mag = np.interp(nu, fm, mag_m)
+    ph = np.interp(nu, fm, ph_m)
+    H = mag * np.exp(1j * ph)
+    peak = np.max(mag_m)
+    if peak > 0:
+        H = H / peak
+    ph0 = np.interp(carrier, fm, ph_m)        # reference phase to the carrier
+    return H * np.exp(-1j * ph0)
+
+
 def ringdown_time(nu0, Q):
     """Resonator amplitude ring-down time constant (ns): ``tau = Q / (pi nu0)``.
 
@@ -190,7 +237,7 @@ def ringdown_time(nu0, Q):
 
 
 def apply_resonator(w, dt, nu0, Q, detuning=0.0, mode='simulate', max_gain=10.0,
-                    ringdown=0.0):
+                    ringdown=0.0, measured=None):
     """Filter a complex baseband waveform through the resonator transfer fn.
 
     ``w`` is the sampled complex envelope ``a(t) exp(i phi(t))`` on a uniform
@@ -223,6 +270,11 @@ def apply_resonator(w, dt, nu0, Q, detuning=0.0, mode='simulate', max_gain=10.0,
         (the compensated drive is meant to cancel the resonator's distortion of
         the *driven* portion; modelling its ring-down would need the predistorted
         drive followed by the real H, which this single-multiply form can't do).
+    measured : (ndarray, ndarray) or None
+        Optional ``(freq_meas_GHz, H_meas_complex)`` measured transfer function. If
+        given, ``H`` is built from it via :func:`measured_transfer` (carrier taken
+        as ``nu0 - detuning``) instead of the ideal RLC ``resonator_transfer`` —
+        ``nu0``/``Q`` then only set the carrier reference and the ring-down clock.
 
     Returns
     -------
@@ -242,7 +294,10 @@ def apply_resonator(w, dt, nu0, Q, detuning=0.0, mode='simulate', max_gain=10.0,
     W = np.zeros(m, dtype=complex)
     W[:n] = w                                       # drive is zero during ring-down
     freqs = np.fft.fftfreq(m, d=dt)                 # GHz
-    H = resonator_transfer(freqs, nu0, Q, detuning)
+    if measured is not None:
+        H = measured_transfer(freqs, measured[0], measured[1], nu0 - detuning)
+    else:
+        H = resonator_transfer(freqs, nu0, Q, detuning)
     if mode == 'compensate':
         G = 1.0 / H
         mag = np.abs(G)
@@ -412,3 +467,76 @@ def flip_angle(shape, tp, nu1, params, dt=0.5):
     steps = np.diff(edges)
     a, _ = waveform(shape, tmid, tp, params)
     return 2.0 * np.pi * nu1 * float(np.sum(a * steps))
+
+
+def adiabaticity_profile(shape, tp, nu1, offsets, params, dt=0.5, phi0=0.0,
+                         resonator=None):
+    """Adiabaticity factor Q_crit(offset) of a frequency-swept pulse.
+
+    In the frame following the instantaneous RF frequency a spin at resonance
+    offset ``dW`` sees an effective field with transverse component
+    ``w1(t) = 2*pi*nu1*a(t)`` and longitudinal component
+    ``dOmega(t) = 2*pi*(dW - nu_inst(t))``, where ``nu_inst = (1/2pi) dphi/dt`` is
+    the instantaneous pulse frequency. Adiabatic passage requires the effective
+    field to reorient slowly compared with its own magnitude:
+
+        Q(t) = |Omega_eff(t)| / |d(alpha)/dt| ,   alpha = atan2(w1, dOmega)
+
+    and ``Q`` evaluated at the spin's resonance crossing (where ``dOmega = 0`` and
+    the field tips through the transverse plane) decides whether the spin is
+    inverted. ``Q_crit >> 1`` (rule of thumb >~ 5) means adiabatic. This is the
+    Garwood-DelaBarre / Doll-Jeschke adiabaticity parameter and is only
+    meaningful for swept pulses (WURST, sech/tanh); for amplitude-only shapes it
+    just reflects the envelope ramp.
+
+    Parameters mirror :func:`propagate_pulse`. ``resonator`` (dict or None) is
+    applied to the waveform first, so a *compensated* pulse can be compared with
+    a *simulated* (distorted) one to see whether the AWG pre-distortion restores
+    adiabaticity across the band. Returns ``Q_crit`` for every offset (the same
+    shape as ``offsets``).
+    """
+    offsets = np.asarray(offsets, dtype=float)
+    edges = np.arange(0.0, tp + 0.5 * dt, dt)
+    if edges.size < 2:
+        edges = np.array([0.0, tp])
+    tmid = 0.5 * (edges[:-1] + edges[1:])
+    steps = np.diff(edges)
+
+    a, nu = waveform(shape, tmid, tp, params)
+    phi = phi0 + 2.0 * np.pi * (np.cumsum(nu * steps) - 0.5 * nu * steps)
+
+    # The resonator is a filter: it cannot move the frequency sweep, only
+    # attenuate the amplitude (and add phase). Its effect on adiabaticity is the
+    # amplitude roll-off at the band edges, so take the filtered amplitude
+    # a = |w| but keep the *programmed* sweep nu(t) as the instantaneous
+    # frequency. Differentiating the filtered phase instead is numerically
+    # unstable wherever |w| -> 0 (envelope edges, resonator nulls, ring-down) and
+    # peppered the Q profile with spurious spikes once the resonator was on.
+    if resonator is not None:
+        w = apply_resonator(a * np.exp(1j * phi), dt, **resonator)
+        a = np.abs(w)
+        if a.size > steps.size:                           # ring-down tail
+            extra = a.size - steps.size
+            steps = np.concatenate((steps, np.full(extra, dt)))
+            nu = np.concatenate((nu, np.full(extra, nu[-1])))   # decays at last freq
+
+    # Mid-step time grid for the angle derivative (ns).
+    t = np.cumsum(steps) - 0.5 * steps
+    if t.size < 3:
+        return np.full(offsets.shape, np.inf)
+
+    w1 = np.abs(nu1) * np.abs(a)                          # transverse drive (GHz)
+    dOmega = offsets[:, None] - nu[None, :]               # (Noff, Nt) GHz
+    Omega = np.hypot(w1[None, :], dOmega)                 # |B_eff| (GHz)
+    alpha = np.arctan2(w1[None, :], dOmega)               # angle from z (rad)
+    dalpha = np.gradient(alpha, t, axis=1)                # rad/ns
+    # Q = 2*pi*|Omega| / |dalpha/dt|  (both numerator and denom are rad/ns).
+    Q = 2.0 * np.pi * Omega / np.maximum(np.abs(dalpha), 1e-12)
+    # Evaluate Q at each spin's resonance crossing — the instant the instantaneous
+    # frequency sweeps through the spin (|dOmega| minimal), where the effective
+    # field tips through the transverse plane and adiabaticity is hardest to keep.
+    # (The global min over time would just pick the trivial zero-field envelope
+    # edges.) Spins never swept through (|dOmega| never small) get a large Q and
+    # are simply not inverted, which is correct.
+    kstar = np.argmin(np.abs(dOmega), axis=1)
+    return Q[np.arange(offsets.size), kstar]
