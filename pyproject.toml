@@ -3,7 +3,7 @@ requires = ["hatchling>=1.9.0", "hatch-vcs", "toml"]
 build-backend = "hatchling.build"
 
 [project]
-name = "atomize-itc"
+name = "atomize-nioch"
 version = "0.0.0"
 authors = [
     {name = "Atomize Developers"}
@@ -28,7 +28,7 @@ dependencies = ["numpy>=1.25", "pyvisa>=1.11", "pyvisa-py>=0.5", "pyqtgraph>=0.1
 license-files = ["license.md"]
 
 [project.scripts]
-atomize-itc = "atomize.main.main:main"
+atomize-nioch = "atomize.main.main:main"
 
 [project.urls]
 Homepage = "https://github.com/Anatoly1010/Atomize"
