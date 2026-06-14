@@ -471,6 +471,42 @@ class MainWindow(QMainWindow):
         for i in range(1, 10):
             self.reset_pulse_func(i)
 
+    def _make_checkbox(self, func):
+        """Create a checkbox with the standard dark-theme style and connect it."""
+        check = QCheckBox("")
+        check.stateChanged.connect(func)
+        check.setStyleSheet("""
+            QCheckBox {
+                color: rgb(193, 202, 227);
+                background-color: transparent;
+                font-weight: bold;
+                spacing: 8px;
+            }
+
+            QCheckBox::indicator {
+                width: 14px;
+                height: 14px;
+                background-color: rgb(63, 63, 97);
+                border: 1px solid rgb(83, 83, 117);
+                border-radius: 3px;
+            }
+
+            QCheckBox::indicator:hover {
+                border: 1px solid rgb(211, 194, 78);
+            }
+
+            QCheckBox::indicator:pressed {
+                background-color: rgb(83, 83, 117);
+            }
+
+            QCheckBox::indicator:checked {
+                background-color: rgb(211, 194, 78);
+                border: 3px solid rgb(63, 63, 97);
+            }
+        """)
+        check.setFixedSize(170, 26)
+        return check
+
     def design_tab_1(self):
         self.setObjectName("MainWindow")
         self.setWindowTitle("AWG Channel Pulse Control")
@@ -1006,7 +1042,7 @@ class MainWindow(QMainWindow):
         self.tab_pulse.tabBar().setTabTextColor(1, QColor(193, 202, 227))
 
         # ---- Labels & Inputs ----
-        labels = [("Acquisitions", "label_17"), ("Integration Left", "label_18"), ("Integration Right", "label_19"), ("Det. Points", "label_20"), ("Hor. offset", "label_21"), ("Points", "label_e1"), ("Scans", "label_e2"), ("Experiment Name", "label_e3"), ("Curve Name", "label_e4"), ("Start Field", "label_f1"), ("End Field", "label_f2"), ("Field Step", "label_f3"), ("Sweep Type", "label_c1"), ("Start Log Time", "label_e5"), ("End Log Time", "label_e6"),
+        labels = [("Acquisitions", "label_17"), ("Integration Left", "label_18"), ("Integration Right", "label_19"), ("Det. Points", "label_20"), ("Hor. offset", "label_21"), ("Shift Together", "label_shift"), ("Points", "label_e1"), ("Scans", "label_e2"), ("Experiment Name", "label_e3"), ("Curve Name", "label_e4"), ("Start Field", "label_f1"), ("End Field", "label_f2"), ("Field Step", "label_f3"), ("Sweep Type", "label_c1"), ("Start Log Time", "label_e5"), ("End Log Time", "label_e6"),
             ('X<sub style="font-size: 12pt;">0</sub>', "label_e7"), ("ΔX ", "label_e8"),
             ("Amplitude Step", "label_f4"), ("Cycles", "label_cyc"), ("Save Each Cycle", "label_save_cyc")]
 
@@ -1070,6 +1106,10 @@ class MainWindow(QMainWindow):
         # spinbox above (320). The old "half the detection window" coupling
         # is disabled so the requested default is honoured.
         # self.posttrigger = int( self.dig_points / 2 )
+
+        # Shift Together: keep (record length - posttrigger) constant while the
+        # record length changes, so the acquired signal stays in place.
+        self.shift_together = 0
 
         self.X0.setToolTip('X<sub style="font-size: 12pt;">0</sub> value for the custom X-axis.')
         self.XDelta.setToolTip('ΔX value for the custom X-axis. Applied if not equal to 0.')
@@ -1231,8 +1271,12 @@ class MainWindow(QMainWindow):
         right_grid.addWidget(self.Dec, 2, 1)
         right_grid.addWidget(self.label_21, 3, 0)
         right_grid.addWidget(self.Hor_offset, 3, 1)
-        right_grid.addWidget(hline(), 4, 0, 1, 2)
-        right_grid.setRowStretch(5, 1)
+        self.shift_box = self._make_checkbox(self.shift_online)
+        self.shift_box.setToolTip('Shift Together: when changing Det. Points, shift Hor. offset by the same amount so the signal stays put.')
+        right_grid.addWidget(self.label_shift, 4, 0)
+        right_grid.addWidget(self.shift_box, 4, 1)
+        right_grid.addWidget(hline(), 5, 0, 1, 2)
+        right_grid.setRowStretch(6, 1)
         right_grid.setColumnStretch(4, 1)
 
         third_grid = QGridLayout()
@@ -1357,39 +1401,8 @@ class MainWindow(QMainWindow):
                        ("Save2D", self.save_2d)]
 
         for attr_name, func in check_boxes:
-            check = QCheckBox("")
+            check = self._make_checkbox(func)
             setattr(self, attr_name, check)
-            check.stateChanged.connect(func)
-            check.setStyleSheet("""
-                QCheckBox { 
-                    color: rgb(193, 202, 227); 
-                    background-color: transparent; 
-                    font-weight: bold;
-                    spacing: 8px; 
-                }
-
-                QCheckBox::indicator {
-                    width: 14px;
-                    height: 14px;
-                    background-color: rgb(63, 63, 97);
-                    border: 1px solid rgb(83, 83, 117);
-                    border-radius: 3px;
-                }
-
-                QCheckBox::indicator:hover {
-                    border: 1px solid rgb(211, 194, 78);
-                }
-
-                QCheckBox::indicator:pressed {
-                    background-color: rgb(83, 83, 117);
-                }
-
-                QCheckBox::indicator:checked {
-                    background-color: rgb(211, 194, 78);
-                    border: 3px solid rgb(63, 63, 97); 
-                }
-            """)
-            check.setFixedSize(170, 26)
             if attr_name == 'IQ_corr':
                 check.setChecked(True)
 
@@ -1909,29 +1922,6 @@ class MainWindow(QMainWindow):
     def q_func(self):
         """Loaded Q for the ideal-RLC correction."""
         self.q_cur = float( self.Q_res.value() )
-
-    def _apply_awg_correction(self, awg, mode):
-        """Read correction.param and push resonator-correction settings to the AWG.
-
-        mode 0 = off (no correction applied), 1 = only Pi/2 (high-amplitude
-        pulses), 2 = all swept pulses. The measured triple-Lorentzian magnitude
-        fit (+ LOW/LIMIT clamp) comes from correction.param. NIOCH's
-        Spectrum_M4I_6631 awg_correction(only_pi_half, coef_array, low_level,
-        limit) has no model/f0/Q/phase arguments, so those are not passed.
-        """
-        if mode == 0:
-            return
-
-        path_file = os.path.join( os.path.abspath( os.getcwd() ),
-                                  '../atomize/control_center/correction.param' )
-        with open(path_file, 'r') as file_to_read:
-            text_from_file = file_to_read.read().split('\n')
-        coef = [ float( text_from_file[i].split(' ')[1] ) for i in range(10) ]
-
-        awg.awg_correction(only_pi_half = ('True' if mode == 1 else 'False'),
-            coef_array = coef,
-            low_level = float( text_from_file[10].split(' ')[1] ),
-            limit = float( text_from_file[11].split(' ')[1] ) )
 
     def b_sech_func(self):
         """
@@ -2857,12 +2847,29 @@ class MainWindow(QMainWindow):
         if it would no longer fit inside the record. Pushes PO/HO live if a run is
         in progress.
         """
-        self.dig_points = int( self.Dec.value() )
+        new_points = int( self.Dec.value() )
         self.time_per_point = 2  # NIOCH: fixed 2 ns / digitizer point
-        # keep the posttrigger valid: it has to be smaller than the record length
-        if self.posttrigger >= self.dig_points:
-            self.posttrigger = int( self.dig_points / 2 )
+        if self.shift_together == 1:
+            # Shift Together: keep the gap (record length - posttrigger)
+            # constant, so growing/shrinking the window moves the horizontal
+            # offset by the same amount and the signal stays at the same place.
+            gap = self.dig_points - self.posttrigger
+            self.dig_points = new_points
+            self.posttrigger = self.dig_points - gap
+            if self.posttrigger < 0:
+                self.posttrigger = 0
+            elif self.posttrigger >= self.dig_points:
+                self.posttrigger = self.dig_points - 2
+            # update the display without re-triggering hor_offset() (we send HO below)
+            self.Hor_offset.blockSignals( True )
             self.Hor_offset.setValue( self.posttrigger )
+            self.Hor_offset.blockSignals( False )
+        else:
+            self.dig_points = new_points
+            # keep the posttrigger valid: it has to be smaller than the record length
+            if self.posttrigger >= self.dig_points:
+                self.posttrigger = int( self.dig_points / 2 )
+                self.Hor_offset.setValue( self.posttrigger )
         try:
             self.parent_conn_dig.send( 'PO' + str(self.dig_points) )
             self.parent_conn_dig.send( 'HO' + str(self.posttrigger) )
@@ -2870,6 +2877,17 @@ class MainWindow(QMainWindow):
             pass
         self.win_left()
         self.win_right()
+
+    def shift_online(self):
+        """
+        Shift Together checkbox: when on, changing the record length
+        (Det. Points) also shifts the horizontal offset (posttrigger) by the
+        same amount in decimat(), keeping the acquired signal in place.
+        """
+        if self.shift_box.checkState().value == 2:   # checked
+            self.shift_together = 1
+        elif self.shift_box.checkState().value == 0: # unchecked
+            self.shift_together = 0
 
     def hor_offset(self):
         """
@@ -3645,7 +3663,7 @@ class Worker():
 
         self.command = 'start'
         
-    def dig_on(self, conn, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30, p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, iq_corr, script_test=False ):
+    def dig_on(self, conn, dig_points, posttrigger, n_averages, win_left, win_right, rect1, rect2, rect3, rect4, rect5, rect6, rect7, n_wurst, rep_rate, mag_field, fft_flag, cur_phase, ch0_ampl, ch1_ampl, trig_delay, awg2, awg3, awg4, awg5, awg6, awg7, quad, zero_order, first_order, second_order, p_to_drop, b_sech, combo_cor, combo_synt, _reserved, rect8, rect9, awg8, awg9, laser_flag, laser_num, laser_qsw_delay, iq_corr, script_test=False ):
         """
         function that contains updating of the digitizer.
 
@@ -3679,11 +3697,11 @@ class Worker():
             awg = spectrum_awg.Spectrum_M4I_6631_X8() if AWG_PRESENT else _NullAWG()
             fft = fft_module.Fast_Fourier()
             # bh15 = itc.BH_15()
-            #bh15.magnet_setup( p15, 0.5 )
-            # bh15.magnet_field( p15 ) #, calibration = 'True' )
+            #bh15.magnet_setup( mag_field, 0.5 )
+            # bh15.magnet_field( mag_field ) #, calibration = 'True' )
 
             process = 'None'
-            num_ave = p3
+            num_ave = n_averages
             iq_cor = iq_corr
 
             # AWG channel + clock configuration (NIOCH Spectrum M4I-6631)
@@ -3692,29 +3710,29 @@ class Worker():
             awg.awg_clock_mode('Internal')
             awg.awg_reference_clock(100)
             awg.awg_sample_rate(1000)
-            awg.awg_trigger_delay( p20 )
-            awg.phase_shift_ch1_seq_mode = p17
+            awg.awg_trigger_delay( trig_delay )
+            awg.phase_shift_ch1_seq_mode = cur_phase
 
             # correction from file (measured profile from correction.param;
             # model / f0 / Q / phase from the AWG-tab controls)
-            self._apply_awg_correction(awg, p33)
+            self._apply_awg_correction(awg, combo_cor)
 
-            awg.awg_amplitude('CH0', str(p18), 'CH1', str(p19) )
+            awg.awg_amplitude('CH0', str(ch0_ampl), 'CH1', str(ch1_ampl) )
 
             # Master AWG-card trigger (NIOCH: TRIGGER_AWG triggers the AWG card;
             # each AWG pulse is gated by an 'AWG' channel marker pulse)
             pb.pulser_pulse(name='P0', channel='TRIGGER_AWG', start='0 ns', length='30 ns')
 
             # DETECTION pulse
-            iq_freq = -int( p6[4].split(" MHz")[0] )
-            if int(float(p6[2].split(' ')[0])) != 0:
-                pb.pulser_pulse(name='P1', channel=p6[0], start=p6[1], length=p6[2], phase_list=p6[3])
+            iq_freq = -int( rect1[4].split(" MHz")[0] )
+            if int(float(rect1[2].split(' ')[0])) != 0:
+                pb.pulser_pulse(name='P1', channel=rect1[0], start=rect1[1], length=rect1[2], phase_list=rect1[3])
 
             #Laser flag
-            if p40 != 1:
+            if laser_flag != 1:
 
-                trigger_pulses = [p7, p8, p9, p10, p11, p12, p36, p37]
-                awg_params = [p21, p22, p23, p24, p25, p26, p38, p39]
+                trigger_pulses = [rect2, rect3, rect4, rect5, rect6, rect7, rect8, rect9]
+                awg_params = [awg2, awg3, awg4, awg5, awg6, awg7, awg8, awg9]
 
                 for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
                     if int(float(tp[1].split(' ')[0])) != 0:
@@ -3735,7 +3753,7 @@ class Worker():
                         }
 
                         if is_complex:
-                            awg_kwargs.update({'n': p13, 'b': p32})
+                            awg_kwargs.update({'n': n_wurst, 'b': b_sech})
 
                         awg.awg_pulse(**awg_kwargs)
 
@@ -3748,30 +3766,30 @@ class Worker():
                                 start=tp[0],
                                 length=tp[1]
                             )
-                pb.pulser_repetition_rate( str(p14) + ' Hz' )
+                pb.pulser_repetition_rate( str(rep_rate) + ' Hz' )
 
             else:
 
-                if script_test and int(float(p7[1].split(' ')[0])) == 0:
+                if script_test and int(float(rect2[1].split(' ')[0])) == 0:
                     raise ValueError("LASER pulse has zero length")
-                #p7 is LASER pulse
+                #rect2 is LASER pulse
                 pb.pulser_pulse(
                     name=f'L1',
                     channel='LASER',
-                    start=p7[0],
-                    length=p7[1]
+                    start=rect2[0],
+                    length=rect2[1]
                 )
 
-                trigger_pulses = [p8, p9, p10, p11, p12, p36, p37]
-                awg_params = [p22, p23, p24, p25, p26, p38, p39]
+                trigger_pulses = [rect3, rect4, rect5, rect6, rect7, rect8, rect9]
+                awg_params = [awg3, awg4, awg5, awg6, awg7, awg8, awg9]
 
                 for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
 
                     if int(float(tp[1].split(' ')[0])) != 0:
                         # add q_delay
-                        start_val = float(tp[0].split(' ')[0]) + p42
+                        start_val = float(tp[0].split(' ')[0]) + laser_qsw_delay
                         tp[0] = f"{self.round_to_closest(start_val, 2)} ns"
-                        start_val_awg = float(ap[5].split(' ')[0]) + p42
+                        start_val_awg = float(ap[5].split(' ')[0]) + laser_qsw_delay
                         ap[5] = f"{self.round_to_closest(start_val_awg, 2)} ns"
 
                         is_complex = ap[0] in ['WURST', 'SECH/TANH']
@@ -3790,7 +3808,7 @@ class Worker():
                         }
 
                         if is_complex:
-                            awg_kwargs.update({'n': p13, 'b': p32})
+                            awg_kwargs.update({'n': n_wurst, 'b': b_sech})
 
                         awg.awg_pulse(**awg_kwargs)
 
@@ -3802,34 +3820,34 @@ class Worker():
                                 length=tp[1]
                             )
 
-                if p41 == 1:
+                if laser_num == 1:
                     pb.pulser_repetition_rate( '9.9 Hz' )
-                    #q_delay = p42
-                elif p41 == 2:
-                    pb.pulser_repetition_rate( str(p14) + ' Hz' )
-                    #q_delay = p42
+                    #q_delay = laser_qsw_delay
+                elif laser_num == 2:
+                    pb.pulser_repetition_rate( str(rep_rate) + ' Hz' )
+                    #q_delay = laser_qsw_delay
                 else:
-                    pb.pulser_repetition_rate( str(p14) + ' Hz' )
+                    pb.pulser_repetition_rate( str(rep_rate) + ' Hz' )
 
 
             # NIOCH: compile the AWG buffer (zero-filled waveform) after all pulses
             awg.awg_setup()
 
             # NIOCH Spectrum digitizer: point/posttrigger based, fixed 2 ns/point.
-            # p1 = record length (DETECTION window in points); p2 = posttrigger.
-            WIN_ADC = int( p1 )
+            # dig_points = record length (DETECTION window in points); posttrigger = posttrigger points.
+            WIN_ADC = int( dig_points )
             t_res = 2.0
 
             dig.digitizer_card_mode('Average')
             dig.digitizer_clock_mode('Internal')
             dig.digitizer_reference_clock(100)
-            dig.digitizer_number_of_points( p1 )
-            dig.digitizer_posttrigger( p2 )
-            dig.digitizer_number_of_averages( p3 )
+            dig.digitizer_number_of_points( dig_points )
+            dig.digitizer_posttrigger( posttrigger )
+            dig.digitizer_number_of_averages( n_averages )
             dig.digitizer_setup()
 
-            p14 = float(p14)
-            PHASES = len( p6[3] )
+            rep_rate = float(rep_rate)
+            PHASES = len( rect1[3] )
 
             x_axis = np.arange( WIN_ADC ) * t_res * 1e-9
             cycle_data_x = np.zeros( ( PHASES, WIN_ADC ) )
@@ -3861,49 +3879,49 @@ class Worker():
                     dig.digitizer_setup()
 
                 elif self.command[0:2] == 'NA':
-                    p3 = int( self.command[2:] )
+                    n_averages = int( self.command[2:] )
                     dig.digitizer_stop()
-                    dig.digitizer_number_of_averages( p3 )
+                    dig.digitizer_number_of_averages( n_averages )
                     dig.digitizer_setup()
 
                 elif self.command[0:2] == 'WL':
-                    p4 = int( self.command[2:] )
+                    win_left = int( self.command[2:] )
                 elif self.command[0:2] == 'WR':
-                    p5 = int( self.command[2:] )
+                    win_right = int( self.command[2:] )
                 elif self.command[0:2] == 'RR':
-                    p14 = float( self.command[2:] )
-                    pb.pulser_repetition_rate( str(p14) + ' Hz' )
+                    rep_rate = float( self.command[2:] )
+                    pb.pulser_repetition_rate( str(rep_rate) + ' Hz' )
 
                 elif self.command[0:2] == 'FI':
-                    p15 = float( self.command[2:] )
-                    # bh15.magnet_field( p15 )#, calibration = 'True' )
+                    mag_field = float( self.command[2:] )
+                    # bh15.magnet_field( mag_field )#, calibration = 'True' )
                 elif self.command[0:2] == 'FF':
-                    p16 = int( self.command[2:] )
+                    fft_flag = int( self.command[2:] )
                 elif self.command[0:2] == 'QC':
-                    p27 = int( self.command[2:] )
+                    quad = int( self.command[2:] )
                 elif self.command[0:2] == 'ZO':
-                    p28 = float( self.command[2:] )
+                    zero_order = float( self.command[2:] )
                 elif self.command[0:2] == 'FO':
-                    p29 = float( self.command[2:] )
+                    first_order = float( self.command[2:] )
                 elif self.command[0:2] == 'SO':
-                    p30 = float( self.command[2:] )
+                    second_order = float( self.command[2:] )
                 elif self.command[0:2] == 'PD':
-                    p31 = int( self.command[2:] )
+                    p_to_drop = int( self.command[2:] )
                 elif self.command[0:2] == 'LM':
-                    #p2 = int( self.command[2:] )
+                    #posttrigger = int( self.command[2:] )
                     pass
 
                 ###
-                ###awg.phase_x = p17
+                ###awg.phase_x = cur_phase
 
                 # check integration window
-                if p4 > WIN_ADC:
-                    p4 = WIN_ADC
-                if p5 > WIN_ADC:
-                    p5 = WIN_ADC
+                if win_left > WIN_ADC:
+                    win_left = WIN_ADC
+                if win_right > WIN_ADC:
+                    win_right = WIN_ADC
 
                 # phase cycle
-                PHASES = len( p6[3] )
+                PHASES = len( rect1[3] )
 
                 # phase cycle: AWG advances phase, one digitizer curve per phase,
                 # then the pulser combines the cycle (NIOCH AWG idiom, see
@@ -3916,25 +3934,25 @@ class Worker():
                     awg.awg_stop()
                     k += 1
 
-                data_x, data_y = pb.pulser_acquisition_cycle( cycle_data_x, cycle_data_y, acq_cycle = p6[3] )
+                data_x, data_y = pb.pulser_acquisition_cycle( cycle_data_x, cycle_data_y, acq_cycle = rect1[3] )
 
                 if script_test:
                     general.plot_1d('Dig', x_axis, ( data_x, data_y ),
                         xscale = 's', yscale = 'V', label = 'ch',
-                        vline = (p4 * t_res * 1e-9, p5 * t_res * 1e-9)
+                        vline = (win_left * t_res * 1e-9, win_right * t_res * 1e-9)
                         )
                 else:
-                    int_x = round( np.sum( data_x[p4:p5] ) * t_res , 1 )
-                    int_y = round( np.sum( data_y[p4:p5] ) * t_res , 1 )
+                    int_x = round( np.sum( data_x[win_left:win_right] ) * t_res , 1 )
+                    int_y = round( np.sum( data_y[win_left:win_right] ) * t_res , 1 )
                     general.plot_1d('Dig', x_axis, ( data_x, data_y ),
                         xscale = 's', yscale = 'V', label = 'ch',
-                        vline = (p4 * t_res * 1e-9, p5 * t_res * 1e-9),
+                        vline = (win_left * t_res * 1e-9, win_right * t_res * 1e-9),
                         text = 'I/Q ' + str(int_x) + '/' + str(int_y)
                         )
 
-                if p16 == 1:
+                if fft_flag == 1:
 
-                    if p27 == 0:
+                    if quad == 0:
                         freq_axis, abs_values = fft.fft(x_axis, data_x, data_y, t_res)
                         m_val = round( np.amax( abs_values ), 2 )
                         general.plot_1d('FFT', freq_axis, abs_values,
@@ -3942,12 +3960,12 @@ class Worker():
                             yscale = 'Arb. U.', text = 'Max ' + str(m_val)
                             )
                     else:
-                        if p31 > len( data_x ) - 2:
-                            p31 = len( data_x ) - 4
+                        if p_to_drop > len( data_x ) - 2:
+                            p_to_drop = len( data_x ) - 4
                             general.message('Maximum length of the data achieved. A number of drop points was corrected.')
                         # fixed resolution of digitizer; 2 ns
-                        freq, fft_x, fft_y = fft.fft( x_axis[p31:], data_x[p31:], data_y[p31:], t_res, re = 'True' )
-                        data_fft = fft.ph_correction( freq, fft_x, fft_y, p28, p29, p30 )
+                        freq, fft_x, fft_y = fft.fft( x_axis[p_to_drop:], data_x[p_to_drop:], data_y[p_to_drop:], t_res, re = 'True' )
+                        data_fft = fft.ph_correction( freq, fft_x, fft_y, zero_order, first_order, second_order )
                         general.plot_1d('FFT', freq, ( data_fft[0], data_fft[1] ),
                             xname = 'Freq Offset', xscale = 'MHz',
                             yscale = 'Arb. U.', label = 'FFT'
@@ -4012,11 +4030,11 @@ class Worker():
             limit = float( text_from_file[11].split(' ')[1] ) )
 
     def exp(self, conn, decimation, num_ave, scans, points,
-            exp_name, curve_name, p1_exp, p2_exp,
-            p3_exp, p4_exp, p5_exp, p6_exp, p7_exp, p8_exp, p9_exp,
+            exp_name, curve_name, rect1, rect2,
+            rect3, rect4, rect5, rect6, rect7, rect8, rect9,
             n_wurst, rep_rate, field, ch0_ampl,
-            ch1_ampl, p2_awg_exp, p3_awg_exp, p4_awg_exp,
-            p5_awg_exp, p6_awg_exp, p7_awg_exp, p8_awg_exp, p9_awg_exp,
+            ch1_ampl, awg2, awg3, awg4,
+            awg5, awg6, awg7, awg8, awg9,
             b_sech_cur, correction, synt, laser_flag, laser_num,
             q_switch_delay, iq_phase, iq_corr, win_left, win_right, zero_phase,
             x0, xd, first_order, sec_order, save2d, script_test=False):
@@ -4054,27 +4072,27 @@ class Worker():
             dig.win_right = win_right
             zp = zero_phase
 
-            #p1_exp DETECTION
-            iq_freq = -int( p1_exp[6].split(" MHz")[0] )
+            #rect1 DETECTION
+            iq_freq = -int( rect1[6].split(" MHz")[0] )
             
             if xd == 0.0:
 
-                pulses2 = [p2_exp, p3_exp, p4_exp, p5_exp, p6_exp, p7_exp, p8_exp, p9_exp]
+                pulses2 = [rect2, rect3, rect4, rect5, rect6, rect7, rect8, rect9]
 
-                if p1_exp[4] != '0.0 ns':
+                if rect1[4] != '0.0 ns':
                     #delta_start
-                    step = round( float( p1_exp[4].split(' ')[0] ), 1)
+                    step = round( float( rect1[4].split(' ')[0] ), 1)
                     for p in pulses2:
                         if p[3] != '0.0 ns':
                             f_delay = self.round_to_closest( float(p[1].split(' ')[0]), 2)
                             break
                         else:
-                            f_delay = self.round_to_closest( float(p1_exp[1].split(' ')[0]), 2)
+                            f_delay = self.round_to_closest( float(rect1[1].split(' ')[0]), 2)
 
-                elif p1_exp[5] != '0.0 ns':
+                elif rect1[5] != '0.0 ns':
                     #length_increment
-                    step = round( float( p1_exp[5].split(' ')[0] ), 1)
-                    f_delay = self.round_to_closest( float(p1_exp[2].split(' ')[0]), 2)
+                    step = round( float( rect1[5].split(' ')[0] ), 1)
+                    f_delay = self.round_to_closest( float(rect1[2].split(' ')[0]), 2)
                 else:
                     for p in pulses2:
                         if p[2] != '0.0 ns':
@@ -4115,7 +4133,7 @@ class Worker():
             FIELD = field
             AVERAGES = num_ave
             SCANS = scans
-            PHASES = len(p1_exp[3])
+            PHASES = len(rect1[3])
             DEC_COEF = decimation
             process = 'None'
             REP_RATE = f'{rep_rate} Hz'
@@ -4132,16 +4150,16 @@ class Worker():
             general.wait('2000 ms')
 
             # DETECTION pulse
-            if int(float(p1_exp[2].split(' ')[0])) != 0:
-                pb.pulser_pulse(name='P1', channel=p1_exp[0], start=p1_exp[1], length=p1_exp[2], phase_list=p1_exp[3], delta_start=p1_exp[4], length_increment=p1_exp[5])
+            if int(float(rect1[2].split(' ')[0])) != 0:
+                pb.pulser_pulse(name='P1', channel=rect1[0], start=rect1[1], length=rect1[2], phase_list=rect1[3], delta_start=rect1[4], length_increment=rect1[5])
 
             #Laser flag
             if laser_flag != 1:
 
-                trigger_pulses = [p2_exp, p3_exp, p4_exp, p5_exp, p6_exp, p7_exp, p8_exp, p9_exp]
+                trigger_pulses = [rect2, rect3, rect4, rect5, rect6, rect7, rect8, rect9]
                 awg_params = [
-                                p2_awg_exp, p3_awg_exp, p4_awg_exp, p5_awg_exp, 
-                                p6_awg_exp, p7_awg_exp, p8_awg_exp, p9_awg_exp
+                                awg2, awg3, awg4, awg5, 
+                                awg6, awg7, awg8, awg9
                              ]
 
                 for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
@@ -4185,22 +4203,22 @@ class Worker():
 
             else:
 
-                if script_test and int(float(p2_exp[1].split(' ')[0])) == 0:
+                if script_test and int(float(rect2[1].split(' ')[0])) == 0:
                     raise ValueError("LASER pulse has zero length")
                 #p7 is LASER pulse
                 pb.pulser_pulse(
                     name=f'L1',
                     channel='LASER',
-                    start=p2_exp[0],
-                    length=p2_exp[1],
-                    delta_start=p2_exp[2],
-                    length_increment=p2_exp[3]
+                    start=rect2[0],
+                    length=rect2[1],
+                    delta_start=rect2[2],
+                    length_increment=rect2[3]
                 )
 
-                trigger_pulses = [p3_exp, p4_exp, p5_exp, p6_exp, p7_exp, p8_exp, p9_exp]
+                trigger_pulses = [rect3, rect4, rect5, rect6, rect7, rect8, rect9]
                 awg_params = [
-                                p3_awg_exp, p4_awg_exp, p5_awg_exp,
-                                p6_awg_exp, p7_awg_exp, p8_awg_exp, p9_awg_exp
+                                awg3, awg4, awg5,
+                                awg6, awg7, awg8, awg9
                              ]
 
                 for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
@@ -4316,7 +4334,7 @@ class Worker():
                             awg.awg_stop()
                             ph += 1
 
-                        data_x, data_y = pb.pulser_acquisition_cycle( cycle_data_x, cycle_data_y, acq_cycle = p1_exp[3] )
+                        data_x, data_y = pb.pulser_acquisition_cycle( cycle_data_x, cycle_data_y, acq_cycle = rect1[3] )
 
                         # scan-average the oscillogram into the 2D array
                         data[0, :, j] = ( data[0, :, j] * (k - 1) + data_x ) / k
@@ -4430,7 +4448,7 @@ class Worker():
                     f"{'Number of Scans:':<{w}} {SCANS}\n"
                     f"{'Averages:':<{w}} {AVERAGES}\n"
                     f"{'Points:':<{w}} {POINTS}\n"
-                    f"{'Window:':<{w}} {p1_exp[2]}\n"
+                    f"{'Window:':<{w}} {rect1[2]}\n"
                     f"{'Horizontal Resolution:':<{w}} {t_res:.1f} ns\n"
                     f"{'Vertical Resolution:':<{w}} {STEP} ns\n"
                     # f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
@@ -4515,11 +4533,11 @@ class Worker():
             conn.send( ('Error', exc_info) )
 
     def exp_eseem(self, conn, decimation, num_ave, scans, points,
-            exp_name, curve_name, p1_exp, p2_exp,
-            p3_exp, p4_exp, p5_exp, p6_exp, p7_exp, p8_exp, p9_exp,
+            exp_name, curve_name, rect1, rect2,
+            rect3, rect4, rect5, rect6, rect7, rect8, rect9,
             n_wurst, rep_rate, field, ch0_ampl,
-            ch1_ampl, p2_awg_exp, p3_awg_exp, p4_awg_exp,
-            p5_awg_exp, p6_awg_exp, p7_awg_exp, p8_awg_exp, p9_awg_exp,
+            ch1_ampl, awg2, awg3, awg4,
+            awg5, awg6, awg7, awg8, awg9,
             b_sech_cur, correction, synt, laser_flag, laser_num,
             q_switch_delay, iq_phase, iq_corr, win_left, win_right, zero_phase,
             x0, xd, first_order, sec_order, save2d,
@@ -4587,27 +4605,27 @@ class Worker():
             dig.win_right = win_right
             zp = zero_phase
 
-            #p1_exp DETECTION
-            iq_freq = -int( p1_exp[6].split(" MHz")[0] )
+            #rect1 DETECTION
+            iq_freq = -int( rect1[6].split(" MHz")[0] )
 
             if xd == 0.0:
 
-                pulses2 = [p2_exp, p3_exp, p4_exp, p5_exp, p6_exp, p7_exp, p8_exp, p9_exp]
+                pulses2 = [rect2, rect3, rect4, rect5, rect6, rect7, rect8, rect9]
 
-                if p1_exp[4] != '0.0 ns':
+                if rect1[4] != '0.0 ns':
                     #delta_start
-                    step = round( float( p1_exp[4].split(' ')[0] ), 1)
+                    step = round( float( rect1[4].split(' ')[0] ), 1)
                     for p in pulses2:
                         if p[3] != '0.0 ns':
                             f_delay = self.round_to_closest( float(p[1].split(' ')[0]), 2)
                             break
                         else:
-                            f_delay = self.round_to_closest( float(p1_exp[1].split(' ')[0]), 2)
+                            f_delay = self.round_to_closest( float(rect1[1].split(' ')[0]), 2)
 
-                elif p1_exp[5] != '0.0 ns':
+                elif rect1[5] != '0.0 ns':
                     #length_increment
-                    step = round( float( p1_exp[5].split(' ')[0] ), 1)
-                    f_delay = self.round_to_closest( float(p1_exp[2].split(' ')[0]), 2)
+                    step = round( float( rect1[5].split(' ')[0] ), 1)
+                    f_delay = self.round_to_closest( float(rect1[2].split(' ')[0]), 2)
                 else:
                     for p in pulses2:
                         if p[2] != '0.0 ns':
@@ -4648,7 +4666,7 @@ class Worker():
             FIELD = field
             AVERAGES = num_ave
             SCANS = scans
-            PHASES = len(p1_exp[3])
+            PHASES = len(rect1[3])
             DEC_COEF = decimation
             process = 'None'
             REP_RATE = f'{rep_rate} Hz'
@@ -4683,17 +4701,17 @@ class Worker():
                 eseem_all_inc2.append(eseem_inc2[gui_idx])
 
             # DETECTION pulse
-            if int(float(p1_exp[2].split(' ')[0])) != 0:
-                pb.pulser_pulse(name='P1', channel=p1_exp[0], start=p1_exp[1], length=p1_exp[2], phase_list=p1_exp[3], delta_start=p1_exp[4], length_increment=p1_exp[5])
-                _eseem_add('P1', 0, p1_exp[4])
+            if int(float(rect1[2].split(' ')[0])) != 0:
+                pb.pulser_pulse(name='P1', channel=rect1[0], start=rect1[1], length=rect1[2], phase_list=rect1[3], delta_start=rect1[4], length_increment=rect1[5])
+                _eseem_add('P1', 0, rect1[4])
 
             #Laser flag
             if laser_flag != 1:
 
-                trigger_pulses = [p2_exp, p3_exp, p4_exp, p5_exp, p6_exp, p7_exp, p8_exp, p9_exp]
+                trigger_pulses = [rect2, rect3, rect4, rect5, rect6, rect7, rect8, rect9]
                 awg_params = [
-                                p2_awg_exp, p3_awg_exp, p4_awg_exp, p5_awg_exp,
-                                p6_awg_exp, p7_awg_exp, p8_awg_exp, p9_awg_exp
+                                awg2, awg3, awg4, awg5,
+                                awg6, awg7, awg8, awg9
                              ]
 
                 for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
@@ -4738,23 +4756,23 @@ class Worker():
 
             else:
 
-                if script_test and int(float(p2_exp[1].split(' ')[0])) == 0:
+                if script_test and int(float(rect2[1].split(' ')[0])) == 0:
                     raise ValueError("LASER pulse has zero length")
                 #p7 is LASER pulse
                 pb.pulser_pulse(
                     name=f'L1',
                     channel='LASER',
-                    start=p2_exp[0],
-                    length=p2_exp[1],
-                    delta_start=p2_exp[2],
-                    length_increment=p2_exp[3]
+                    start=rect2[0],
+                    length=rect2[1],
+                    delta_start=rect2[2],
+                    length_increment=rect2[3]
                 )
-                _eseem_add('L1', 1, p2_exp[2])
+                _eseem_add('L1', 1, rect2[2])
 
-                trigger_pulses = [p3_exp, p4_exp, p5_exp, p6_exp, p7_exp, p8_exp, p9_exp]
+                trigger_pulses = [rect3, rect4, rect5, rect6, rect7, rect8, rect9]
                 awg_params = [
-                                p3_awg_exp, p4_awg_exp, p5_awg_exp,
-                                p6_awg_exp, p7_awg_exp, p8_awg_exp, p9_awg_exp
+                                awg3, awg4, awg5,
+                                awg6, awg7, awg8, awg9
                              ]
 
                 for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
@@ -4900,7 +4918,7 @@ class Worker():
                             awg.awg_stop()
                             ph += 1
 
-                        data_x, data_y = pb.pulser_acquisition_cycle( cycle_data_x, cycle_data_y, acq_cycle = p1_exp[3] )
+                        data_x, data_y = pb.pulser_acquisition_cycle( cycle_data_x, cycle_data_y, acq_cycle = rect1[3] )
                         # cumulative tau-average across every (cycle, scan) pass at
                         # this point: m counts passes so the running mean is the
                         # ESEEM-averaged result and the cycle-boundary snapshots stay
@@ -5075,7 +5093,7 @@ class Worker():
                     f"{'Start Increment 2:':<{w}} {inc2_summary}\n"
                     f"{'Averages:':<{w}} {AVERAGES}\n"
                     f"{'Points:':<{w}} {POINTS}\n"
-                    f"{'Window:':<{w}} {p1_exp[2]}\n"
+                    f"{'Window:':<{w}} {rect1[2]}\n"
                     f"{'Horizontal Resolution:':<{w}} {t_res:.1f} ns\n"
                     f"{'Vertical Resolution:':<{w}} {STEP} ns\n"
                     # f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
@@ -5185,11 +5203,11 @@ class Worker():
 
     def exp_field(self, conn, decimation, num_ave, scans, start_field,
             end_field, step_field, exp_name,
-            curve_name, p1_exp, p2_exp,
-            p3_exp, p4_exp, p5_exp, p6_exp, p7_exp, p8_exp, p9_exp,
+            curve_name, rect1, rect2,
+            rect3, rect4, rect5, rect6, rect7, rect8, rect9,
             n_wurst, rep_rate, ch0_ampl,
-            ch1_ampl, p2_awg_exp, p3_awg_exp, p4_awg_exp,
-            p5_awg_exp, p6_awg_exp, p7_awg_exp, p8_awg_exp, p9_awg_exp,
+            ch1_ampl, awg2, awg3, awg4,
+            awg5, awg6, awg7, awg8, awg9,
             b_sech_cur, correction, synt, laser_flag, laser_num,
             q_switch_delay, iq_phase, iq_corr, win_left, win_right, zero_phase,
             first_order, sec_order, save2d, script_test=False):
@@ -5250,7 +5268,7 @@ class Worker():
 
             AVERAGES = num_ave
             SCANS = scans
-            PHASES = len(p1_exp[3])
+            PHASES = len(rect1[3])
             DEC_COEF = decimation
             process = 'None'
             REP_RATE = f'{rep_rate} Hz'
@@ -5264,17 +5282,17 @@ class Worker():
             general.wait('2000 ms')
 
             # DETECTION pulse
-            iq_freq = -int( p1_exp[6].split(" MHz")[0] )
-            if int(float(p1_exp[2].split(' ')[0])) != 0:
-                pb.pulser_pulse(name='P1', channel=p1_exp[0], start=p1_exp[1], length=p1_exp[2], phase_list=p1_exp[3], delta_start=p1_exp[4], length_increment=p1_exp[5])
+            iq_freq = -int( rect1[6].split(" MHz")[0] )
+            if int(float(rect1[2].split(' ')[0])) != 0:
+                pb.pulser_pulse(name='P1', channel=rect1[0], start=rect1[1], length=rect1[2], phase_list=rect1[3], delta_start=rect1[4], length_increment=rect1[5])
 
             #Laser flag
             if laser_flag != 1:
 
-                trigger_pulses = [p2_exp, p3_exp, p4_exp, p5_exp, p6_exp, p7_exp, p8_exp, p9_exp]
+                trigger_pulses = [rect2, rect3, rect4, rect5, rect6, rect7, rect8, rect9]
                 awg_params = [
-                                p2_awg_exp, p3_awg_exp, p4_awg_exp, p5_awg_exp, 
-                                p6_awg_exp, p7_awg_exp, p8_awg_exp, p9_awg_exp
+                                awg2, awg3, awg4, awg5, 
+                                awg6, awg7, awg8, awg9
                              ]
 
                 for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
@@ -5316,22 +5334,22 @@ class Worker():
 
             else:
 
-                if script_test and int(float(p2_exp[1].split(' ')[0])) == 0:
+                if script_test and int(float(rect2[1].split(' ')[0])) == 0:
                     raise ValueError("LASER pulse has zero length")
                 #p7 is LASER pulse
                 pb.pulser_pulse(
                     name=f'L1',
                     channel='LASER',
-                    start=p2_exp[0],
-                    length=p2_exp[1],
-                    delta_start=p2_exp[2],
-                    length_increment=p2_exp[3]
+                    start=rect2[0],
+                    length=rect2[1],
+                    delta_start=rect2[2],
+                    length_increment=rect2[3]
                 )
 
-                trigger_pulses = [p3_exp, p4_exp, p5_exp, p6_exp, p7_exp, p8_exp, p9_exp]
+                trigger_pulses = [rect3, rect4, rect5, rect6, rect7, rect8, rect9]
                 awg_params = [
-                                p3_awg_exp, p4_awg_exp, p5_awg_exp,
-                                p6_awg_exp, p7_awg_exp, p8_awg_exp, p9_awg_exp
+                                awg3, awg4, awg5,
+                                awg6, awg7, awg8, awg9
                              ]
 
                 for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
@@ -5453,7 +5471,7 @@ class Worker():
                             awg.awg_stop()
                             ph += 1
 
-                        data_x, data_y = pb.pulser_acquisition_cycle( cycle_data_x, cycle_data_y, acq_cycle = p1_exp[3] )
+                        data_x, data_y = pb.pulser_acquisition_cycle( cycle_data_x, cycle_data_y, acq_cycle = rect1[3] )
                         data[0, :, j] = ( data[0, :, j] * (k - 1) + data_x ) / k
                         data[1, :, j] = ( data[1, :, j] * (k - 1) + data_y ) / k
 
@@ -5550,7 +5568,7 @@ class Worker():
                     f"{'Number of Scans:':<{w}} {SCANS}\n"
                     f"{'Averages:':<{w}} {AVERAGES}\n"
                     f"{'Points:':<{w}} {POINTS}\n"
-                    f"{'Window:':<{w}} {p1_exp[2]}\n"
+                    f"{'Window:':<{w}} {rect1[2]}\n"
                     f"{'Horizontal Resolution:':<{w}} {t_res:.1f} ns\n"
                     f"{'Vertical Resolution:':<{w}} {FIELD_STEP} G\n"
                     # f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
@@ -5636,11 +5654,11 @@ class Worker():
 
     def exp_log(self, conn, decimation, num_ave, scans, points,
             log_start, log_end, exp_name,
-            curve_name, p1_exp, p2_exp,
-            p3_exp, p4_exp, p5_exp, p6_exp, p7_exp, p8_exp, p9_exp,
+            curve_name, rect1, rect2,
+            rect3, rect4, rect5, rect6, rect7, rect8, rect9,
             n_wurst, rep_rate, field, ch0_ampl,
-            ch1_ampl, p2_awg_exp, p3_awg_exp, p4_awg_exp,
-            p5_awg_exp, p6_awg_exp, p7_awg_exp, p8_awg_exp, p9_awg_exp,
+            ch1_ampl, awg2, awg3, awg4,
+            awg5, awg6, awg7, awg8, awg9,
             b_sech_cur, correction, synt, laser_flag, laser_num,
             q_switch_delay, iq_phase, iq_corr, win_left, win_right, zero_phase,
             x0, xd, first_order, sec_order, save2d, script_test=False):
@@ -5711,7 +5729,7 @@ class Worker():
             FIELD = field
             AVERAGES = num_ave
             SCANS = scans
-            PHASES = len(p1_exp[3])
+            PHASES = len(rect1[3])
             DEC_COEF = decimation
             process = 'None'
             REP_RATE = f'{rep_rate} Hz'
@@ -5736,27 +5754,27 @@ class Worker():
             rel_shift = np.array( [] )
 
             # DETECTION pulse; is added manually
-            iq_freq = -int( p1_exp[6].split(" MHz")[0] )
-            if int(float(p1_exp[2].split(' ')[0])) != 0:
-                pb.pulser_pulse(name='P1', channel=p1_exp[0], start=p1_exp[1], length=p1_exp[2], phase_list=p1_exp[3], delta_start=p1_exp[4])
+            iq_freq = -int( rect1[6].split(" MHz")[0] )
+            if int(float(rect1[2].split(' ')[0])) != 0:
+                pb.pulser_pulse(name='P1', channel=rect1[0], start=rect1[1], length=rect1[2], phase_list=rect1[3], delta_start=rect1[4])
                 name_list.append('P1')
-                rel_shift = np.append(rel_shift, float(p1_exp[4].split(' ')[0]) )
+                rel_shift = np.append(rel_shift, float(rect1[4].split(' ')[0]) )
 
             # Laser pulse also is added manually
             if laser_flag != 1:
                 pulses = [
-                        p2_exp, p3_exp, p4_exp, 
-                        p5_exp, p6_exp, p7_exp, p8_exp, 
-                        p9_exp
+                        rect2, rect3, rect4, 
+                        rect5, rect6, rect7, rect8, 
+                        rect9
                         ]
             else:
-                if int(float(p2_exp[1].split(' ')[0])) != 0:
+                if int(float(rect2[1].split(' ')[0])) != 0:
                     name_list.append(f'L1')
-                    rel_shift = np.append(rel_shift, float(p2_exp[2].split(' ')[0]) ) 
+                    rel_shift = np.append(rel_shift, float(rect2[2].split(' ')[0]) ) 
                 pulses = [
-                        p3_exp, p4_exp, 
-                        p5_exp, p6_exp, p7_exp, p8_exp, 
-                        p9_exp
+                        rect3, rect4, 
+                        rect5, rect6, rect7, rect8, 
+                        rect9
                         ]
 
             for p in pulses:
@@ -5778,7 +5796,7 @@ class Worker():
             rel_shift = ( (rel_shift ) / next_after_min).astype(int)
 
             if rel_shift[0] != 0.0:
-                x_axis = x_axis * rel_shift[0] + self.round_to_closest( float(p1_exp[1].split(" ")[0]) , 2)
+                x_axis = x_axis * rel_shift[0] + self.round_to_closest( float(rect1[1].split(" ")[0]) , 2)
             else:
                 indices = np.where(rel_shift[1:] != 0)[0] + 1
                 if indices.size > 0:
@@ -5794,10 +5812,10 @@ class Worker():
             #Laser flag
             if laser_flag != 1:
 
-                trigger_pulses = [p2_exp, p3_exp, p4_exp, p5_exp, p6_exp, p7_exp, p8_exp, p9_exp]
+                trigger_pulses = [rect2, rect3, rect4, rect5, rect6, rect7, rect8, rect9]
                 awg_params = [
-                                p2_awg_exp, p3_awg_exp, p4_awg_exp, p5_awg_exp,
-                                p6_awg_exp, p7_awg_exp, p8_awg_exp, p9_awg_exp
+                                awg2, awg3, awg4, awg5,
+                                awg6, awg7, awg8, awg9
                              ]
 
                 # rel_shift only got entries for non-zero pulses (see the
@@ -5847,7 +5865,7 @@ class Worker():
 
             else:
 
-                if script_test and int(float(p2_exp[1].split(' ')[0])) == 0:
+                if script_test and int(float(rect2[1].split(' ')[0])) == 0:
                     raise ValueError("LASER pulse has zero length")
                 #p7 is LASER pulse — its rel_shift slot sits right after P1's (if P1 was added).
                 if 'L1' in name_list:
@@ -5858,15 +5876,15 @@ class Worker():
                 pb.pulser_pulse(
                     name=f'L1',
                     channel='LASER',
-                    start=p2_exp[0],
-                    length=p2_exp[1],
+                    start=rect2[0],
+                    length=rect2[1],
                     delta_start=laser_delta_start
                 )
 
-                trigger_pulses = [p3_exp, p4_exp, p5_exp, p6_exp, p7_exp, p8_exp, p9_exp]
+                trigger_pulses = [rect3, rect4, rect5, rect6, rect7, rect8, rect9]
                 awg_params = [
-                                p3_awg_exp, p4_awg_exp, p5_awg_exp,
-                                p6_awg_exp, p7_awg_exp, p8_awg_exp, p9_awg_exp
+                                awg3, awg4, awg5,
+                                awg6, awg7, awg8, awg9
                              ]
 
                 # Same rel_shift indexing fix as the laser_flag != 1 branch.
@@ -5979,7 +5997,7 @@ class Worker():
                             awg.awg_stop()
                             ph += 1
 
-                        data_x, data_y = pb.pulser_acquisition_cycle( cycle_data_x, cycle_data_y, acq_cycle = p1_exp[3] )
+                        data_x, data_y = pb.pulser_acquisition_cycle( cycle_data_x, cycle_data_y, acq_cycle = rect1[3] )
                         data[0, :, j] = ( data[0, :, j] * (k - 1) + data_x ) / k
                         data[1, :, j] = ( data[1, :, j] * (k - 1) + data_y ) / k
 
@@ -6095,7 +6113,7 @@ class Worker():
                     f"{'Number of Scans:':<{w}} {SCANS}\n"
                     f"{'Averages:':<{w}} {AVERAGES}\n"
                     f"{'Points:':<{w}} {POINTS}\n"
-                    f"{'Window:':<{w}} {p1_exp[2]}\n"
+                    f"{'Window:':<{w}} {rect1[2]}\n"
                     f"{'Horizontal Resolution:':<{w}} {t_res:.1f} ns\n"
                     f"{'Vertical Resolution (ns):':<{w}} {v_res_formatted}\n"
                     f"{'Lg(X0/ns):':<{w}} {T_start}\n"
@@ -6183,11 +6201,11 @@ class Worker():
 
     def exp_amplitude(self, conn, decimation, num_ave, scans, points,
             step_ampl, field, exp_name,
-            curve_name, p1_exp, p2_exp,
-            p3_exp, p4_exp, p5_exp, p6_exp, p7_exp, p8_exp, p9_exp,
+            curve_name, rect1, rect2,
+            rect3, rect4, rect5, rect6, rect7, rect8, rect9,
             n_wurst, rep_rate, ch0_ampl,
-            ch1_ampl, p2_awg_exp, p3_awg_exp, p4_awg_exp,
-            p5_awg_exp, p6_awg_exp, p7_awg_exp, p8_awg_exp, p9_awg_exp,
+            ch1_ampl, awg2, awg3, awg4,
+            awg5, awg6, awg7, awg8, awg9,
             b_sech_cur, correction, synt, laser_flag, laser_num,
             q_switch_delay, iq_phase, iq_corr, win_left, win_right, zero_phase,
             first_order, sec_order, save2d, script_test=False):
@@ -6225,8 +6243,8 @@ class Worker():
             dig.win_right = win_right
             zp = zero_phase
 
-            #p1_exp DETECTION
-            iq_freq = -int( p1_exp[6].split(" MHz")[0] )
+            #rect1 DETECTION
+            iq_freq = -int( rect1[6].split(" MHz")[0] )
             
             awg.phase_shift_ch1_seq_mode = iq_phase
 
@@ -6251,7 +6269,7 @@ class Worker():
 
             AVERAGES = num_ave
             SCANS = scans
-            PHASES = len(p1_exp[3])
+            PHASES = len(rect1[3])
             DEC_COEF = decimation
             process = 'None'
             REP_RATE = f'{rep_rate} Hz'
@@ -6269,18 +6287,18 @@ class Worker():
             ampl_list = []
 
             # DETECTION pulse
-            iq_freq = -int( p1_exp[6].split(" MHz")[0] )
-            if int(float(p1_exp[2].split(' ')[0])) != 0:
-                pb.pulser_pulse(name='P1', channel=p1_exp[0], start=p1_exp[1], length=p1_exp[2], phase_list=p1_exp[3], delta_start=p1_exp[4], length_increment=p1_exp[5])
+            iq_freq = -int( rect1[6].split(" MHz")[0] )
+            if int(float(rect1[2].split(' ')[0])) != 0:
+                pb.pulser_pulse(name='P1', channel=rect1[0], start=rect1[1], length=rect1[2], phase_list=rect1[3], delta_start=rect1[4], length_increment=rect1[5])
 
             #Laser flag
             if laser_flag != 1:
 
 
-                trigger_pulses = [p2_exp, p3_exp, p4_exp, p5_exp, p6_exp, p7_exp, p8_exp, p9_exp]
+                trigger_pulses = [rect2, rect3, rect4, rect5, rect6, rect7, rect8, rect9]
                 awg_params = [
-                                p2_awg_exp, p3_awg_exp, p4_awg_exp, p5_awg_exp, 
-                                p6_awg_exp, p7_awg_exp, p8_awg_exp, p9_awg_exp
+                                awg2, awg3, awg4, awg5, 
+                                awg6, awg7, awg8, awg9
                              ]
 
                 for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
@@ -6332,22 +6350,22 @@ class Worker():
 
             else:
 
-                if script_test and int(float(p2_exp[1].split(' ')[0])) == 0:
+                if script_test and int(float(rect2[1].split(' ')[0])) == 0:
                     raise ValueError("LASER pulse has zero length")
                 #p7 is LASER pulse
                 pb.pulser_pulse(
                     name=f'L1',
                     channel='LASER',
-                    start=p2_exp[0],
-                    length=p2_exp[1],
-                    delta_start=p2_exp[2],
-                    length_increment=p2_exp[3]
+                    start=rect2[0],
+                    length=rect2[1],
+                    delta_start=rect2[2],
+                    length_increment=rect2[3]
                 )
 
-                trigger_pulses = [p3_exp, p4_exp, p5_exp, p6_exp, p7_exp, p8_exp, p9_exp]
+                trigger_pulses = [rect3, rect4, rect5, rect6, rect7, rect8, rect9]
                 awg_params = [
-                                p3_awg_exp, p4_awg_exp, p5_awg_exp,
-                                p6_awg_exp, p7_awg_exp, p8_awg_exp, p9_awg_exp
+                                awg3, awg4, awg5,
+                                awg6, awg7, awg8, awg9
                              ]
 
                 for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
@@ -6476,7 +6494,7 @@ class Worker():
                             awg.awg_stop()
                             ph += 1
 
-                        data_x, data_y = pb.pulser_acquisition_cycle( cycle_data_x, cycle_data_y, acq_cycle = p1_exp[3] )
+                        data_x, data_y = pb.pulser_acquisition_cycle( cycle_data_x, cycle_data_y, acq_cycle = rect1[3] )
                         data[0, :, j] = ( data[0, :, j] * (k - 1) + data_x ) / k
                         data[1, :, j] = ( data[1, :, j] * (k - 1) + data_y ) / k
 
@@ -6609,7 +6627,7 @@ class Worker():
                     f"{'Number of Scans:':<{w}} {SCANS}\n"
                     f"{'Averages:':<{w}} {AVERAGES}\n"
                     f"{'Points:':<{w}} {POINTS}\n"
-                    f"{'Window:':<{w}} {p1_exp[2]}\n"
+                    f"{'Window:':<{w}} {rect1[2]}\n"
                     f"{'Horizontal Resolution:':<{w}} {t_res:.1f} ns\n"
                     f"{'Start Amplitude:':<{w}} {f_delay} %\n"
                     f"{'Vertical Resolution:':<{w}} {STEP} %\n"

@@ -358,6 +358,42 @@ class MainWindow(QMainWindow):
         for i in range(1, 10):
             self.reset_pulse_func(i)
 
+    def _make_checkbox(self, func):
+        """Create a checkbox with the standard dark-theme style and connect it."""
+        check = QCheckBox("")
+        check.stateChanged.connect(func)
+        check.setStyleSheet("""
+            QCheckBox {
+                color: rgb(193, 202, 227);
+                background-color: transparent;
+                font-weight: bold;
+                spacing: 8px;
+            }
+
+            QCheckBox::indicator {
+                width: 14px;
+                height: 14px;
+                background-color: rgb(63, 63, 97);
+                border: 1px solid rgb(83, 83, 117);
+                border-radius: 3px;
+            }
+
+            QCheckBox::indicator:hover {
+                border: 1px solid rgb(211, 194, 78);
+            }
+
+            QCheckBox::indicator:pressed {
+                background-color: rgb(83, 83, 117);
+            }
+
+            QCheckBox::indicator:checked {
+                background-color: rgb(211, 194, 78);
+                border: 3px solid rgb(63, 63, 97);
+            }
+        """)
+        check.setFixedSize(170, 26)
+        return check
+
     def design_tab_1(self):
         self.setObjectName("MainWindow")
         self.setWindowTitle("RECT Channel Pulse Control")
@@ -821,7 +857,7 @@ class MainWindow(QMainWindow):
         self.tab_pulse.tabBar().setTabTextColor(1, QColor(193, 202, 227))
 
         # ---- Labels & Inputs ----
-        labels = [("Acquisitions", "label_17"), ("Integration Left", "label_18"), ("Integration Right", "label_19"), ("Det. Points", "label_20"), ("Hor. offset", "label_21"), ("Points", "label_e1"), ("Scans", "label_e2"), ("Experiment Name", "label_e3"), ("Curve Name", "label_e4"), ("Start Field", "label_f1"), ("End Field", "label_f2"), ("Field Step", "label_f3"), ("Sweep Type", "label_c1"), ("Start Log Time", "label_e5"), ("End Log Time", "label_e6"),
+        labels = [("Acquisitions", "label_17"), ("Integration Left", "label_18"), ("Integration Right", "label_19"), ("Det. Points", "label_20"), ("Hor. offset", "label_21"), ("Shift Together", "label_shift"), ("Points", "label_e1"), ("Scans", "label_e2"), ("Experiment Name", "label_e3"), ("Curve Name", "label_e4"), ("Start Field", "label_f1"), ("End Field", "label_f2"), ("Field Step", "label_f3"), ("Sweep Type", "label_c1"), ("Start Log Time", "label_e5"), ("End Log Time", "label_e6"),
             ('X<sub style="font-size: 12pt;">0</sub>', "label_e7"), ("ΔX ", "label_e8")]
 
         for name, attr_name in labels:
@@ -996,8 +1032,12 @@ class MainWindow(QMainWindow):
         right_grid.addWidget(self.Dec, 2, 1)
         right_grid.addWidget(self.label_21, 3, 0)
         right_grid.addWidget(self.Hor_offset, 3, 1)
-        right_grid.addWidget(hline(), 4, 0, 1, 2)
-        right_grid.setRowStretch(5, 1)
+        self.shift_box = self._make_checkbox(self.shift_online)
+        self.shift_box.setToolTip('Shift Together: when changing Det. Points, shift Hor. offset by the same amount so the signal stays put.')
+        right_grid.addWidget(self.label_shift, 4, 0)
+        right_grid.addWidget(self.shift_box, 4, 1)
+        right_grid.addWidget(hline(), 5, 0, 1, 2)
+        right_grid.setRowStretch(6, 1)
         right_grid.setColumnStretch(4, 1)
 
         third_grid = QGridLayout()
@@ -1108,6 +1148,9 @@ class MainWindow(QMainWindow):
         # old NIOCH UI) in place of the Insys decimation control.
         self.dig_points = 512
         self.posttrigger = 320
+        # Shift Together: keep (record length - posttrigger) constant while the
+        # record length changes, so the acquired signal stays in place.
+        self.shift_together = 0
 
         # ---- Check Boxes ----
         check_boxes = [("fft_box", self.fft_online),
@@ -1115,39 +1158,7 @@ class MainWindow(QMainWindow):
                        ]
 
         for attr_name, func in check_boxes:
-            check = QCheckBox("")
-            setattr(self, attr_name, check)
-            check.stateChanged.connect(func)
-            check.setStyleSheet("""
-                QCheckBox { 
-                    color: rgb(193, 202, 227); 
-                    background-color: transparent; 
-                    font-weight: bold;
-                    spacing: 8px; 
-                }
-
-                QCheckBox::indicator {
-                    width: 14px;
-                    height: 14px;
-                    background-color: rgb(63, 63, 97);
-                    border: 1px solid rgb(83, 83, 117);
-                    border-radius: 3px;
-                }
-
-                QCheckBox::indicator:hover {
-                    border: 1px solid rgb(211, 194, 78);
-                }
-
-                QCheckBox::indicator:pressed {
-                    background-color: rgb(83, 83, 117);
-                }
-
-                QCheckBox::indicator:checked {
-                    background-color: rgb(211, 194, 78);
-                    border: 3px solid rgb(63, 63, 97); 
-                }
-            """)
-            check.setFixedSize(170, 26)
+            setattr(self, attr_name, self._make_checkbox(func))
 
 
         self.fft_box.setToolTip('Show amplitude FFT of raw I/Q data.')
@@ -2179,17 +2190,45 @@ class MainWindow(QMainWindow):
         is only re-clamped here if it would no longer fit inside the record.
         Pushes PO/HO live if a run is in progress.
         """
-        self.dig_points = int( self.Dec.value() )
+        new_points = int( self.Dec.value() )
         self.time_per_point = 2  # NIOCH: fixed 2 ns / digitizer point
-        # keep the posttrigger valid: it has to be smaller than the record length
-        if self.posttrigger >= self.dig_points:
-            self.posttrigger = int( self.dig_points / 2 )
+        if self.shift_together == 1:
+            # Shift Together: keep the gap (record length - posttrigger)
+            # constant, so growing/shrinking the window moves the horizontal
+            # offset by the same amount and the signal stays at the same place.
+            gap = self.dig_points - self.posttrigger
+            self.dig_points = new_points
+            self.posttrigger = self.dig_points - gap
+            if self.posttrigger < 0:
+                self.posttrigger = 0
+            elif self.posttrigger >= self.dig_points:
+                self.posttrigger = self.dig_points - 2
+            # update the display without re-triggering hor_offset() (we send HO below)
+            self.Hor_offset.blockSignals( True )
             self.Hor_offset.setValue( self.posttrigger )
+            self.Hor_offset.blockSignals( False )
+        else:
+            self.dig_points = new_points
+            # keep the posttrigger valid: it has to be smaller than the record length
+            if self.posttrigger >= self.dig_points:
+                self.posttrigger = int( self.dig_points / 2 )
+                self.Hor_offset.setValue( self.posttrigger )
         try:
             self.parent_conn_dig.send( 'PO' + str(self.dig_points) )
             self.parent_conn_dig.send( 'HO' + str(self.posttrigger) )
         except (AttributeError, BrokenPipeError, OSError):
             pass
+
+    def shift_online(self):
+        """
+        Shift Together checkbox: when on, changing the record length
+        (Det. Points) also shifts the horizontal offset (posttrigger) by the
+        same amount in decimat(), keeping the acquired signal in place.
+        """
+        if self.shift_box.checkState().value == 2:   # checked
+            self.shift_together = 1
+        elif self.shift_box.checkState().value == 0: # unchecked
+            self.shift_together = 0
 
     def hor_offset(self):
         """
@@ -2800,7 +2839,7 @@ class Worker():
 
         self.command = 'start'
     
-    def dig_on(self, conn, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18, p19, p20, p21, p22, p23, p24, p25, script_test=False):
+    def dig_on(self, conn, dig_points, posttrigger, n_averages, win_left, win_right, rect1, rect2, rect3, rect4, rect5, rect6, rect7, laser_flag, rep_rate, mag_field, fft_flag, quad, zero_order, first_order, second_order, p_to_drop, laser_num, laser_qsw_delay, rect8, rect9, script_test=False):
         """
         function that contains updating of the digitizer.
 
@@ -2832,22 +2871,22 @@ class Worker():
             fft = fft_module.Fast_Fourier()
             #bh15 = itc.BH_15()
 
-            #bh15.magnet_setup( p15, 0.5 )
-            #bh15.magnet_field( p15 ) #, calibration = 'True'
+            #bh15.magnet_setup( mag_field, 0.5 )
+            #bh15.magnet_field( mag_field ) #, calibration = 'True'
 
             process = 'None'
 
             # NIOCH digitizer is point/posttrigger based (no Insys decimation):
-            # p1 = number of digitizer points (record length)
-            # p2 = posttrigger points
+            # dig_points = number of digitizer points (record length)
+            # posttrigger = number of posttrigger points
 
             #parameters for initial initialization
 
-            #p4 window left
-            #p5 window right
+            #win_left window left
+            #win_right window right
             
-            if p13 != 1:
-                pulses = [p6, p7, p8, p9, p10, p11, p12, p24, p25]
+            if laser_flag != 1:
+                pulses = [rect1, rect2, rect3, rect4, rect5, rect6, rect7, rect8, rect9]
 
                 for i, p in enumerate(pulses):
                     length_str = p[2].split(' ')[0]
@@ -2860,16 +2899,16 @@ class Worker():
                             phase_list=p[3]
                         )
                 
-                pb.pulser_repetition_rate( str(p14) + ' Hz' )
+                pb.pulser_repetition_rate( str(rep_rate) + ' Hz' )
 
             else:
 
 
-                pulses = [p6, p7, p8, p9, p10, p11, p12, p24, p25]
+                pulses = [rect1, rect2, rect3, rect4, rect5, rect6, rect7, rect8, rect9]
 
                 for i, p in enumerate(pulses):
                     if i != 1:
-                        start_val = float(p[1].split(' ')[0]) + p23
+                        start_val = float(p[1].split(' ')[0]) + laser_qsw_delay
                         # NIOCH MW pulses sit on an integer 2 ns grid (ITC uses 3.2 ns)
                         p[1] = f"{self.round_to_closest(start_val, 2)} ns"
 
@@ -2890,29 +2929,29 @@ class Worker():
 
                         pb.pulser_pulse(**kwargs)
 
-                if p22 == 1:
+                if laser_num == 1:
                     pb.pulser_repetition_rate( '9.9 Hz' )
-                elif p22 == 2:
-                    pb.pulser_repetition_rate( str(p14) + ' Hz' )
+                elif laser_num == 2:
+                    pb.pulser_repetition_rate( str(rep_rate) + ' Hz' )
                 else:
-                    pb.pulser_repetition_rate( str(p14) + ' Hz' )
+                    pb.pulser_repetition_rate( str(rep_rate) + ' Hz' )
 
 
             # NIOCH Spectrum digitizer: point/posttrigger based, fixed 2 ns/point
-            # sampling (500 MHz). p1 = record length (points); p2 = posttrigger.
-            WIN_ADC = int( p1 )
+            # sampling (500 MHz). dig_points = record length (points); posttrigger = posttrigger points.
+            WIN_ADC = int( dig_points )
             t_res = 2.0                      # ns per point (digitizer & AWG both 2 ns)
 
             dig.digitizer_card_mode('Average')
             dig.digitizer_clock_mode('Internal')
             dig.digitizer_reference_clock(100)
-            dig.digitizer_number_of_points( p1 )
-            dig.digitizer_posttrigger( p2 )
-            dig.digitizer_number_of_averages( p3 )
+            dig.digitizer_number_of_points( dig_points )
+            dig.digitizer_posttrigger( posttrigger )
+            dig.digitizer_number_of_averages( n_averages )
             dig.digitizer_setup()
 
-            p14 = float(p14)
-            PHASES = len( p6[3] )
+            rep_rate = float(rep_rate)
+            PHASES = len( rect1[3] )
 
             # device returns x_axis in seconds; allocate phase-cycle buffers
             x_axis = np.arange( WIN_ADC ) * t_res * 1e-9
@@ -2948,43 +2987,43 @@ class Worker():
                     pass
 
                 elif self.command[0:2] == 'NA':
-                    p3 = int( self.command[2:] )
+                    n_averages = int( self.command[2:] )
                     dig.digitizer_stop()
-                    dig.digitizer_number_of_averages( p3 )
+                    dig.digitizer_number_of_averages( n_averages )
                     dig.digitizer_setup()
 
                 elif self.command[0:2] == 'WL':
-                    p4 = int( self.command[2:] )
+                    win_left = int( self.command[2:] )
                 elif self.command[0:2] == 'WR':
-                    p5 = int( self.command[2:] )
+                    win_right = int( self.command[2:] )
                 elif self.command[0:2] == 'RR':
-                    p14 = float( self.command[2:] )
-                    pb.pulser_repetition_rate( str(p14) + ' Hz' )
+                    rep_rate = float( self.command[2:] )
+                    pb.pulser_repetition_rate( str(rep_rate) + ' Hz' )
 
                 elif self.command[0:2] == 'FI':
-                    p15 = float( self.command[2:] )
-                    #bh15.magnet_field( p15 ) #, calibration = 'True'
+                    mag_field = float( self.command[2:] )
+                    #bh15.magnet_field( mag_field ) #, calibration = 'True'
                 elif self.command[0:2] == 'FF':
-                    p16 = int( self.command[2:] )
+                    fft_flag = int( self.command[2:] )
                 elif self.command[0:2] == 'QC':
-                    p17 = int( self.command[2:] )
+                    quad = int( self.command[2:] )
                 elif self.command[0:2] == 'ZO':
-                    p18 = float( self.command[2:] )
+                    zero_order = float( self.command[2:] )
                 elif self.command[0:2] == 'FO':
-                    p19 = float( self.command[2:] )
+                    first_order = float( self.command[2:] )
                 elif self.command[0:2] == 'SO':
-                    p20 = float( self.command[2:] )
+                    second_order = float( self.command[2:] )
                 elif self.command[0:2] == 'PD':
-                    p21 = int( self.command[2:] )
+                    p_to_drop = int( self.command[2:] )
 
                 # check integration window
-                if p4 > WIN_ADC:
-                    p4 = WIN_ADC
-                if p5 > WIN_ADC:
-                    p5 = WIN_ADC
+                if win_left > WIN_ADC:
+                    win_left = WIN_ADC
+                if win_right > WIN_ADC:
+                    win_right = WIN_ADC
 
                 # phase cycle
-                PHASES = len( p6[3] )
+                PHASES = len( rect1[3] )
 
                 
                 # NIOCH: one digitizer acquisition per phase, then let the pulser
@@ -2995,27 +3034,27 @@ class Worker():
                     x_axis, cycle_data_x[k], cycle_data_y[k] = dig.digitizer_get_curve()
                     k += 1
 
-                data_x, data_y = pb.pulser_acquisition_cycle( cycle_data_x, cycle_data_y, acq_cycle = p6[3] )
+                data_x, data_y = pb.pulser_acquisition_cycle( cycle_data_x, cycle_data_y, acq_cycle = rect1[3] )
 
-                if script_test and p16 == 1:
+                if script_test and fft_flag == 1:
                     # FFT mode in test: omit the I/Q text on the Dig plot since FFT is shown
                     general.plot_1d('Dig', x_axis, ( data_x, data_y ),
                         xscale = 's', yscale = 'V', label = 'ch',
-                        vline = (p4 * t_res * 1e-9, p5 * t_res * 1e-9)
+                        vline = (win_left * t_res * 1e-9, win_right * t_res * 1e-9)
                         )
                 else:
-                    int_x = round( np.sum( data_x[p4:p5] ) * t_res , 1 )
-                    int_y = round( np.sum( data_y[p4:p5] ) * t_res , 1 )
+                    int_x = round( np.sum( data_x[win_left:win_right] ) * t_res , 1 )
+                    int_y = round( np.sum( data_y[win_left:win_right] ) * t_res , 1 )
 
                     general.plot_1d('Dig', x_axis, ( data_x, data_y ),
                         xscale = 's', yscale = 'V', label = 'ch',
-                        vline = (p4 * t_res * 1e-9, p5 * t_res * 1e-9),
+                        vline = (win_left * t_res * 1e-9, win_right * t_res * 1e-9),
                         text = 'I/Q ' + str(int_x) + '/' + str(int_y)
                         )
 
-                if p16 == 1:
+                if fft_flag == 1:
 
-                    if p17 == 0:
+                    if quad == 0:
                         freq_axis, abs_values = fft.fft(x_axis, data_x, data_y, t_res)
                         m_val = round( np.amax( abs_values ), 2 )
                         general.plot_1d('FFT', freq_axis, abs_values, xname = 'Freq Offset',
@@ -3023,12 +3062,12 @@ class Worker():
                             yscale = 'Arb. U.', text = 'Max ' + str(m_val)
                             )
                     else:
-                        if p21 > len( data_x ) - 2:
-                            p21 = len( data_x ) - 4
+                        if p_to_drop > len( data_x ) - 2:
+                            p_to_drop = len( data_x ) - 4
                             general.message('Maximum length of the data achieved. A number of drop points was corrected.')
                         # fixed resolution of digitizer; 2 ns
-                        freq, fft_x, fft_y = fft.fft( x_axis[p21:] , data_x[p21:], data_y[p21:], t_res, re = 'True' )
-                        data_fft = fft.ph_correction( freq, fft_x, fft_y, p18, p19, p20 )
+                        freq, fft_x, fft_y = fft.fft( x_axis[p_to_drop:] , data_x[p_to_drop:], data_y[p_to_drop:], t_res, re = 'True' )
+                        data_fft = fft.ph_correction( freq, fft_x, fft_y, zero_order, first_order, second_order )
                         general.plot_1d('FFT', freq, ( data_fft[0], data_fft[1] ),
                             xname = 'Freq Offset', xscale = 'MHz',
                             yscale = 'Arb. U.', label = 'FFT'
@@ -3072,8 +3111,8 @@ class Worker():
 
     def exp(self, conn, decimation, num_ave, scans, points,
             win_left, exp_name, curve_name,
-            win_right, p1_exp, p2_exp, p3_exp, p4_exp,
-            p5_exp, p6_exp, p7_exp, p8_exp, p9_exp, laser_flag,
+            win_right, rect1, rect2, rect3, rect4,
+            rect5, rect6, rect7, rect8, rect9, laser_flag,
             rep_rate, field, laser_num, q_switch_delay, x0, xd,
             zero_order, first_order, sec_order, ph_cor, script_test=False):
 
@@ -3109,21 +3148,21 @@ class Worker():
             dig.win_right = win_right
 
             if xd == 0.0:
-                pulses2 = [p2_exp, p3_exp, p4_exp, p5_exp, p6_exp, p7_exp, p8_exp, p9_exp]
-                #p1_exp DETECTION
-                if p1_exp[4] != '0.0 ns':
+                pulses2 = [rect2, rect3, rect4, rect5, rect6, rect7, rect8, rect9]
+                #rect1 DETECTION
+                if rect1[4] != '0.0 ns':
                     #delta_start
-                    step = round( float( p1_exp[4].split(' ')[0] ), 1)
+                    step = round( float( rect1[4].split(' ')[0] ), 1)
                     for p in pulses2:
                         if p[5] != '0.0 ns':
                             f_delay = self.round_to_closest( float(p[2].split(' ')[0]), 2)
                             break
                         else:
-                            f_delay = self.round_to_closest( float(p1_exp[1].split(' ')[0]), 2)
-                elif p1_exp[5] != '0.0 ns':
+                            f_delay = self.round_to_closest( float(rect1[1].split(' ')[0]), 2)
+                elif rect1[5] != '0.0 ns':
                     #length_increment
-                    step = round( float( p1_exp[5].split(' ')[0] ), 1)
-                    f_delay = self.round_to_closest( float(p1_exp[2].split(' ')[0]), 2)
+                    step = round( float( rect1[5].split(' ')[0] ), 1)
+                    f_delay = self.round_to_closest( float(rect1[2].split(' ')[0]), 2)
                 else:                
                     for p in pulses2:
                         if p[4] != '0.0 ns':
@@ -3148,7 +3187,7 @@ class Worker():
             FIELD = field
             AVERAGES = num_ave
             SCANS = scans
-            PHASES = len(p1_exp[3])
+            PHASES = len(rect1[3])
             DEC_COEF = decimation
             process = 'None'
             REP_RATE = f'{rep_rate} Hz'
@@ -3160,9 +3199,9 @@ class Worker():
 
             if laser_flag != 1:
                 pulses = [
-                        p1_exp, p2_exp, p3_exp, p4_exp, 
-                        p5_exp, p6_exp, p7_exp, p8_exp, 
-                        p9_exp
+                        rect1, rect2, rect3, rect4, 
+                        rect5, rect6, rect7, rect8, 
+                        rect9
                         ]
 
                 for i, p in enumerate(pulses):
@@ -3182,9 +3221,9 @@ class Worker():
             else:
 
                 pulses = [
-                        p1_exp, p2_exp, p3_exp, p4_exp, 
-                        p5_exp, p6_exp, p7_exp, p8_exp, 
-                        p9_exp
+                        rect1, rect2, rect3, rect4, 
+                        rect5, rect6, rect7, rect8, 
+                        rect9
                         ]
 
                 for i, p in enumerate(pulses):
@@ -3269,7 +3308,7 @@ class Worker():
                             pb.pulser_next_phase()
                             cyc_x[i], cyc_y[i] = dig.digitizer_get_curve( integral = True )
 
-                        ix, iy = pb.pulser_acquisition_cycle( cyc_x, cyc_y, acq_cycle = p1_exp[3] )
+                        ix, iy = pb.pulser_acquisition_cycle( cyc_x, cyc_y, acq_cycle = rect1[3] )
                         data[0, j] = ( data[0, j] * (k - 1) + ix ) / k
                         data[1, j] = ( data[1, j] * (k - 1) + iy ) / k
 
@@ -3362,8 +3401,8 @@ class Worker():
 
     def exp_field(self, conn, decimation, num_ave, scans, start_field,
             end_field, step_field, win_left, exp_name, curve_name,
-            win_right, p1_exp, p2_exp, p3_exp, p4_exp,
-            p5_exp, p6_exp, p7_exp, p8_exp, p9_exp, laser_flag,
+            win_right, rect1, rect2, rect3, rect4,
+            rect5, rect6, rect7, rect8, rect9, laser_flag,
             rep_rate, laser_num, q_switch_delay,
             zero_order, first_order, sec_order, ph_cor, script_test=False):
 
@@ -3403,7 +3442,7 @@ class Worker():
             
             AVERAGES = num_ave
             SCANS = scans
-            PHASES = len(p1_exp[3])
+            PHASES = len(rect1[3])
             DEC_COEF = decimation
             process = 'None'
             REP_RATE = f'{rep_rate} Hz'
@@ -3415,9 +3454,9 @@ class Worker():
 
             if laser_flag != 1:
                 pulses = [
-                        p1_exp, p2_exp, p3_exp, p4_exp, 
-                        p5_exp, p6_exp, p7_exp, p8_exp, 
-                        p9_exp
+                        rect1, rect2, rect3, rect4, 
+                        rect5, rect6, rect7, rect8, 
+                        rect9
                         ]
 
                 for i, p in enumerate(pulses):
@@ -3440,9 +3479,9 @@ class Worker():
             else:
 
                 pulses = [
-                        p1_exp, p2_exp, p3_exp, p4_exp,
-                        p5_exp, p6_exp, p7_exp, p8_exp,
-                        p9_exp
+                        rect1, rect2, rect3, rect4,
+                        rect5, rect6, rect7, rect8,
+                        rect9
                         ]
 
                 for i, p in enumerate(pulses):
@@ -3544,7 +3583,7 @@ class Worker():
                             pb.pulser_next_phase()
                             cyc_x[i], cyc_y[i] = dig.digitizer_get_curve( integral = True )
 
-                        ix, iy = pb.pulser_acquisition_cycle( cyc_x, cyc_y, acq_cycle = p1_exp[3] )
+                        ix, iy = pb.pulser_acquisition_cycle( cyc_x, cyc_y, acq_cycle = rect1[3] )
                         data[0, j] = ( data[0, j] * (k - 1) + ix ) / k
                         data[1, j] = ( data[1, j] * (k - 1) + iy ) / k
 
@@ -3636,8 +3675,8 @@ class Worker():
 
     def exp_log(self, conn, decimation, num_ave, scans, points,
             log_start, log_end, win_left, exp_name, curve_name,
-            win_right, p1_exp, p2_exp, p3_exp, p4_exp,
-            p5_exp, p6_exp, p7_exp, p8_exp, p9_exp, laser_flag,
+            win_right, rect1, rect2, rect3, rect4,
+            rect5, rect6, rect7, rect8, rect9, laser_flag,
             rep_rate, field, laser_num, q_switch_delay, x0, xd,
             zero_order, first_order, sec_order, ph_cor, script_test=False):
 
@@ -3686,7 +3725,7 @@ class Worker():
             FIELD = field
             AVERAGES = num_ave
             SCANS = scans
-            PHASES = len(p1_exp[3])
+            PHASES = len(rect1[3])
             DEC_COEF = decimation
             process = 'None'
             REP_RATE = f'{rep_rate} Hz'
@@ -3701,9 +3740,9 @@ class Worker():
             name_list = []
             rel_shift = np.array( [] )
             pulses = [
-                    p1_exp, p2_exp, p3_exp, p4_exp, 
-                    p5_exp, p6_exp, p7_exp, p8_exp, 
-                    p9_exp
+                    rect1, rect2, rect3, rect4, 
+                    rect5, rect6, rect7, rect8, 
+                    rect9
                     ]
 
             for p in pulses:
@@ -3725,7 +3764,7 @@ class Worker():
             rel_shift = ( (rel_shift ) / next_after_min).astype(int)
 
             if rel_shift[0] != 0.0:
-                x_axis = x_axis * rel_shift[0] + self.round_to_closest( float(p1_exp[1].split(" ")[0]) , 2)
+                x_axis = x_axis * rel_shift[0] + self.round_to_closest( float(rect1[1].split(" ")[0]) , 2)
             else:
                 indices = np.where(rel_shift[1:] != 0)[0] + 1
                 if indices.size > 0:
@@ -3843,7 +3882,7 @@ class Worker():
                             pb.pulser_next_phase()
                             cyc_x[i], cyc_y[i] = dig.digitizer_get_curve( integral = True )
 
-                        ix, iy = pb.pulser_acquisition_cycle( cyc_x, cyc_y, acq_cycle = p1_exp[3] )
+                        ix, iy = pb.pulser_acquisition_cycle( cyc_x, cyc_y, acq_cycle = rect1[3] )
                         data[0, j] = ( data[0, j] * (k - 1) + ix ) / k
                         data[1, j] = ( data[1, j] * (k - 1) + iy ) / k
 
