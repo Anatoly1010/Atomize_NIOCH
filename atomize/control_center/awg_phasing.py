@@ -27,6 +27,20 @@ from atomize.general_modules.gui_style import apply_app_style
 SEQCALC_SIGNAL = os.path.join(tempfile.gettempdir(), 'atomize_seqcalc.param')
 SEQCALC_CHANNEL = 'awg'
 
+class SnapSpinBox(QSpinBox):
+    """QSpinBox that snaps any value to the nearest multiple of its single step.
+    The digitizer requires Det. Points / Hor. offset on a 32-point grid; the
+    arrows already step by 32, but a value typed in by hand would otherwise be
+    accepted verbatim. We round on text interpretation (Enter / focus-out)."""
+    def valueFromText(self, text):
+        step = self.singleStep() or 1
+        digits = re.sub(r'[^0-9\-]', '', text)
+        try:
+            raw = int(digits)
+        except ValueError:
+            return self.value()
+        return int(round(raw / step)) * step
+
 # -------------------------------------------------------------------------
 # Bench-test switch. On a machine that cannot seat the full digitizer + AWG +
 # pulser stack at once, set DIG_PRESENT = False to validate the AWG + pulser
@@ -1054,8 +1068,8 @@ class MainWindow(QMainWindow):
 
         # ---- Boxes ----
         double_boxes = [(QSpinBox, "Acq_number", "number_averages", self.acq_number, 1, 1e4, 1, 1, 0, ""),
-                      (QSpinBox, "Dec", "dig_points", self.decimat, 100, 20000, 512, 32, 0, ""),
-                      (QSpinBox, "Hor_offset", "posttrigger", self.hor_offset, 0, 20000, 320, 32, 0, ""),
+                      (SnapSpinBox, "Dec", "dig_points", self.decimat, 100, 20000, 512, 32, 0, ""),
+                      (SnapSpinBox, "Hor_offset", "posttrigger", self.hor_offset, 0, 20000, 320, 32, 0, ""),
                       (QDoubleSpinBox, "Win_left", "cur_win_left", self.win_left, 0, 6400, 0, 0.4, 1, " ns"),
                       (QDoubleSpinBox, "Win_right", "cur_win_right", self.win_right, 0, 6400, 320, 0.4, 1, " ns"),
                       (QSpinBox, "box_points", "cur_points", self.points, 1, 20000, 500, 10, 0, ""),
@@ -2066,8 +2080,13 @@ class MainWindow(QMainWindow):
         A function to change left integration window
         """
         self.cur_win_left = int( float( self.Win_left.value() ) / self.time_per_point )
-        if round( self.cur_win_left * self.time_per_point, 1) > round( float( self.remove_ns( self.p1_length ) ), 1):
-            self.cur_win_left = int( round( float( self.remove_ns( self.p1_length ) ), 1) / self.time_per_point )
+        # Bound the integration window to the digitizer RECORD length (Det.
+        # Points), not the detection-pulse length: the Spectrum card records
+        # dig_points samples regardless of the pulse sequence (the old p1_length
+        # bound was an Insys-era leftover that snapped every window wider than P1
+        # back to the same value, so the integral never changed).
+        if self.cur_win_left > self.dig_points:
+            self.cur_win_left = int( self.dig_points )
             self.Win_left.setValue( round( self.cur_win_left * self.time_per_point, 1) )
 
         if self.opened == 0:
@@ -2078,8 +2097,8 @@ class MainWindow(QMainWindow):
 
     def win_right(self):
         self.cur_win_right = int( float( self.Win_right.value() ) / self.time_per_point )
-        if round( self.cur_win_right * self.time_per_point, 1) > round( float( self.remove_ns( self.p1_length ) ), 1):
-            self.cur_win_right = int( round( float( self.remove_ns( self.p1_length ) ), 1) / self.time_per_point )
+        if self.cur_win_right > self.dig_points:
+            self.cur_win_right = int( self.dig_points )
             self.Win_right.setValue( round( self.cur_win_right * self.time_per_point, 1) )
 
         if self.opened == 0:
@@ -3039,9 +3058,10 @@ class MainWindow(QMainWindow):
                     sys.exit()
 
     def dig_start_exp(self):
+        self.errors.clear()
         worker = Worker()
 
-        self.p1_exp = [self.p1_typ, self.p1_start, self.p1_length, 
+        self.p1_exp = [self.p1_typ, self.p1_start, self.p1_length,
                         self.ph_1, self.p1_st_increment, self.p1_len_increment, self.p1_freq
                         ]
 
@@ -3206,6 +3226,7 @@ class MainWindow(QMainWindow):
         Create a Pipe for interaction with this thread
         self.param_i are used as parameters for script function
         """
+        self.errors.clear()
         worker = Worker()
 
         self.p1_list = [self.p1_typ, self.p1_start, self.p1_length, self.ph_1, self.p1_freq]
@@ -3433,7 +3454,10 @@ class MainWindow(QMainWindow):
             self.progress_bar.setValue(0)
             self.button_start_exp.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97); border-style: outset; color: rgb(193, 202, 227); font-weight: bold; }  QPushButton:pressed {background-color: rgb(211, 194, 78); border-style: inset; font-weight: bold; }")
         else:
-            self.errors.clear()
+            # Do NOT clear the log here: a Run-Pulses/Update process that ends
+            # (or that died with an error) would otherwise have its output and
+            # error message wiped the instant the user stops it to read it. The
+            # log is cleared at LAUNCH instead (dig_start / dig_start_exp).
             self.button_update.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97); border-style: outset; color: rgb(193, 202, 227); font-weight: bold; }  QPushButton:pressed {background-color: rgb(211, 194, 78); border-style: inset; font-weight: bold; }")
         
         #self.timer.stop()
@@ -4700,6 +4724,22 @@ class Worker():
                 eseem_all_inc1.append(inc1_str)
                 eseem_all_inc2.append(eseem_inc2[gui_idx])
 
+            # NIOCH: the AWG is a separate Spectrum card with its own pulse list,
+            # so unlike Insys the MW waveform pulses do NOT follow the pulser gates
+            # automatically. We keep a parallel AWG bookkeeping (every awg_pulse,
+            # one entry, with its Inc1 = awg delta_start and Inc2 = the same GUI
+            # Start Increment 2 as its trigger) and apply the cumulative cycle
+            # offset to the AWG too, otherwise the pulse position never advances
+            # between cycles.
+            eseem_awg_names = []
+            eseem_awg_inc1 = []
+            eseem_awg_inc2 = []
+
+            def _eseem_add_awg(pname, gui_idx, inc1_str):
+                eseem_awg_names.append(pname)
+                eseem_awg_inc1.append(inc1_str)
+                eseem_awg_inc2.append(eseem_inc2[gui_idx])
+
             # DETECTION pulse
             if int(float(rect1[2].split(' ')[0])) != 0:
                 pb.pulser_pulse(name='P1', channel=rect1[0], start=rect1[1], length=rect1[2], phase_list=rect1[3], delta_start=rect1[4], length_increment=rect1[5])
@@ -4741,6 +4781,7 @@ class Worker():
                             awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
 
                         awg.awg_pulse(**awg_kwargs)
+                        _eseem_add_awg(f'P{2*i + 2}', i + 1, ap[8])
 
                         if ap[0] != 'BLANK':
                             pb.pulser_pulse(
@@ -4807,6 +4848,7 @@ class Worker():
                             awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
 
                         awg.awg_pulse(**awg_kwargs)
+                        _eseem_add_awg(f'P{2*i + 2}', i + 2, ap[8])
 
                         if ap[0] != 'BLANK':
                             pb.pulser_pulse(
@@ -4902,9 +4944,12 @@ class Worker():
                     # restore all Inc1 values so the point loop sweeps normally.
                     if cycle > 0 and has_eseem:
                         pb.pulser_redefine_delta_start(name = eseem_all_names, delta_start = eseem_all_inc2)
+                        awg.awg_redefine_delta_start(name = eseem_awg_names, delta_start = eseem_awg_inc2)
                         for _ in range(cycle):
                             pb.pulser_shift()
+                            awg.awg_shift()
                         pb.pulser_redefine_delta_start(name = eseem_all_names, delta_start = eseem_all_inc1)
+                        awg.awg_redefine_delta_start(name = eseem_awg_names, delta_start = eseem_awg_inc1)
 
                     for j in range(POINTS):
 

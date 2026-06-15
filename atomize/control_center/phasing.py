@@ -25,6 +25,20 @@ from atomize.control_center.time_log_spinbox import TimeLogSpinBox
 SEQCALC_SIGNAL = os.path.join(tempfile.gettempdir(), 'atomize_seqcalc.param')
 SEQCALC_CHANNEL = 'rect'
 
+class SnapSpinBox(QSpinBox):
+    """QSpinBox that snaps any value to the nearest multiple of its single step.
+    The digitizer requires Det. Points / Hor. offset on a 32-point grid; the
+    arrows already step by 32, but a value typed in by hand would otherwise be
+    accepted verbatim. We round on text interpretation (Enter / focus-out)."""
+    def valueFromText(self, text):
+        step = self.singleStep() or 1
+        digits = re.sub(r'[^0-9\-]', '', text)
+        try:
+            raw = int(digits)
+        except ValueError:
+            return self.value()
+        return int(round(raw / step)) * step
+
 class MainWindow(QMainWindow):
     """
     A main window class
@@ -298,14 +312,16 @@ class MainWindow(QMainWindow):
             values = [0, 0, 0, 0, "+x,+x", "MW"]
 
         suffixes = ["_st", "_len", "_st_inc", "_len_inc"]
-        
+
         for i, suffix in enumerate(suffixes):
             getattr(self, f"P{pulse_number}{suffix}").setValue(values[i])
+
+        getattr(self, f"P{pulse_number}_st_inc2").setValue(0)
 
         phase_widget = getattr(self, f"Phase_{pulse_number}")
         new_phase_text = str(values[4])
         phase_widget.setPlainText(new_phase_text)
-            
+
         combo_widget = getattr(self, f"P{pulse_number}_type")
         new_combo_text = str(values[5])
         combo_widget.setCurrentText(new_combo_text)
@@ -317,15 +333,17 @@ class MainWindow(QMainWindow):
         getattr(self, f"P{pulse_number}_st").setValue(self.pulse_buffer['st'])
         getattr(self, f"P{pulse_number}_len").setValue(self.pulse_buffer['len'])
         getattr(self, f"P{pulse_number}_st_inc").setValue(self.pulse_buffer['st_inc'])
+        getattr(self, f"P{pulse_number}_st_inc2").setValue(self.pulse_buffer.get('st_inc2', 0))
         getattr(self, f"P{pulse_number}_len_inc").setValue(self.pulse_buffer['len_inc'])
         getattr(self, f"Phase_{pulse_number}").setPlainText(self.pulse_buffer['phase'])
         getattr(self, f"P{pulse_number}_type").setCurrentText(self.pulse_buffer['type'])
-    
+
     def copy_pulse_func(self, pulse_number):
         self.pulse_buffer = {
             'st': getattr(self, f"P{pulse_number}_st").value(),
             'len': getattr(self, f"P{pulse_number}_len").value(),
             'st_inc': getattr(self, f"P{pulse_number}_st_inc").value(),
+            'st_inc2': getattr(self, f"P{pulse_number}_st_inc2").value(),
             'len_inc': getattr(self, f"P{pulse_number}_len_inc").value(),
             'phase': getattr(self, f"Phase_{pulse_number}").toPlainText(),
             'type': getattr(self, f"P{pulse_number}_type").currentText()
@@ -342,14 +360,16 @@ class MainWindow(QMainWindow):
             values = [0, 0, 0, 0, "+x,+x", "MW"]
 
         suffixes = ["_st", "_len", "_st_inc", "_len_inc"]
-        
+
         for i, suffix in enumerate(suffixes):
             getattr(self, f"P{pulse_number}{suffix}").setValue(values[i])
+
+        getattr(self, f"P{pulse_number}_st_inc2").setValue(0)
 
         phase_widget = getattr(self, f"Phase_{pulse_number}")
         new_phase_text = str(values[4])
         phase_widget.setPlainText(new_phase_text)
-            
+
         combo_widget = getattr(self, f"P{pulse_number}_type")
         new_combo_text = str(values[5])
         combo_widget.setCurrentText(new_combo_text)
@@ -510,7 +530,7 @@ class MainWindow(QMainWindow):
         main_window_layout.addWidget(buttons_widget)
 
         # ---- Labels & Inputs ----
-        labels = [("Start", "label_1"), ("Length", "label_2"), ("Start Increment", "label_3"), ("Length Increment", "label_4"), ("Type", "label_5"), ("Phase", "label_6"), ("Repetition Rate", "label_7"), ("Magnetic Field", "label_8"), ("Progress", "label_p1")]
+        labels = [("Start", "label_1"), ("Length", "label_2"), ("Start Increment", "label_3"), ("Length Increment", "label_4"), ("Type", "label_5"), ("Phase", "label_6"), ("Repetition Rate", "label_7"), ("Magnetic Field", "label_8"), ("Progress", "label_p1"), ("Start Increment 2", "label_si2")]
 
         for name, attr_name in labels:
             lbl = QLabel(name)
@@ -523,13 +543,20 @@ class MainWindow(QMainWindow):
         pulses = [(QDoubleSpinBox, 0, 100e6, 0, 2, 1, " ns", "_st", "_start"),
                   (QDoubleSpinBox, 0, 1900, 0, 2, 1, " ns", "_len", "_length"),
                   (QDoubleSpinBox, 0, 1e6, 0, 2, 1, " ns", "_st_inc", "_st_increment"),
+                  (QDoubleSpinBox, 0, 1e6, 0, 2, 1, " ns", "_st_inc2", "_st_increment2"),
                   (QDoubleSpinBox, 0, 320, 0, 2, 1, " ns", "_len_inc", "_len_increment")
                  ]
+        # Start Increment 2 (ESEEM tau-averaging) is appended as a 5th per-pulse
+        # row. Its label is label_si2 (outside the sequential label_N range), so
+        # the per-row label/grid-row mapping is given explicitly here.
+        pulse_labels = ["label_1", "label_2", "label_3", "label_si2", "label_4"]
+        pulse_rows = [3, 4, 5, 6, 7]
 
-        for j in range(1, 5):
+        for j in range(1, 6):
             pulse_set = pulses[j-1]
-            label_widget = getattr(self, f"label_{j}")
-            self.gridLayout.addWidget(label_widget, j + 2, 0)
+            grid_row = pulse_rows[j-1]
+            label_widget = getattr(self, pulse_labels[j-1])
+            self.gridLayout.addWidget(label_widget, grid_row, 0)
 
             for i in range(1, 10):
                 spin_box = (pulse_set[0])()
@@ -566,7 +593,7 @@ class MainWindow(QMainWindow):
 
                 start_value = self.round_and_change(spin_box)
                 setattr(self, f"p{i}{pulse_set[8]}", start_value)
-                self.gridLayout.addWidget(spin_box, j + 2, i)
+                self.gridLayout.addWidget(spin_box, grid_row, i)
 
                 if j == 1:
                     lbl = QLabel(f"{i}")
@@ -583,7 +610,7 @@ class MainWindow(QMainWindow):
             return line
 
         self.gridLayout.addWidget(hline(), 1, 0, 1, 10)
-        self.gridLayout.addWidget(hline(), 7, 0, 1, 10)
+        self.gridLayout.addWidget(hline(), 8, 0, 1, 10)
 
         # ---- Combo boxes----
         combo_boxes = [("DETECTION", "_type", "_type", "_typ", ["DETECTION"]),
@@ -593,7 +620,7 @@ class MainWindow(QMainWindow):
 
         label_widget = getattr(self, f"label_5")
         label_widget.setFixedSize(170, 26)
-        self.gridLayout.addWidget(label_widget, 8, 0)
+        self.gridLayout.addWidget(label_widget, 9, 0)
 
         self.laser_flag = 0
 
@@ -624,9 +651,9 @@ class MainWindow(QMainWindow):
             combo.currentTextChanged.connect(lambda _, idx = i: self.update_pulse_type(idx))
             setattr(self, f"p{i}_typ", combo.currentText())
 
-            self.gridLayout.addWidget(combo, 8, i)
+            self.gridLayout.addWidget(combo, 9, i)
 
-        self.gridLayout.addWidget(hline(), 9, 0, 1, 10)
+        self.gridLayout.addWidget(hline(), 10, 0, 1, 10)
 
         # ---- Text Edits ----
         text_edit = ["+x,-x", "+x,-x", "+x,+x"]
@@ -678,13 +705,13 @@ class MainWindow(QMainWindow):
             txt.textChanged.connect(lambda idx = i: self.update_pulse_phase(idx))
             self.update_pulse_phase(i)
 
-            self.gridLayout.addWidget(txt, 10, i)
-            txt.setContextMenuPolicy(Qt.ContextMenuPolicy.NoContextMenu) 
+            self.gridLayout.addWidget(txt, 11, i)
+            txt.setContextMenuPolicy(Qt.ContextMenuPolicy.NoContextMenu)
 
         label_widget = getattr(self, f"label_6")
         label_widget.setFixedSize(170, 26)
-        self.gridLayout.addWidget(label_widget, 10, 0)
-        self.gridLayout.addWidget(hline(), 11, 0, 1, 10)
+        self.gridLayout.addWidget(label_widget, 11, 0)
+        self.gridLayout.addWidget(hline(), 12, 0, 1, 10)
 
 
         # ---- Boxes----
@@ -858,7 +885,7 @@ class MainWindow(QMainWindow):
 
         # ---- Labels & Inputs ----
         labels = [("Acquisitions", "label_17"), ("Integration Left", "label_18"), ("Integration Right", "label_19"), ("Det. Points", "label_20"), ("Hor. offset", "label_21"), ("Shift Together", "label_shift"), ("Points", "label_e1"), ("Scans", "label_e2"), ("Experiment Name", "label_e3"), ("Curve Name", "label_e4"), ("Start Field", "label_f1"), ("End Field", "label_f2"), ("Field Step", "label_f3"), ("Sweep Type", "label_c1"), ("Start Log Time", "label_e5"), ("End Log Time", "label_e6"),
-            ('X<sub style="font-size: 12pt;">0</sub>', "label_e7"), ("ΔX ", "label_e8")]
+            ('X<sub style="font-size: 12pt;">0</sub>', "label_e7"), ("ΔX ", "label_e8"), ("Cycles", "label_cyc"), ("Save Each Cycle", "label_save_cyc")]
 
         for name, attr_name in labels:
             lbl = QLabel(name)
@@ -868,8 +895,8 @@ class MainWindow(QMainWindow):
 
         # ---- Boxes ----
         double_boxes = [(QSpinBox, "Acq_number", "number_averages", self.acq_number, 1, 1e4, 1, 1, 0, ""),
-                      (QSpinBox, "Dec", "dig_points", self.decimat, 128, 32000, 512, 32, 0, ""),
-                      (QSpinBox, "Hor_offset", "posttrigger", self.hor_offset, 0, 32000, 320, 32, 0, ""),
+                      (SnapSpinBox, "Dec", "dig_points", self.decimat, 128, 32000, 512, 32, 0, ""),
+                      (SnapSpinBox, "Hor_offset", "posttrigger", self.hor_offset, 0, 32000, 320, 32, 0, ""),
                       (QDoubleSpinBox, "Win_left", "cur_win_left", self.win_left, 0, 6400, 0, 0.4, 1, " ns"),
                       (QDoubleSpinBox, "Win_right", "cur_win_right", self.win_right, 0, 6400, 320, 0.4, 1, " ns"),
                       (QSpinBox, "box_points", "cur_points", self.points, 1, 20000, 500, 1, 0, ""),
@@ -878,7 +905,8 @@ class MainWindow(QMainWindow):
                       (QDoubleSpinBox, "box_end_field", "cur_end_field", self.end_field, 0, 15000, 4000, 1, 1, " G"),
                       (QDoubleSpinBox, "box_step_field", "cur_step", self.step_field, 0.01, 50, 0.5, 0.1, 2, " G"),
                       (QDoubleSpinBox, "X0", "cur_x0", self.x0, -100e6, 100e6, 0, 2, 1, " ns"),
-                      (QDoubleSpinBox, "XDelta", "cur_xdelta", self.xdelta, -100e6, 100e6, 0, 2, 1, " ns")
+                      (QDoubleSpinBox, "XDelta", "cur_xdelta", self.xdelta, -100e6, 100e6, 0, 2, 1, " ns"),
+                      (QSpinBox, "box_cycles", "cur_cycles", self.cycles_func, 1, 1024, 8, 1, 0, "")
                         ]
 
         for widget_class, attr_name, par_name, func, v_min, v_max, cur_val, v_step, dec, suf in double_boxes:
@@ -952,9 +980,9 @@ class MainWindow(QMainWindow):
             txt.setContextMenuPolicy(Qt.ContextMenuPolicy.NoContextMenu)
 
         # ---- Combo boxes----
-        combo_boxes = [("Linear Time", "combo_sweep", "cur_sweep", self.sweep_type, 
+        combo_boxes = [("Linear Time", "combo_sweep", "cur_sweep", self.sweep_type,
                         [
-                        "Linear Time", "Field", "Log Time"
+                        "Linear Time", "Field", "Log Time", "ESEEM Avg"
                         ])
                       ]
 
@@ -975,7 +1003,45 @@ class MainWindow(QMainWindow):
                 }
                 """)
 
-        self.combo_sweep.setToolTip('Linear Time: standard linear delay/length increment experiment.\nField: field-sweep experiment.\nLog Time: log10 delay/length increment experiment.')
+        self.combo_sweep.setToolTip('Linear Time: standard linear delay/length increment experiment.\nField: field-sweep experiment.\nLog Time: log10 delay/length increment experiment.\nESEEM Avg: ESEEM tau-averaging — repeats the linear-time scan over several cycles, shifting the pulses set by Start Increment 2 (Pulses tab) cumulatively each cycle, then averages.')
+
+        self.box_cycles.setToolTip('ESEEM Avg only: number of averaging cycles. Each cycle the pulses are shifted by Start Increment 2 (Pulses tab) cumulatively (cycle 0 = base, cycle c = base + c·Inc2).')
+
+        # ---- Save-each-cycle checkbox (ESEEM Avg) ----
+        self.save_each_cycle = 0
+        self.Save_each = QCheckBox("")
+        self.Save_each.stateChanged.connect(self.save_each_func)
+        self.Save_each.setStyleSheet("""
+            QCheckBox {
+                color: rgb(193, 202, 227);
+                background-color: transparent;
+                font-weight: bold;
+                spacing: 8px;
+            }
+
+            QCheckBox::indicator {
+                width: 14px;
+                height: 14px;
+                background-color: rgb(63, 63, 97);
+                border: 1px solid rgb(83, 83, 117);
+                border-radius: 3px;
+            }
+
+            QCheckBox::indicator:hover {
+                border: 1px solid rgb(211, 194, 78);
+            }
+
+            QCheckBox::indicator:pressed {
+                background-color: rgb(83, 83, 117);
+            }
+
+            QCheckBox::indicator:checked {
+                background-color: rgb(211, 194, 78);
+                border: 3px solid rgb(63, 63, 97);
+            }
+        """)
+        self.Save_each.setFixedSize(170, 26)
+        self.Save_each.setToolTip('ESEEM Avg only: when checked, additionally save each cycle’s raw trace to its own file (suffixed by the cycle index), alongside the averaged result.')
 
         # ---- Separators ----
         def hline():
@@ -1050,8 +1116,13 @@ class MainWindow(QMainWindow):
         third_grid.addWidget(self.label_f3, 2, 0)
         third_grid.addWidget(self.box_step_field, 2, 1)
         third_grid.addWidget(hline(), 3, 0, 1, 2)
-        third_grid.setRowStretch(4, 1)
-        third_grid.setColumnStretch(4, 1)
+        third_grid.addWidget(self.label_cyc, 4, 0)
+        third_grid.addWidget(self.box_cycles, 4, 1)
+        third_grid.addWidget(self.label_save_cyc, 5, 0)
+        third_grid.addWidget(self.Save_each, 5, 1)
+        third_grid.addWidget(hline(), 6, 0, 1, 2)
+        third_grid.setRowStretch(7, 1)
+        third_grid.setColumnStretch(7, 1)
 
         forth_grid = QGridLayout()
         forth_grid.setVerticalSpacing(4)
@@ -1316,6 +1387,21 @@ class MainWindow(QMainWindow):
         self.cur_points = int( self.box_points.value() )
         #print(self.cur_start_field)
 
+    def cycles_func(self):
+        """
+        A function to update the number of ESEEM-averaging cycles.
+        """
+        self.cur_cycles = int( self.box_cycles.value() )
+
+    def save_each_func(self):
+        """
+        Toggle saving each ESEEM-averaging cycle to its own file.
+        """
+        if self.Save_each.checkState().value == 2: # checked
+            self.save_each_cycle = 1
+        elif self.Save_each.checkState().value == 0: # unchecked
+            self.save_each_cycle = 0
+
     def start_exp(self):
         if self.is_experiment == True:
             return
@@ -1433,10 +1519,15 @@ class MainWindow(QMainWindow):
         A function to change left integration window
         """
         self.cur_win_left = int( float( self.Win_left.value() ) / self.time_per_point )
-        if round( self.cur_win_left * self.time_per_point, 1) > round( float( self.remove_ns( self.p1_length ) ), 1):
-            self.cur_win_left = int( round( float( self.remove_ns( self.p1_length ) ), 1) / self.time_per_point )
+        # Bound the integration window to the digitizer RECORD length (Det.
+        # Points), not the detection-pulse length: the Spectrum card records
+        # dig_points samples regardless of the pulse sequence (the old p1_length
+        # bound was an Insys-era leftover that snapped every window wider than P1
+        # back to the same value, so the integral never changed).
+        if self.cur_win_left > self.dig_points:
+            self.cur_win_left = int( self.dig_points )
             self.Win_left.setValue( round( self.cur_win_left * self.time_per_point, 1) )
-        
+
         if self.opened == 0:
             try:
                 self.parent_conn_dig.send( 'WL' + str( self.cur_win_left ) )
@@ -1445,8 +1536,8 @@ class MainWindow(QMainWindow):
 
     def win_right(self):
         self.cur_win_right = int( float( self.Win_right.value() ) / self.time_per_point )
-        if round( self.cur_win_right * self.time_per_point, 1) > round( float( self.remove_ns( self.p1_length ) ), 1):
-            self.cur_win_right = int( round( float( self.remove_ns( self.p1_length ) ), 1) / self.time_per_point )
+        if self.cur_win_right > self.dig_points:
+            self.cur_win_right = int( self.dig_points )
             self.Win_right.setValue( round( self.cur_win_right * self.time_per_point, 1) )
 
         if self.opened == 0:
@@ -1982,6 +2073,17 @@ class MainWindow(QMainWindow):
         except IndexError:
             pass
 
+        # ESEEM-averaging fields are appended at the very end; older presets
+        # without them are left at their defaults.
+        try:
+            self.box_cycles.setValue( int( lines[32].split(':  ')[1] ) )
+            if int( lines[33].split(':  ')[1] ) == 2:
+                self.Save_each.setChecked(True)
+            else:
+                self.Save_each.setChecked(False)
+        except (IndexError, ValueError):
+            pass
+
         self.dig_stop()
 
         self.fft = 0
@@ -2000,6 +2102,12 @@ class MainWindow(QMainWindow):
         phase.setPlainText( str( (array[3])[1:-1] ) )
         d_start.setValue( float( array[4] ) )
         len_inc.setValue( float( array[5] ) )
+        # ESEEM Start Increment 2 is appended last so older presets (without it)
+        # still load; default to 0 when the field is absent or unparsable.
+        try:
+            getattr(self, f'P{index + 1}_st_inc2').setValue( float( array[6] ) )
+        except (IndexError, ValueError):
+            getattr(self, f'P{index + 1}_st_inc2').setValue( 0 )
 
     def apply_seqcalc_pulses(self, filename):
         """Apply ONLY the pulse layout from a Sequence-Calculator preset.
@@ -2062,9 +2170,11 @@ class MainWindow(QMainWindow):
                 ph_list = getattr(self, f'Phase_{i}').toPlainText().strip()
                 d_start = getattr(self, f'P{i}_st_inc').value()
                 len_inc = getattr(self, f'P{i}_len_inc').value()
-                
+                d_start2 = getattr(self, f'P{i}_st_inc2').value()
+
                 ph_str = f"[{ph_list}]"#f"[{','.join(ph_list)}]"
-                file.write(f"P{i}:  {p_type},  {p_st},  {p_len},  {ph_str},  {d_start},  {len_inc}\n")
+                # Start Increment 2 is appended last so older readers ignore it.
+                file.write(f"P{i}:  {p_type},  {p_st},  {p_len},  {ph_str},  {d_start},  {len_inc},  {d_start2}\n")
 
             file.write( 'Rep rate:  ' + str(self.Rep_rate.value()) + '\n' )
             file.write( 'Field:  ' + str(self.Field.value()) + '\n' )
@@ -2091,6 +2201,10 @@ class MainWindow(QMainWindow):
 
             file.write( 'X0:  ' + str( self.X0.value() ) + '\n' )
             file.write( 'dX:  ' + str( self.XDelta.value() ) + '\n' )
+
+            # ESEEM-averaging settings (appended at the end for backward compat)
+            file.write( 'Cycles:  ' + str( self.box_cycles.value() ) + '\n' )
+            file.write( 'Save Each Cycle:  ' + str( self.Save_each.checkState().value ) + '\n' )
 
     def phase_converted(self, ph_str):
         if ph_str == '+x':
@@ -2363,6 +2477,7 @@ class MainWindow(QMainWindow):
                     sys.exit()
 
     def dig_start_exp(self):
+        self.errors.clear()
         worker = Worker()
 
         for i in range(1, 10):
@@ -2390,8 +2505,12 @@ class MainWindow(QMainWindow):
             pass
 
         self.parent_conn_dig, self.child_conn_dig = Pipe()
-        # a process for running function script 
+        # a process for running function script
         # sending parameters for initial initialization
+
+        # ESEEM tau-averaging: per-pulse second start increment ("X ns" strings),
+        # one entry per pulse P1..P9. Consumed only by the "ESEEM Avg" sweep type.
+        self.eseem_inc2 = [ getattr(self, f'p{i}_st_increment2') for i in range(1, 10) ]
 
         if self.cur_sweep == 'Linear Time':
             self.digitizer_process = Process( target = worker.exp, args = (
@@ -2404,6 +2523,20 @@ class MainWindow(QMainWindow):
                 self.mag_field, self.combo_laser_num, self.laser_q_switch_delay,
                 self.cur_x0, self.cur_xdelta,
                 self.zero_order, self.first_order, self.second_order, self.quad, True
+                )
+            )
+        elif self.cur_sweep == 'ESEEM Avg':
+            self.digitizer_process = Process( target = worker.exp_eseem, args = (
+                self.child_conn_dig,
+                self.dig_points, self.number_averages, self.cur_scan, self.cur_points,
+                self.cur_win_left, self.cur_exp_name, self.cur_curve_name,
+                self.cur_win_right, self.p1_exp, self.p2_exp, self.p3_exp, self.p4_exp,
+                self.p5_exp, self.p6_exp, self.p7_exp, self.p8_exp, self.p9_exp, self.laser_flag,
+                self.repetition_rate.split(' ')[0],
+                self.mag_field, self.combo_laser_num, self.laser_q_switch_delay,
+                self.cur_x0, self.cur_xdelta,
+                self.zero_order, self.first_order, self.second_order, self.quad,
+                self.eseem_inc2, self.cur_cycles, self.save_each_cycle, True
                 )
             )
         elif self.cur_sweep == 'Field':
@@ -2454,6 +2587,7 @@ class MainWindow(QMainWindow):
         Create a Pipe for interaction with this thread
         self.param_i are used as parameters for script function
         """
+        self.errors.clear()
         worker = Worker()
 
         for i in range(1, 10):
@@ -2665,7 +2799,10 @@ class MainWindow(QMainWindow):
             self.progress_bar.setValue(0)
             self.button_start_exp.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97); border-style: outset; color: rgb(193, 202, 227); font-weight: bold; }  QPushButton:pressed {background-color: rgb(211, 194, 78); border-style: inset; font-weight: bold; }")
         else:
-            self.errors.clear()
+            # Do NOT clear the log here: a Run-Pulses/Update process that ends
+            # (or that died with an error) would otherwise have its output and
+            # error message wiped the instant the user stops it to read it. The
+            # log is cleared at LAUNCH instead (dig_start / dig_start_exp).
             self.button_update.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97); border-style: outset; color: rgb(193, 202, 227); font-weight: bold; }  QPushButton:pressed {background-color: rgb(211, 194, 78); border-style: inset; font-weight: bold; }")
         
         #self.timer.stop()
@@ -2711,20 +2848,34 @@ class MainWindow(QMainWindow):
         self.parent_conn_dig, self.child_conn_dig = Pipe()
         
         if self.cur_sweep == 'Linear Time':
-            self.digitizer_process = Process( target = worker.exp, args = ( 
+            self.digitizer_process = Process( target = worker.exp, args = (
                 self.child_conn_dig,
                 self.dig_points, self.number_averages, self.cur_scan, self.cur_points,
                 self.cur_win_left, self.cur_exp_name, self.cur_curve_name,
-                self.cur_win_right, self.p1_exp, self.p2_exp, self.p3_exp, self.p4_exp, 
-                self.p5_exp, self.p6_exp, self.p7_exp, self.p8_exp, self.p9_exp, self.laser_flag, 
-                self.repetition_rate.split(' ')[0], 
+                self.cur_win_right, self.p1_exp, self.p2_exp, self.p3_exp, self.p4_exp,
+                self.p5_exp, self.p6_exp, self.p7_exp, self.p8_exp, self.p9_exp, self.laser_flag,
+                self.repetition_rate.split(' ')[0],
                 self.mag_field, self.combo_laser_num, self.laser_q_switch_delay,
                 self.cur_x0, self.cur_xdelta,
                 self.zero_order, self.first_order, self.second_order, self.quad
-                ) 
+                )
+            )
+        elif self.cur_sweep == 'ESEEM Avg':
+            self.digitizer_process = Process( target = worker.exp_eseem, args = (
+                self.child_conn_dig,
+                self.dig_points, self.number_averages, self.cur_scan, self.cur_points,
+                self.cur_win_left, self.cur_exp_name, self.cur_curve_name,
+                self.cur_win_right, self.p1_exp, self.p2_exp, self.p3_exp, self.p4_exp,
+                self.p5_exp, self.p6_exp, self.p7_exp, self.p8_exp, self.p9_exp, self.laser_flag,
+                self.repetition_rate.split(' ')[0],
+                self.mag_field, self.combo_laser_num, self.laser_q_switch_delay,
+                self.cur_x0, self.cur_xdelta,
+                self.zero_order, self.first_order, self.second_order, self.quad,
+                self.eseem_inc2, self.cur_cycles, self.save_each_cycle
+                )
             )
         elif self.cur_sweep == 'Field':
-            self.digitizer_process = Process( target = worker.exp_field, args = ( 
+            self.digitizer_process = Process( target = worker.exp_field, args = (
                 self.child_conn_dig,
                 self.dig_points, self.number_averages, self.cur_scan, self.cur_start_field,
                 self.cur_end_field, self.cur_step,
@@ -3392,6 +3543,388 @@ class Worker():
 
 
                     file_handler.save_data(file_data, np.c_[x_axis, data[0], data[1]], header = header, mode = 'w')
+
+                    conn.send( ('', f'Experiment {EXP_NAME} finished') )
+
+        except BaseException as e:
+            exc_info = f"{type(e)} \n{str(e)} \n{traceback.format_exc()}"
+            conn.send( ('Error', exc_info) )
+
+    def exp_eseem(self, conn, decimation, num_ave, scans, points,
+            win_left, exp_name, curve_name,
+            win_right, rect1, rect2, rect3, rect4,
+            rect5, rect6, rect7, rect8, rect9, laser_flag,
+            rep_rate, field, laser_num, q_switch_delay, x0, xd,
+            zero_order, first_order, sec_order, ph_cor,
+            eseem_inc2, cycles, save_each, script_test=False):
+        """
+        ESEEM tau-averaging variant of exp() (RECT / integral acquisition).
+
+        Runs the standard linear-time scan `cycles` times. Before each cycle's
+        scan, the pulses whose per-pulse "Start Increment 2" (eseem_inc2, one
+        "X ns" string per GUI pulse P1..P9) is non-zero are shifted cumulatively
+        by that increment (cycle 0 = base, cycle c = base + c·Inc2). The normal
+        "Start Increment 1" sweep then runs on top of the shifted base. Because
+        pulser_pulse_reset() returns to the absolute base after every scan, the
+        cycle offset is re-applied at the start of each scan.
+
+        Unlike the AWG window there is no AWG card here, so the tau shift is on
+        the pulser only (pulser_redefine_delta_start + blanket pulser_shift; the
+        non-ESEEM pulses carry a 0 ns Inc2 so the blanket shift leaves them put).
+        `data` holds the running mean over every (cycle, scan) pass
+        (m = cycle*SCANS + k) — that average IS the tau-averaged result. With
+        save_each set, each cycle's own trace is recovered by differencing the
+        cumulative snapshots taken at the cycle boundaries
+        (cycle_c = (c+1)*M_c - c*M_{c-1}) and written to its own file.
+        """
+
+        import traceback
+
+        if script_test:
+            sys.argv = ['', 'test']
+
+        try:
+            import time
+            import datetime
+            import numpy as np
+            import atomize.general_modules.general_functions as general
+            if script_test:
+                general.test_flag = 'test'
+            import atomize.device_modules.Spectrum_M4I_2211_X8 as spectrum
+            import atomize.device_modules.PB_ESR_500_pro as pb_pro
+            # import atomize.device_modules.SR_PTC_10 as ls
+            # import atomize.device_modules.BH_15 as bh
+            # import atomize.device_modules.Micran_X_band_MW_bridge as mwBridge
+            import atomize.general_modules.csv_opener_saver as openfile
+
+            pb = pb_pro.PB_ESR_500_Pro()
+            dig = spectrum.Spectrum_M4I_2211_X8()
+            file_handler = openfile.Saver_Opener()
+            # bh15 = bh.BH_15()
+            # ptc = ls.SR_PTC_10()
+            # mw = mwBridge.Micran_X_band_MW_bridge()
+
+            # integration window (point indices) for digitizer_get_curve(integral=True)
+            dig.win_left = win_left
+            dig.win_right = win_right
+
+            if xd == 0.0:
+                pulses2 = [rect2, rect3, rect4, rect5, rect6, rect7, rect8, rect9]
+                #rect1 DETECTION
+                if rect1[4] != '0.0 ns':
+                    #delta_start
+                    step = round( float( rect1[4].split(' ')[0] ), 1)
+                    for p in pulses2:
+                        if p[5] != '0.0 ns':
+                            f_delay = self.round_to_closest( float(p[2].split(' ')[0]), 2)
+                            break
+                        else:
+                            f_delay = self.round_to_closest( float(rect1[1].split(' ')[0]), 2)
+                elif rect1[5] != '0.0 ns':
+                    #length_increment
+                    step = round( float( rect1[5].split(' ')[0] ), 1)
+                    f_delay = self.round_to_closest( float(rect1[2].split(' ')[0]), 2)
+                else:
+                    for p in pulses2:
+                        if p[4] != '0.0 ns':
+                            step = round( float( p[4].split(' ')[0] ), 1)
+                            f_delay = self.round_to_closest( float(p[1].split(' ')[0]), 2)
+                            break
+                        else:
+                            #prevent no increment
+                            step = 1
+                            f_delay = 0
+            else:
+                step = round( xd, 1 )
+                f_delay =  self.round_to_closest( x0, 2 )
+
+            if step == 1 and not script_test:
+                conn.send( ('Message', 'No START or LENGTH increment; the time axis corresponds to the number of points in the experiment') )
+                general.plot_remove(exp_name)
+
+            POINTS = points
+            STEP = step
+            FIELD = field
+            AVERAGES = num_ave
+            SCANS = scans
+            PHASES = len(rect1[3])
+            CYCLES = cycles
+            DEC_COEF = decimation
+            process = 'None'
+            REP_RATE = f'{rep_rate} Hz'
+            EXP_NAME = exp_name
+            CURVE_NAME = curve_name
+
+            #bh15.magnet_field( field )
+            general.wait('2000 ms')
+
+            # ESEEM tau-shift bookkeeping: for every pulser pulse we record its
+            # name, its normal Inc1 delta_start (to restore) and its Start
+            # Increment 2 (0 ns for non-ESEEM pulses, so a blanket pulser_shift
+            # during the cycle offset moves only the ESEEM ones). The worker
+            # pulse name 'P{i}' maps to GUI pulse P{i+1}, i.e. eseem_inc2[i].
+            eseem_all_names = []
+            eseem_all_inc1 = []
+            eseem_all_inc2 = []
+
+            if laser_flag != 1:
+                pulses = [
+                        rect1, rect2, rect3, rect4,
+                        rect5, rect6, rect7, rect8,
+                        rect9
+                        ]
+
+                for i, p in enumerate(pulses):
+                    length_str = p[2].split(' ')[0]
+                    if int(float(length_str)) != 0:
+                        pb.pulser_pulse(
+                            name=f'P{i}',
+                            channel=p[0],
+                            start=p[1],
+                            length=p[2],
+                            phase_list=p[3],
+                            delta_start=p[4],
+                            length_increment=p[5]
+                        )
+                        eseem_all_names.append(f'P{i}')
+                        eseem_all_inc1.append(p[4])
+                        eseem_all_inc2.append(eseem_inc2[i])
+                pb.pulser_repetition_rate( REP_RATE )
+
+            else:
+
+                pulses = [
+                        rect1, rect2, rect3, rect4,
+                        rect5, rect6, rect7, rect8,
+                        rect9
+                        ]
+
+                for i, p in enumerate(pulses):
+                    if i != 1:
+                        start_val = float(p[1].split(' ')[0]) + q_switch_delay
+                        p[1] = f"{self.round_to_closest(start_val, 2)} ns"
+
+                    length_val = int(float(p[2].split(' ')[0]))
+                    if script_test and i == 1 and length_val == 0:
+                        raise ValueError("LASER pulse has zero length")
+
+                    if length_val != 0:
+                        kwargs = {
+                            'name': f'P{i}',
+                            'channel': p[0],
+                            'start': p[1],
+                            'length': p[2],
+                            'delta_start': p[4],
+                            'length_increment': p[5]
+                        }
+
+                        if i != 1:
+                            kwargs['phase_list'] = p[3]
+
+                        pb.pulser_pulse(**kwargs)
+                        eseem_all_names.append(f'P{i}')
+                        eseem_all_inc1.append(p[4])
+                        eseem_all_inc2.append(eseem_inc2[i])
+
+                if laser_num == 1:
+                    pb.pulser_repetition_rate( '9.9 Hz' )
+                elif laser_num == 2:
+                    pb.pulser_repetition_rate( REP_RATE )
+                else:
+                    pb.pulser_repetition_rate( REP_RATE )
+
+            # Whether any pulse actually carries a non-zero Start Increment 2.
+            has_eseem = any( float( v.split(' ')[0] ) != 0 for v in eseem_all_inc2 )
+
+            # DEC_COEF is the digitizer record length (= DETECTION window in points,
+            # 2 ns/point). Posttrigger defaults to half the window.
+            DIG_POINTS = int( DEC_COEF )
+            POSTTRIGGER = int( DIG_POINTS / 2 )
+            dig.digitizer_card_mode('Average')
+            dig.digitizer_clock_mode('Internal')
+            dig.digitizer_reference_clock(100)
+            dig.digitizer_number_of_points( DIG_POINTS )
+            dig.digitizer_posttrigger( POSTTRIGGER )
+            dig.digitizer_number_of_averages( AVERAGES )
+            dig.digitizer_setup()
+
+            # `data` holds the cumulative tau-average (running mean over every
+            # (cycle, scan) pass). Allocated once so the live plot shows the
+            # running average continuously rather than blanking each cycle.
+            data = np.zeros( ( 2, POINTS ) )
+            x_axis = f_delay + np.linspace(0, (POINTS - 1)*STEP, num = POINTS)
+            x_axis_plot = x_axis / 1e9
+            cycle_snapshots = []
+            completed_cycles = 0
+            k = 1
+            j = 0
+
+            # one phase-cycle buffer reused every point (all PHASES elements are
+            # overwritten each acquisition, so no need to re-allocate per point)
+            cyc_x = np.zeros( PHASES )
+            cyc_y = np.zeros( PHASES )
+
+            def _scan_iter():
+                if script_test:
+                    yield from general.scans(SCANS)
+                else:
+                    kk = 1
+                    while kk <= SCANS:
+                        yield kk
+                        kk += 1
+
+            # In test mode a single cycle exercises the same code path.
+            cycle_count = 1 if script_test else CYCLES
+
+            for cycle in range(cycle_count):
+
+                if self.command == 'exit':
+                    break
+
+                for k in _scan_iter():
+                    # sp = ptc.tc_setpoint('Heater')
+                    # ct = ptc.tc_temperature('3A')
+
+                    # if np.abs(sp - ct) > 0.8:
+                        # general.wait('8000 ms')
+
+                    if self.command == 'exit':
+                        break
+
+                    # Re-apply the cumulative ESEEM offset on the freshly reset
+                    # base: set every pulse's delta_start to its Inc2 (0 for
+                    # non-ESEEM), shift `cycle` times so only the ESEEM pulses
+                    # move, then restore all Inc1 values so the point loop sweeps
+                    # normally.
+                    if cycle > 0 and has_eseem:
+                        pb.pulser_redefine_delta_start(name = eseem_all_names, delta_start = eseem_all_inc2)
+                        for _ in range(cycle):
+                            pb.pulser_shift()
+                        pb.pulser_redefine_delta_start(name = eseem_all_names, delta_start = eseem_all_inc1)
+
+                    for j in range(POINTS):
+                        # phase cycle for this tau point: one integral per phase,
+                        # combined by the pulser, then averaged over all passes
+                        for i in range(PHASES):
+                            pb.pulser_next_phase()
+                            cyc_x[i], cyc_y[i] = dig.digitizer_get_curve( integral = True )
+
+                        ix, iy = pb.pulser_acquisition_cycle( cyc_x, cyc_y, acq_cycle = rect1[3] )
+                        # cumulative tau-average across every (cycle, scan) pass
+                        m = cycle * SCANS + k
+                        data[0, j] = ( data[0, j] * (m - 1) + ix ) / m
+                        data[1, j] = ( data[1, j] * (m - 1) + iy ) / m
+
+                        if (not script_test) or j == POINTS - 1:
+                            if step != 1:
+                                general.plot_1d(EXP_NAME, x_axis_plot, ( data[0], data[1] ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = f"Cycle / Scan: {cycle + 1}/{CYCLES} / {k}")
+                            else:
+                                general.plot_1d(EXP_NAME, x_axis, ( data[0], data[1] ), xname = 'Point', xscale = '', yname = 'Area', yscale = 'A.U.', label = curve_name, text = f"Cycle / Scan: {cycle + 1}/{CYCLES} / {k}")
+
+                        pb.pulser_shift()
+                        pb.pulser_increment()
+
+                        if not script_test:
+                            denom = max( CYCLES * POINTS * SCANS, 1 )
+                            conn.send( ('Status', int( 100 * ( cycle * POINTS * SCANS + ( k - 1 ) * POINTS + j + 1 ) / denom )) )
+
+                        # Changing the scan count mid-run is disabled for ESEEM
+                        # averaging: it would give cycles unequal shot counts,
+                        # breaking the cumulative average and snapshot differencing.
+                        if self.command[0:2] == 'SC':
+                            self.command = 'start'
+                        elif self.command == 'exit':
+                            break
+
+                        if conn.poll() == True:
+                            self.command = conn.recv()
+
+                    pb.pulser_pulse_reset()
+
+                # Interrupted mid-cycle: `data` is still a valid cumulative mean,
+                # but not a clean cycle boundary, so don't snapshot it.
+                if self.command == 'exit':
+                    break
+
+                cycle_snapshots.append( np.copy(data) )
+                completed_cycles += 1
+
+                if not script_test:
+                    if step != 1:
+                        general.plot_1d(EXP_NAME, x_axis_plot, ( data[0], data[1] ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = f"ESEEM average over {completed_cycles} cycle(s)")
+                    else:
+                        general.plot_1d(EXP_NAME, x_axis, ( data[0], data[1] ), xname = 'Point', xscale = '', yname = 'Area', yscale = 'A.U.', label = curve_name, text = f"ESEEM average over {completed_cycles} cycle(s)")
+
+            self.command = 'exit'
+
+            if self.command == 'exit':
+                tb = round( int(DEC_COEF) * 2, 1)      # detection window, ns (2 ns/point)
+                dig.digitizer_stop()
+                dig.digitizer_close()
+                pb.pulser_stop()
+
+                if step != 1:
+                    general.plot_1d(EXP_NAME, x_axis_plot, ( data[0], data[1] ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = f"ESEEM average over {completed_cycles} cycle(s)")
+                else:
+                    general.plot_1d(EXP_NAME, x_axis, ( data[0], data[1] ), xname = 'Point', xscale = '', yname = 'Area', yscale = 'A.U.', label = curve_name, text = f"ESEEM average over {completed_cycles} cycle(s)")
+
+                now = datetime.datetime.now().strftime("%d-%m-%Y %H-%M-%S")
+                w = 30
+
+                # non-zero Start Increment 2 values, for the file header
+                inc2_summary = ', '.join(
+                    f"P{idx + 1}={val}" for idx, val in enumerate(eseem_inc2)
+                    if float(val.split(' ')[0]) != 0
+                ) or 'none'
+
+                # Data saving
+                header = (
+                    f"{'Date:':<{w}} {now}\n"
+                    f"{'Experiment:':<{w}} Pulsed EPR ESEEM-Averaged Experiment\n"
+                    f"{'Field:':<{w}} {FIELD} G\n"
+                    f"{'Repetition Rate:':<{w}} {pb.pulser_repetition_rate()}\n"
+                    f"{'Number of Scans:':<{w}} {SCANS}\n"
+                    f"{'ESEEM Cycles:':<{w}} {completed_cycles}\n"
+                    f"{'Start Increment 2:':<{w}} {inc2_summary}\n"
+                    f"{'Averages:':<{w}} {AVERAGES}\n"
+                    f"{'Points:':<{w}} {POINTS}\n"
+                    f"{'Window:':<{w}} {tb} ns\n"
+                    f"{'Horizontal Resolution:':<{w}} {STEP} ns\n"
+                    f"{'-'*50}\n"
+                    f"Pulse List:\n{pb.pulser_pulse_list()}"
+                    f"{'-'*50}\n"
+                    f"Time (ns), I (A.U.), Q (A.U.)"
+                )
+
+                if script_test:
+                    conn.send( ('test', f'') )
+                else:
+                    conn.send(('Open', ''))
+
+                    while True:
+                        if conn.poll():
+                            msg = conn.recv()
+                            if msg.startswith('FL'):
+                                file_data = msg[2:]
+                                break
+                        general.wait('200 ms')
+
+                    file_handler.save_data(file_data, np.c_[x_axis, data[0], data[1]], header = header, mode = 'w')
+
+                    # Optionally save every cycle's own trace alongside the
+                    # average. `data` is the cumulative mean, so each individual
+                    # cycle is recovered by differencing consecutive cumulative
+                    # snapshots: with M_c = mean over cycles 0..c, the isolated
+                    # trace is cycle_c = (c+1)*M_c - c*M_{c-1} (cycle 0 = M_0).
+                    if save_each:
+                        for idx in range(len(cycle_snapshots)):
+                            Mc = cycle_snapshots[idx]
+                            if idx == 0:
+                                cdat = Mc
+                            else:
+                                cdat = (idx + 1) * Mc - idx * cycle_snapshots[idx - 1]
+                            cpath = file_data.replace(".csv", f"_cycle{idx}.csv")
+                            file_handler.save_data(cpath, np.c_[x_axis, cdat[0], cdat[1]], header = header, mode = 'w')
 
                     conn.send( ('', f'Experiment {EXP_NAME} finished') )
 
