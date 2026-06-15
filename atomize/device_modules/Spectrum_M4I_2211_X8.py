@@ -19,19 +19,8 @@ _spec_cfg = cutil.read_specific_parameters(
 if _spec_cfg.get('header_dir'):
     sys.path.append( _spec_cfg['header_dir'] )
 
-# pyspcm.py writes a "Python Version: ... on <OS>" banner straight to stdout on
-# import. The main window captures child-process stdout into its error log
-# (text_errors), so that banner would otherwise show up there on every run.
-# Silence stdout only for these vendor imports; the wildcard names still bind to
-# this module's globals (module-level import * inside a try is fine).
-import io as _io
-_stdout_bak = sys.stdout
-sys.stdout = _io.StringIO()
-try:
-    from pyspcm import *
-    from spcm_tools import *
-finally:
-    sys.stdout = _stdout_bak
+from pyspcm import *
+from spcm_tools import *
 
 class Spectrum_M4I_2211_X8:
     def __init__(self):

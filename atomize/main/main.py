@@ -254,6 +254,11 @@ class MainExtended(MainWindow):
 
         self.skip_lines = 0
 
+        # Line prefixes of vendor-library stdout chatter to drop from the log in
+        # handle_output_control_center() (str.startswith accepts this tuple).
+        # 'Python Version:' is pyspcm's import banner (Spectrum AWG/digitizers).
+        self.suppressed_stdout_prefixes = ('Python Version:', )
+
     def create_namelist(self):
         return MyExtendedNameList(self)
 
@@ -280,7 +285,14 @@ class MainExtended(MainWindow):
         elif raw_data.startswith("closing "):
             pass
         elif self.skip_lines != 1:
-            self.text_errors.appendPlainText(raw_data[:-1])
+            # Drop vendor-library chatter that some device modules emit straight
+            # to stdout on import (e.g. pyspcm's "Python Version: ... on <OS>"
+            # banner from the Spectrum AWG/digitizer modules), so it does not
+            # clutter the log. Filter line-by-line and keep everything else.
+            cleaned = '\n'.join( line for line in raw_data[:-1].split('\n')
+                                 if not line.lstrip().startswith(self.suppressed_stdout_prefixes) )
+            if cleaned.strip() != '':
+                self.text_errors.appendPlainText(cleaned)
 
     # control tab design
     def set_control_center(self):
