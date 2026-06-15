@@ -309,11 +309,11 @@ class MainExtended(MainWindow):
 
         button_list = []
 
-        button_name_1 = ["Set MF"]
+        button_name_1 = ["", "Set MF"]
         button_name_2 = ["Pulsed MW Bridge", "", "RECT Channel", "AWG Channel"]
-        button_name_3 = ["Resonator Tuning", "", "Data Treatment", "Data Treatment 2D", "DEER / PDS", "Pulse Sequence", "Excitation Profile", "Sequence Simulator"]
+        button_name_3 = ["Resonator Tuning", "", "Data Treatment", "Data Treatment 2D", "DEER / PDS", "Pulse Sequence", "Excitation Profile", "Spin Dynamics"]
 
-        actions_1 = [self.start_field_control]
+        actions_1 = [None, self.start_field_control]
         actions_2 = [self.start_mw_control, None, self.start_rect_phasing, self.start_awg_phasing]
         actions_3 = [self.start_tune_preset, None, self.start_treatment_control, self.start_treatment_2d_control, self.start_deer_analysis, self.start_sequence_calculator, self.start_excitation_profile, self.start_spin_sim]
 
