@@ -322,16 +322,19 @@ class MainWindow(QMainWindow):
         self.deer_rmax.setSingleStep(0.1); self.deer_rmax.setValue(8.0)
         self.deer_rmax.valueChanged.connect(self._live_update)
         self.deer_rmax.valueChanged.connect(self._mellin_live)
-        btn_autormax = QPushButton('Auto')
-        btn_autormax.setStyleSheet(BUTTON_STYLE)
-        btn_autormax.setToolTip(
-            'Set the distance max to the longest distance the trace length '
-            'supports: r_max ≈ 5·(t_max/2)^⅓ nm (DeerAnalysis/Jeschke rule). '
-            'Set automatically on load; mass beyond it is not constrained by the '
-            'data.')
-        btn_autormax.clicked.connect(self._auto_rmax)
+        btn_autorange = QPushButton('Auto')
+        btn_autorange.setStyleSheet(BUTTON_STYLE)
+        btn_autorange.setToolTip(
+            'Set the reliable distance window the data support:\n'
+            '• min ≈ (4·NU_DD·Δt)^⅓ nm — shortest distance whose dipolar '
+            'oscillation the time step Δt still samples (Nyquist).\n'
+            '• max ≈ 5·(t_max/2)^⅓ nm — longest distance the trace length '
+            'supports (DeerAnalysis/Jeschke rule).\n'
+            'Both are set automatically on load; mass outside this window is '
+            'not constrained by the data.')
+        btn_autorange.clicked.connect(self._auto_rrange)
         rr_row.addWidget(self.deer_rmin); rr_row.addWidget(self.deer_rmax)
-        rr_row.addWidget(btn_autormax)
+        rr_row.addWidget(btn_autorange)
         grid.addLayout(rr_row, r, 1); r += 1
 
         grid.addWidget(self._label('Distance points'), r, 0)
@@ -346,7 +349,8 @@ class MainWindow(QMainWindow):
         self.deer_show = QComboBox()
         self.deer_show.setStyleSheet(COMBO_STYLE)
         self.deer_show.addItems(['V(t) + background + fit', 'Form factor + fit',
-                                 'Background fit', 'L-curve'])
+                                 'Background fit', 'Residual', 'Residual ACF',
+                                 'L-curve'])
         self.deer_show.setToolTip('Top-plot view (the L-curve view applies to the '
                                   'Tikhonov engine only).')
         self.deer_show.currentIndexChanged.connect(self._deer_rerender)
@@ -381,7 +385,7 @@ class MainWindow(QMainWindow):
         requested, so toggling it on needs a re-inversion."""
         if self.deer_result is None:
             return
-        if self.deer_result.get('engine') == 'mellin':
+        if self.deer_result.get('engine', '').startswith('mellin'):
             if self.real_xy[0] is not None:
                 self.do_mellin()
             else:
@@ -578,14 +582,18 @@ class MainWindow(QMainWindow):
         grid.addWidget(self._label('Background fit'), r, 0)
         self.deer_engine = QComboBox()
         self.deer_engine.setStyleSheet(COMBO_STYLE)
-        self.deer_engine.addItems(['Sequential', 'Joint (global)'])
+        self.deer_engine.addItems(['Sequential', 'Joint (global)',
+                                   'None (no background)'])
         self.deer_engine.setCurrentIndex(1)            # Joint (global) is the default
         self.deer_engine.setToolTip(
             'Sequential: fit the background on the tail window, divide it out, '
             'then invert (fast).\nJoint (global): fit background + modulation '
             'depth together with P(r) in one pass (DeerLab-style) — more robust '
             'when the background window is short or hard to place, and required '
-            'for a clean Mellin fit. Default.')
+            'for a clean Mellin fit. Default.\nNone (no background): B(t)=1, fit '
+            'only the modulation depth λ. For pre-corrected / simulated / '
+            'full-modulation (λ→1) data that has NO background — fitting a decay '
+            'there would absorb the dipolar decay and badly broaden P(r).')
         self.deer_engine.currentIndexChanged.connect(self._live_update)
         self.deer_engine.currentIndexChanged.connect(self._mellin_live)
         grid.addWidget(self.deer_engine, r, 1); r += 1
@@ -693,19 +701,21 @@ class MainWindow(QMainWindow):
         self.mellin_delta.setRange(0.0, 1e9)
         self.mellin_delta.setDecimals(5)
         self.mellin_delta.setSingleStep(0.001)
-        self.mellin_delta.setValue(0.0)          # 0 ⇒ auto (F(δ) ≈ 0.95)
+        self.mellin_delta.setValue(0.0)          # 0 ⇒ auto (F(δ)≈0.85, clipped 90–120 ns)
         self.mellin_delta.setToolTip(
             'Mellin split point δ (display time units), the lone regularizing '
-            'knob: on [0, δ] the form factor is taken constant and integrated '
-            'analytically; [δ, end] is integrated numerically. The practical '
-            'estimate is F(δ) ≈ 0.95 (paper recommendation). 0 = auto. Larger δ '
-            'regularizes more (smoother, less short-r noise); too large loses '
-            'resolution.')
+            'knob: on [0, δ] the form factor is integrated analytically (keeping '
+            'the parabolic echo top F≈F0+b·T²); [δ, end] is integrated '
+            'numerically. 0 = auto: F(δ)≈0.85, then clipped to 90–120 ns (the '
+            'floor keeps the echo-top anchor wide enough on sharp peaks; the cap '
+            'avoids over-smoothing long-r). Larger δ regularizes more (smoother, '
+            'less short-r noise); too large loses resolution.')
         self.mellin_delta.valueChanged.connect(self._mellin_live)
         self.mellin_delta_auto = QCheckBox('Auto')
         self.mellin_delta_auto.setStyleSheet(CHECKBOX_STYLE)
         self.mellin_delta_auto.setChecked(True)
-        self.mellin_delta_auto.setToolTip('Estimate δ from F(δ) ≈ 0.95.')
+        self.mellin_delta_auto.setToolTip(
+            'Auto δ: where F falls to ≈0.85·F(0), clipped to 90–120 ns.')
         self.mellin_delta_auto.stateChanged.connect(self._mellin_delta_toggle)
         self.mellin_delta.setEnabled(False)
         delta_row.addWidget(self.mellin_delta); delta_row.addWidget(self.mellin_delta_auto)
@@ -717,7 +727,7 @@ class MainWindow(QMainWindow):
         self.mellin_taumax.setStyleSheet(DSPIN_STYLE)
         self.mellin_taumax.setRange(2.0, 200.0)
         self.mellin_taumax.setDecimals(1)
-        self.mellin_taumax.setSingleStep(5.0)
+        self.mellin_taumax.setSingleStep(1.0)
         self.mellin_taumax.setValue(25.0)
         self.mellin_taumax.setEnabled(False)
         self.mellin_taumax.setToolTip(
@@ -760,6 +770,35 @@ class MainWindow(QMainWindow):
         self.mellin_signed_chk.stateChanged.connect(self._deer_rerender)
         grid.addWidget(self.mellin_signed_chk, r, 0, 1, 2); r += 1
 
+        self.mellin_signed_fit_chk = QCheckBox('Signed forward fit (negative-aware)')
+        self.mellin_signed_fit_chk.setStyleSheet(CHECKBOX_STYLE)
+        self.mellin_signed_fit_chk.setToolTip(
+            'Build the forward fit F_fit = K·P from the honest SIGNED density (the '
+            'masses the Mellin inverse actually produced) instead of the clipped, '
+            'low-r-tapered one. Reproduces the echo-top/trough amplitude more '
+            'faithfully (whiter residual); used for both the τmax-penalty rmsF and '
+            'the displayed fit. Uncheck for low-λ data with a strong short-r noise '
+            'spike, where the negatives can give a double-peaked echo top.')
+        self.mellin_signed_fit_chk.setChecked(True)        # signed forward fit = default
+        self.mellin_signed_fit_chk.stateChanged.connect(self._deer_rerender)
+        grid.addWidget(self.mellin_signed_fit_chk, r, 0, 1, 2); r += 1
+
+        self.mellin_consensus_chk = QCheckBox('Robust consensus (noisy data)')
+        self.mellin_consensus_chk.setStyleSheet(CHECKBOX_STYLE)
+        self.mellin_consensus_chk.setToolTip(
+            'For NOISY traces where the zero-time and τ_max are not well '
+            'determined by the data. Instead of one fragile fit, it fits its own '
+            'zero-time and marginalises over the data-consistent t0 × τ_max × '
+            'background-start (× noise) set, reporting the ensemble <b>median</b> '
+            'P(r) + a 95% band (subsumes the Validate sweep). '
+            'Self-gating: on clean/low-noise data it reduces to the single '
+            'fit. NOTE it fits the zero-time itself (overrides the manual t0); '
+            'only meaningful when t0 is uncertain. For very high noise the '
+            'Tikhonov (DEER) engine — which adds smoothness + non-negativity that '
+            'the model-free Mellin lacks — is usually more accurate.')
+        self.mellin_consensus_chk.stateChanged.connect(self._mellin_live)
+        grid.addWidget(self.mellin_consensus_chk, r, 0, 1, 2); r += 1
+
         self.mellin_live = QCheckBox('Live update on parameter change')
         self.mellin_live.setStyleSheet(CHECKBOX_STYLE)
         grid.addWidget(self.mellin_live, r, 0, 1, 2); r += 1
@@ -795,7 +834,7 @@ class MainWindow(QMainWindow):
             return
         if (self.mellin_live.isChecked() and self.real_xy[0] is not None
                 and self.deer_result is not None
-                and self.deer_result.get('engine') == 'mellin'):
+                and self.deer_result.get('engine', '').startswith('mellin')):
             self.do_mellin()
 
     # ----------------------------------------------------------- status
@@ -911,13 +950,16 @@ class MainWindow(QMainWindow):
             return
         x = np.asarray(res['x'], dtype=float)
         mapping = {lbl: (x, np.asarray(y, dtype=float)) for lbl, y in res['channels']}
-        self._register_datasets(mapping)
-        if res['complex']:
-            self.pair_check.setChecked(True)
+        # Preset the time unit BEFORE registering: _register_datasets runs the
+        # auto distance range, which scales with _deer_tfactor(). Setting the
+        # unit afterwards leaves the auto min/max one load behind.
         u = (res['x_unit'] or '').strip().lower()
         tmap = {'ns': 'ns', 'us': 'µs', 'µs': 'µs', 'μs': 'µs', 'ms': 'ms'}
         if u in tmap:
             self.deer_tunit.setCurrentText(tmap[u])
+        self._register_datasets(mapping)
+        # leave I/Q pairing OFF by default even for complex data — the user opts in
+        # (many traces are already phased; auto-pairing surprised more than it helped)
         self._set_loaded_file(os.path.basename(file_path))
         self.set_status(f'Loaded {os.path.basename(file_path)} — {res["format"]}, '
                         f'{len(x)} pts, '
@@ -995,7 +1037,7 @@ class MainWindow(QMainWindow):
                 combo.setCurrentIndex(keys.index(sel))
             combo.blockSignals(False)
         self.pair_check.blockSignals(True)
-        self.pair_check.setChecked(len(keys) > 1)
+        self.pair_check.setChecked(False)              # I/Q pairing is opt-in
         self.pair_check.blockSignals(False)
         self.on_source_changed()                  # populates self.real_xy
         self._reset_bg_window()                    # default bg start (~2/3) + end (last pt)
@@ -1243,6 +1285,22 @@ class MainWindow(QMainWindow):
         rmax = self.R_MAX_FACTOR*(t_us/2.0)**(1.0/3.0)
         return float(np.clip(round(rmax, 1), self.deer_rmin.value() + 0.5, 50.0))
 
+    def _auto_rmin_value(self):
+        """Shortest distance the time step still resolves (nm), or None.
+
+        The fastest dipolar component (parallel, 2·nu_perp = 2·NU_DD/r^3 MHz)
+        must be Nyquist-sampled by the time increment Δt: 1/Δt ≥ 2·(2·NU_DD/r^3)
+        ⇒ r_min = (4·NU_DD·Δt)^⅓ (Δt in μs)."""
+        x, _ = self.real_xy
+        if x is None or len(x) < 2:
+            return None
+        x = np.asarray(x, dtype=float)
+        dt_us = abs(float(np.median(np.diff(x))))*self._deer_tfactor()
+        if dt_us <= 0:
+            return None
+        rmin = (4.0*deer_module.NU_DD*dt_us)**(1.0/3.0)
+        return float(np.clip(round(rmin, 1), 0.5, self.deer_rmax.value() - 0.5))
+
     def _auto_rmax(self):
         rmax = self._auto_rmax_value()
         if rmax is None:
@@ -1252,6 +1310,22 @@ class MainWindow(QMainWindow):
         self.set_status(f'Auto distance max = {rmax:.1f} nm '
                         f'(trace-supported, 5·(t/2)^⅓).')
 
+    def _auto_rrange(self):
+        rmax = self._auto_rmax_value()
+        rmin = self._auto_rmin_value()
+        if rmax is None or rmin is None:
+            self.set_status('Load a V(t) trace first.')
+            return
+        for sb in (self.deer_rmin, self.deer_rmax):
+            sb.blockSignals(True)
+        self.deer_rmax.setValue(rmax)
+        self.deer_rmin.setValue(min(rmin, rmax - 0.5))
+        for sb in (self.deer_rmin, self.deer_rmax):
+            sb.blockSignals(False)
+        self.deer_rmax.valueChanged.emit(rmax)
+        self.set_status(f'Auto distance window = {self.deer_rmin.value():.1f}'
+                        f'–{rmax:.1f} nm (Δt-resolved min, trace-supported max).')
+
     def _reset_bg_window(self):
         """Set sensible defaults for the current (trimmed) trace: background start
         ~2/3 in (auto), background end at the last point (so the end cursor shows),
@@ -1259,7 +1333,8 @@ class MainWindow(QMainWindow):
         bg = self._auto_bg_start_value()
         rmax = self._auto_rmax_value()
         xr = self.real_xy[0]
-        for sb in (self.deer_bgstart, self.deer_bgend, self.deer_rmax):
+        sboxes = (self.deer_bgstart, self.deer_bgend, self.deer_rmin, self.deer_rmax)
+        for sb in sboxes:
             sb.blockSignals(True)
         if bg is not None:
             self.deer_bgstart.setValue(bg)
@@ -1267,7 +1342,10 @@ class MainWindow(QMainWindow):
             self.deer_bgend.setValue(float(np.asarray(xr, dtype=float)[-1]))
         if rmax is not None:
             self.deer_rmax.setValue(rmax)
-        for sb in (self.deer_bgstart, self.deer_bgend, self.deer_rmax):
+        rmin = self._auto_rmin_value()    # uses rmax just set above as the upper clamp
+        if rmin is not None and rmax is not None:
+            self.deer_rmin.setValue(min(rmin, rmax - 0.5))
+        for sb in sboxes:
             sb.blockSignals(False)
 
     def _deer_t0_max(self):
@@ -1315,7 +1393,7 @@ class MainWindow(QMainWindow):
         r = np.linspace(rmin, rmax, int(self.deer_rn.value()))
         alpha = None if self.deer_alpha_auto.isChecked() else float(self.deer_alpha.value())
         afac = float(self.deer_alpha_factor.value())
-        engine = 'joint' if self.deer_engine.currentIndex() == 1 else 'sequential'
+        engine = ('sequential', 'joint', 'none')[self.deer_engine.currentIndex()]
         dim = float(self.deer_dim.value())
         fit_dim = self.deer_fitdim.isChecked()
         validate = self.deer_validate_chk.isChecked()
@@ -1388,7 +1466,7 @@ class MainWindow(QMainWindow):
         dim = float(self.deer_dim.value())
         fit_dim = self.deer_fitdim.isChecked()
         fit_t0 = self.deer_fit_t0.isChecked()
-        bg_engine = 'joint' if self.deer_engine.currentIndex() == 1 else 'sequential'
+        bg_engine = ('sequential', 'joint', 'none')[self.deer_engine.currentIndex()]
         bgs_disp = float(self.deer_bgstart.value())
         bge_disp = float(self.deer_bgend.value())
         t0_cur = float(self.deer_t0.value())
@@ -1398,11 +1476,14 @@ class MainWindow(QMainWindow):
                    else float(self.mellin_taumax.value()))
         n_tau = int(self.mellin_ntau.value())
         validate = self.deer_validate_chk.isChecked()
+        consensus = self.mellin_consensus_chk.isChecked()
         n_mc = 50 if self.deer_ci_chk.isChecked() else 0
 
         def compute():
             t0_disp = t0_cur
-            if fit_t0:
+            # the consensus engine fits its own zero-time (and marginalises over
+            # it), so skip the separate pre-fit when it is selected
+            if fit_t0 and not consensus:
                 t0u = deer_module.fit_zero_time(
                     x * tf, v, bg_start=bgs_disp * tf,
                     bg_end=(bge_disp * tf if bge_disp > bgs_disp else None),
@@ -1413,8 +1494,39 @@ class MainWindow(QMainWindow):
             bg_end_us = ((bge_disp - t0_disp) * tf if bge_disp > bgs_disp else None)
             delta_us = (delta_disp * tf) if delta_disp > 0 else None
             mk = dict(delta=delta_us, tau_max=tau_max, n_tau=n_tau,
-                      bg_engine=bg_engine)
-            if validate:
+                      bg_engine=bg_engine,
+                      signed_fit=self.mellin_signed_fit_chk.isChecked())
+            if consensus:
+                # robust mode: pass the RAW recorded axis + bg window (consensus
+                # fits t0 internally); it manages tau_max, so do not forward it
+                res = deer_module.deer_mellin_consensus(
+                    x * tf, v, r=r, bg_start=bgs_disp * tf,
+                    bg_end=(bge_disp * tf if bge_disp > bgs_disp else None),
+                    dim=dim, fit_dim=fit_dim, delta=delta_us, n_tau=n_tau,
+                    bg_engine=bg_engine, n_mc=8,
+                    signed_fit=self.mellin_signed_fit_chk.isChecked())
+                t0_disp = float(res['t0']) / tf
+                if res.get('consensus') and res.get('P_lower') is not None:
+                    _ens = res.get('ensemble')
+                    band = {'r': res['r'], 'P_density': res['P_density'],
+                            'P_lower': res['P_lower'], 'P_upper': res['P_upper'],
+                            'P_mean': (np.mean(_ens, axis=0) if _ens is not None
+                                       else res['P_density']),
+                            'peak': res.get('peak', float(res['r'][int(
+                                np.argmax(res['P_density']))])),
+                            'r_mean': res.get('r_mean', float(np.sum(
+                                res['r'] * res['P_norm']))),
+                            'percentiles': res.get('percentiles', (2.5, 97.5)),
+                            'n_trials': int(res.get('n_trials', 0)),
+                            'consensus_mode': True,
+                            'rel_noise': float(res.get('rel_noise', 0.0)),
+                            't0_consistent': np.atleast_1d(res.get(
+                                't0_consistent', [res['t0']])),
+                            'bg_starts': np.atleast_1d(res.get(
+                                'bg_starts', [bgs_disp * tf]))}
+                else:                          # gated to the single pick on clean data
+                    band = None
+            elif validate:
                 val = deer_module.deer_validate(
                     t_us, v, r=r, bg_start=bg_us, bg_end=bg_end_us, dim=dim,
                     fit_dim=fit_dim, engine='mellin', **mk)
@@ -1458,7 +1570,7 @@ class MainWindow(QMainWindow):
         self.deer_result = res
         self.deer_band = band
         tf = self._deer_tfactor()
-        is_mellin = res.get('engine') == 'mellin'
+        is_mellin = res.get('engine', '').startswith('mellin')
         self.deer_t0.blockSignals(True)
         self.deer_t0.setValue(t0_disp)
         self.deer_t0.blockSignals(False)
@@ -1467,10 +1579,34 @@ class MainWindow(QMainWindow):
             self.deer_alpha.setValue(float(res['alpha']))
             self.deer_alpha.blockSignals(False)
 
-        F, Ff = res['form_factor'], res['F_fit']
+        F, Ff = res['form_factor'], self._fit_curve(res)
         ss_tot = float(np.sum((F - F.mean()) ** 2)) or 1.0
         r2 = 1 - float(np.sum((F - Ff) ** 2)) / ss_tot
-        if band is not None:
+        # residual-whiteness goodness of fit (Durbin-Watson + lag-1 autocorrelation):
+        # a structured/oscillating residual flags an over-smoothed P(r) that has not
+        # captured all the dipolar modulation. Computed engine-agnostically from the
+        # V-space residual so it works for Tikhonov / joint / Mellin / consensus.
+        wht = self._whiteness_of(res)
+        if wht is not None and np.isfinite(wht['durbin_watson']):
+            wv = ('white' if wht['white'] else 'structured')
+            wht_txt = (f'<br>resid: DW = {wht["durbin_watson"]:.2f}, '
+                       f'r₁ = {wht["acf1"]:+.2f} <i>({wv})</i>')
+        else:
+            wht_txt = ''
+        if band is not None and band.get('consensus_mode'):
+            r_peak, r_mean = band['peak'], band['r_mean']
+            lo, hi = band['percentiles']
+            t0c = band['t0_consistent'] / tf
+            bgc = band.get('bg_starts')
+            tu = self.deer_tunit.currentText()
+            bg_txt = (f'<br>bg {bgc.min()/tf:.3g}–{bgc.max()/tf:.3g} {tu}'
+                      if bgc is not None and len(np.atleast_1d(bgc)) > 1 else '')
+            extra = (f'<br><b style="color: rgb(150, 200, 255);">consensus</b><br>'
+                     f'{band["n_trials"]} trials, rel. noise {band["rel_noise"]:.3f}'
+                     f'<br>t0 {t0c.min():.3g}–{t0c.max():.3g} {tu}{bg_txt}'
+                     f'<br>band = {lo:g}–{hi:g}%')
+            consensus = ' (median)'
+        elif band is not None:
             r_peak, r_mean = band['peak'], band['r_mean']
             bgs = band['bg_starts'] / tf
             lo, hi = band['percentiles']
@@ -1517,7 +1653,7 @@ class MainWindow(QMainWindow):
             f'{reg}<br>'
             f'peak r = {r_peak:.3f} nm<br>'
             f'mean r = {r_mean:.3f} nm<br>'
-            f'form-factor R² = {r2:.4f}{extra}</div>')
+            f'form-factor R² = {r2:.4f}{wht_txt}{extra}</div>')
         self.deer_info.setText(info_html)
         if is_mellin:
             self.mellin_info.setText(info_html)
@@ -1567,7 +1703,7 @@ class MainWindow(QMainWindow):
             pr_curves = [('P(r)', res['r'], res['P_density'], C_FIT, 2)]
             # Mellin: optionally overlay the raw signed distribution (short-r
             # ripples = propagated noise), the method's diagnostic output.
-            if (res.get('engine') == 'mellin'
+            if (res.get('engine', '').startswith('mellin')
                     and res.get('P_signed_density') is not None
                     and self.mellin_signed_chk.isChecked()):
                 pr_curves.append(('P(r) signed', res['r'],
@@ -1578,10 +1714,11 @@ class MainWindow(QMainWindow):
 
         # ---- top plot: chosen time-domain / L-curve view ----
         view = self.deer_show.currentText()
+        ff = self._fit_curve(res)
         if view == 'Form factor + fit':
             self._repaint(self.p_time, self.time_legend, self._time_items,
                           [('F(t)', t_disp, res['form_factor'], C_DATA, 2),
-                           ('K·P fit', t_disp, res['F_fit'], C_FIT, 2)],
+                           ('K·P fit', t_disp, ff, C_FIT, 2)],
                           f'Time ({tunit})', '_time_key', force=True)
             self._show_bg_cursor(True)
             self._show_lcurve_marker(False)
@@ -1593,6 +1730,50 @@ class MainWindow(QMainWindow):
                           f'Time ({tunit})', '_time_key', force=True)
             self._show_bg_cursor(True)
             self._show_lcurve_marker(False)
+        elif view == 'Residual':
+            # plain time-domain residual (data − fit), V space, with the ±σ noise
+            # band: a flat residual inside the band ⇒ adequate fit; a coherent
+            # oscillation ⇒ unmodelled dipolar modulation (over-smoothed P(r)).
+            v_fit = bg['B'] * ((1 - res['lambda']) + res['lambda'] * ff)
+            resid = bg['V_norm'] - v_fit
+            # smoothed overlay exposes the coherent (systematic) part of the
+            # residual — averaging out the white noise; a flat smoothed line ⇒
+            # white, an oscillation ⇒ unmodelled dipolar modulation.
+            wn = int(max(5, len(resid) // 50)) | 1
+            resid_sm = np.convolve(resid, np.ones(wn) / wn, mode='same')
+            curves = [('residual (V − fit)', t_disp, resid, C_DATA, 1),
+                      ('smoothed (coherent)', t_disp, resid_sm, C_FIT, 2)]
+            sig = res.get('noise_level') or res.get('sigma_noise')
+            if sig and np.isfinite(sig) and sig > 0:
+                ones = np.ones_like(t_disp)
+                curves += [('+σ noise', t_disp, sig * ones, C_BG, 1),
+                           ('−σ noise', t_disp, -sig * ones, C_BG, 1)]
+            self._repaint(self.p_time, self.time_legend, self._time_items, curves,
+                          f'Time ({tunit})', '_time_key',
+                          left_label='residual', force=True)
+            self._show_bg_cursor(True)
+            self._show_lcurve_marker(False)
+        elif view == 'Residual ACF':
+            # residual-whiteness autocorrelogram: ACF of the fit residual vs lag,
+            # with the ±1.96/√N white-noise band. Bars inside the band ⇒ white
+            # (adequate fit); a decaying/oscillating ACF reaching past it ⇒ the
+            # residual is structured (over-smoothed P(r) / unmodelled modulation).
+            self._show_bg_cursor(False)
+            self._show_lcurve_marker(False)
+            wht = self._whiteness_of(res)
+            if wht is None or not len(wht.get('acf', [])):
+                self.set_status('No residual ACF available for this result.')
+                return
+            lags = np.asarray(wht['lags'], float)
+            acf = np.asarray(wht['acf'], float)
+            ci = float(wht['ci95'])
+            ones = np.ones_like(lags)
+            self._repaint(self.p_time, self.time_legend, self._time_items,
+                          [('residual ACF', lags, acf, C_FIT, 2),
+                           ('+95% white noise', lags, ci * ones, C_BG, 1),
+                           ('−95% white noise', lags, -ci * ones, C_BG, 1)],
+                          'lag (points)', '_time_key',
+                          left_label='autocorrelation', force=True)
         elif view == 'L-curve':
             self._show_bg_cursor(False)
             lc = res.get('l_curve')
@@ -1609,7 +1790,7 @@ class MainWindow(QMainWindow):
             self._show_lcurve_marker(True, x[idx], y[idx])
         else:  # 'V(t) + background + fit'
             level = (1 - res['lambda']) * bg['B']
-            v_fit = bg['B'] * ((1 - res['lambda']) + res['lambda'] * res['F_fit'])
+            v_fit = bg['B'] * ((1 - res['lambda']) + res['lambda'] * ff)
             self._repaint(self.p_time, self.time_legend, self._time_items,
                           [('V(t)', t_disp, bg['V_norm'], C_DATA, 2),
                            ('background', t_disp, level, C_BG, 2),
@@ -1617,6 +1798,35 @@ class MainWindow(QMainWindow):
                           f'Time ({tunit})', '_time_key', force=True)
             self._show_bg_cursor(True)
             self._show_lcurve_marker(False)
+
+    def _fit_curve(self, res):
+        """The forward fit F_fit to display/score. The Mellin engine already builds
+        it from the signed or clipped density per its `signed_fit` flag (set from the
+        'Signed forward fit' checkbox), so we use it directly; other engines return
+        their own F_fit."""
+        return np.asarray(res['F_fit'], float)
+
+    def _whiteness_of(self, res):
+        """Residual-whiteness diagnostic from the V-space residual over the valid
+        dipolar fit region (t>0, via bg['t']) — matching the engine's own pos-based
+        whiteness so the toggle-off number reproduces it, and honouring the signed-
+        forward-fit toggle. Engine-agnostic. Returns the residual_whiteness dict."""
+        try:
+            bg = res['background']
+            Vn = np.asarray(bg['V_norm'], float)
+            B = np.asarray(bg['B'], float)
+            lam = float(res['lambda'])
+            resid = Vn - B * ((1 - lam) + lam * self._fit_curve(res))
+            tt = bg.get('t')
+            if tt is not None:
+                tt = np.asarray(tt, float)
+                if len(tt) == len(resid):
+                    resid = resid[tt > 0]            # dipolar region only (drop pre-t0)
+            if len(resid) < 4:
+                return None
+            return deer_module.residual_whiteness(resid)
+        except Exception:
+            return None
 
     # --------------------------------------------------------- overlays
     @staticmethod
@@ -1780,7 +1990,7 @@ class MainWindow(QMainWindow):
         tunit = self.deer_tunit.currentText()
         t_disp = res['t'] / self._deer_tfactor()
         bg = res['background']
-        is_mellin = res.get('engine') == 'mellin'
+        is_mellin = res.get('engine', '').startswith('mellin')
         reg_line = (f'lambda = {res["lambda"]:.6g}, k = {res["k"]:.6g}, '
                     f'dim = {res["dim"]:.6g}, '
                     + (f'delta = {res.get("delta", 0)/self._deer_tfactor():.6g} {tunit}, '
