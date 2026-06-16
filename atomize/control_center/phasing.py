@@ -27,7 +27,7 @@ SEQCALC_CHANNEL = 'rect'
 
 class SnapSpinBox(QSpinBox):
     """QSpinBox that snaps any value to the nearest multiple of its single step.
-    The digitizer requires Det. Points / Hor. offset on a 32-point grid; the
+    The digitizer requires Detection Points / Horizontal Offset on a 32-point grid; the
     arrows already step by 32, but a value typed in by hand would otherwise be
     accepted verbatim. We round on text interpretation (Enter / focus-out)."""
     def valueFromText(self, text):
@@ -884,7 +884,7 @@ class MainWindow(QMainWindow):
         self.tab_pulse.tabBar().setTabTextColor(1, QColor(193, 202, 227))
 
         # ---- Labels & Inputs ----
-        labels = [("Acquisitions", "label_17"), ("Integration Left", "label_18"), ("Integration Right", "label_19"), ("Det. Points", "label_20"), ("Hor. offset", "label_21"), ("Shift Together", "label_shift"), ("Points", "label_e1"), ("Scans", "label_e2"), ("Experiment Name", "label_e3"), ("Curve Name", "label_e4"), ("Start Field", "label_f1"), ("End Field", "label_f2"), ("Field Step", "label_f3"), ("Sweep Type", "label_c1"), ("Start Log Time", "label_e5"), ("End Log Time", "label_e6"),
+        labels = [("Acquisitions", "label_17"), ("Integration Left", "label_18"), ("Integration Right", "label_19"), ("Detection Points", "label_20"), ("Horizontal Offset", "label_21"), ("Shift Together", "label_shift"), ("Points", "label_e1"), ("Scans", "label_e2"), ("Experiment Name", "label_e3"), ("Curve Name", "label_e4"), ("Start Field", "label_f1"), ("End Field", "label_f2"), ("Field Step", "label_f3"), ("Sweep Type", "label_c1"), ("Start Log Time", "label_e5"), ("End Log Time", "label_e6"),
             ('X<sub style="font-size: 12pt;">0</sub>', "label_e7"), ("ΔX ", "label_e8"), ("Cycles", "label_cyc"), ("Save Each Cycle", "label_save_cyc")]
 
         for name, attr_name in labels:
@@ -1099,7 +1099,7 @@ class MainWindow(QMainWindow):
         right_grid.addWidget(self.label_21, 3, 0)
         right_grid.addWidget(self.Hor_offset, 3, 1)
         self.shift_box = self._make_checkbox(self.shift_online)
-        self.shift_box.setToolTip('Shift Together: when changing Det. Points, shift Hor. offset by the same amount so the signal stays put.')
+        self.shift_box.setToolTip('Shift Together: when changing Detection Points, shift Horizontal Offset by the same amount so the signal stays put.')
         right_grid.addWidget(self.label_shift, 4, 0)
         right_grid.addWidget(self.shift_box, 4, 1)
         right_grid.addWidget(hline(), 5, 0, 1, 2)
@@ -2300,7 +2300,7 @@ class MainWindow(QMainWindow):
         """
         A function to set the digitizer record length, i.e. the DETECTION window
         in points (NIOCH digitizer is fixed at 2 ns / point). The posttrigger
-        (horizontal offset) is set independently via the Hor. offset control; it
+        (horizontal offset) is set independently via the Horizontal Offset control; it
         is only re-clamped here if it would no longer fit inside the record.
         Pushes PO/HO live if a run is in progress.
         """
@@ -2313,19 +2313,21 @@ class MainWindow(QMainWindow):
             gap = self.dig_points - self.posttrigger
             self.dig_points = new_points
             self.posttrigger = self.dig_points - gap
-            if self.posttrigger < 0:
-                self.posttrigger = 0
-            elif self.posttrigger >= self.dig_points:
-                self.posttrigger = self.dig_points - 2
+            # 4450 requires posttrigger divisible by 16, >= 16, and a minimum
+            # gap of 16 below the record length (points - posttrigger >= 16).
+            if self.posttrigger < 16:
+                self.posttrigger = 16
+            elif self.posttrigger > self.dig_points - 16:
+                self.posttrigger = self.dig_points - 16
             # update the display without re-triggering hor_offset() (we send HO below)
             self.Hor_offset.blockSignals( True )
             self.Hor_offset.setValue( self.posttrigger )
             self.Hor_offset.blockSignals( False )
         else:
             self.dig_points = new_points
-            # keep the posttrigger valid: it has to be smaller than the record length
-            if self.posttrigger >= self.dig_points:
-                self.posttrigger = int( self.dig_points / 2 )
+            # keep the posttrigger valid: the 4450 needs points - posttrigger >= 16
+            if self.posttrigger > self.dig_points - 16:
+                self.posttrigger = self.dig_points - 16
                 self.Hor_offset.setValue( self.posttrigger )
         try:
             self.parent_conn_dig.send( 'PO' + str(self.dig_points) )
@@ -2336,7 +2338,7 @@ class MainWindow(QMainWindow):
     def shift_online(self):
         """
         Shift Together checkbox: when on, changing the record length
-        (Det. Points) also shifts the horizontal offset (posttrigger) by the
+        (Detection Points) also shifts the horizontal offset (posttrigger) by the
         same amount in decimat(), keeping the acquired signal in place.
         """
         if self.shift_box.checkState().value == 2:   # checked
@@ -2347,12 +2349,13 @@ class MainWindow(QMainWindow):
     def hor_offset(self):
         """
         A function to set the digitizer horizontal offset (posttrigger), in
-        points. It must stay smaller than the record length (Det. Points).
+        points. It must stay smaller than the record length (Detection Points).
         Pushes HO live if a run is in progress.
         """
         self.posttrigger = int( self.Hor_offset.value() )
-        if self.posttrigger >= self.dig_points:
-            self.posttrigger = self.dig_points - 2
+        # 4450: posttrigger must stay at least 16 points below the record length
+        if self.posttrigger > self.dig_points - 16:
+            self.posttrigger = self.dig_points - 16
             self.Hor_offset.setValue( self.posttrigger )
         try:
             self.parent_conn_dig.send( 'HO' + str(self.posttrigger) )
@@ -2447,7 +2450,7 @@ class MainWindow(QMainWindow):
         if self.cur_win_right == self.cur_win_left:
             self.cur_win_right += 1 #self.time_per_point
 
-        # Canonical NIOCH digitizer hand-off file (read by Spectrum_M4I_2211_X8,
+        # Canonical NIOCH digitizer hand-off file (read by Spectrum_M4I_4450_X8,
         # dig_control, fft_control). cur_win_left/right are already in points.
         path_to_main = os.path.abspath( os.getcwd() )
         path_file = os.path.join(path_to_main, '../atomize/control_center/digitizer.param')
@@ -3011,19 +3014,19 @@ class Worker():
             import atomize.general_modules.general_functions as general
             if script_test:
                 general.test_flag = 'test'
-            import atomize.device_modules.Spectrum_M4I_2211_X8 as spectrum
+            import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
             import atomize.device_modules.PB_ESR_500_pro as pb_pro
             import atomize.math_modules.fft as fft_module
-            #import atomize.device_modules.BH_15 as itc
+            import atomize.device_modules.BH_15 as itc
 
             pb = pb_pro.PB_ESR_500_Pro()
-            dig = spectrum.Spectrum_M4I_2211_X8()
+            dig = spectrum.Spectrum_M4I_4450_X8()
 
             fft = fft_module.Fast_Fourier()
-            #bh15 = itc.BH_15()
+            bh15 = itc.BH_15()
 
-            #bh15.magnet_setup( mag_field, 0.5 )
-            #bh15.magnet_field( mag_field ) #, calibration = 'True'
+            bh15.magnet_setup( mag_field, 0.5 )
+            bh15.magnet_field( mag_field ) #, calibration = 'True'
 
             process = 'None'
 
@@ -3094,7 +3097,7 @@ class Worker():
             t_res = 2.0                      # ns per point (digitizer & AWG both 2 ns)
 
             dig.digitizer_card_mode('Average')
-            dig.digitizer_clock_mode('Internal')
+            dig.digitizer_clock_mode('External')
             dig.digitizer_reference_clock(100)
             dig.digitizer_number_of_points( dig_points )
             dig.digitizer_posttrigger( posttrigger )
@@ -3153,7 +3156,7 @@ class Worker():
 
                 elif self.command[0:2] == 'FI':
                     mag_field = float( self.command[2:] )
-                    #bh15.magnet_field( mag_field ) #, calibration = 'True'
+                    bh15.magnet_field( mag_field ) #, calibration = 'True'
                 elif self.command[0:2] == 'FF':
                     fft_flag = int( self.command[2:] )
                 elif self.command[0:2] == 'QC':
@@ -3280,19 +3283,19 @@ class Worker():
             import atomize.general_modules.general_functions as general
             if script_test:
                 general.test_flag = 'test'
-            import atomize.device_modules.Spectrum_M4I_2211_X8 as spectrum
+            import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
             import atomize.device_modules.PB_ESR_500_pro as pb_pro
-            # import atomize.device_modules.SR_PTC_10 as ls
-            # import atomize.device_modules.BH_15 as bh
-            # import atomize.device_modules.Micran_X_band_MW_bridge as mwBridge
+            import atomize.device_modules.SR_PTC_10 as ls
+            import atomize.device_modules.BH_15 as bh
+            import atomize.device_modules.Micran_X_band_MW_bridge as mwBridge
             import atomize.general_modules.csv_opener_saver as openfile
 
             pb = pb_pro.PB_ESR_500_Pro()
-            dig = spectrum.Spectrum_M4I_2211_X8()
+            dig = spectrum.Spectrum_M4I_4450_X8()
             file_handler = openfile.Saver_Opener()
-            #bh15 = bh.BH_15()
-            # ptc = ls.SR_PTC_10()
-            # mw = mwBridge.Micran_X_band_MW_bridge()
+            bh15 = bh.BH_15()
+            ptc = ls.SR_PTC_10()
+            mw = mwBridge.Micran_X_band_MW_bridge()
 
             # integration window (point indices) for digitizer_get_curve(integral=True)
             dig.win_left = win_left
@@ -3345,7 +3348,7 @@ class Worker():
             EXP_NAME = exp_name
             CURVE_NAME = curve_name
 
-            #bh15.magnet_field( field )
+            bh15.magnet_field( field )
             general.wait('2000 ms')
 
             if laser_flag != 1:
@@ -3414,7 +3417,7 @@ class Worker():
             DIG_POINTS = int( DEC_COEF )
             POSTTRIGGER = int( DIG_POINTS / 2 )
             dig.digitizer_card_mode('Average')
-            dig.digitizer_clock_mode('Internal')
+            dig.digitizer_clock_mode('External')
             dig.digitizer_reference_clock(100)
             dig.digitizer_number_of_points( DIG_POINTS )
             dig.digitizer_posttrigger( POSTTRIGGER )
@@ -3443,11 +3446,11 @@ class Worker():
             while self.command != 'exit':
 
                 for k in _scan_iter():
-                    # sp = ptc.tc_setpoint('Heater')
-                    # ct = ptc.tc_temperature('3A')
+                    sp = ptc.tc_setpoint('Heater')
+                    ct = ptc.tc_temperature('3A')
 
-                    # if np.abs(sp - ct) > 0.8:
-                        # general.wait('8000 ms')
+                    if np.abs(sp - ct) > 0.8:
+                        general.wait('8000 ms')
 
                     if self.command == 'exit':
                         break
@@ -3508,20 +3511,20 @@ class Worker():
                     f"{'Date:':<{w}} {now}\n"
                     f"{'Experiment:':<{w}} Pulsed EPR Experiment\n"
                     f"{'Field:':<{w}} {FIELD} G\n"
-                    # f"{general.fmt(mw.mw_bridge_att_prm(), w)}\n"
-                    # f"{general.fmt(mw.mw_bridge_att1_prd(), w)}\n"
-                    # f"{general.fmt(mw.mw_bridge_att2_prd(), w)}\n"
-                    # f"{general.fmt(mw.mw_bridge_fv_ctrl(), w)}\n"
-                    # f"{general.fmt(mw.mw_bridge_fv_prm(), w)}\n"
-                    # f"{general.fmt(mw.mw_bridge_synthesizer(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_att_prm(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_att1_prd(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_att2_prd(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_fv_ctrl(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_fv_prm(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_synthesizer(), w)}\n"
                     f"{'Repetition Rate:':<{w}} {pb.pulser_repetition_rate()}\n"
                     f"{'Number of Scans:':<{w}} {SCANS}\n"
                     f"{'Averages:':<{w}} {AVERAGES}\n"
                     f"{'Points:':<{w}} {POINTS}\n"
                     f"{'Window:':<{w}} {tb} ns\n"
                     f"{'Horizontal Resolution:':<{w}} {STEP} ns\n"
-                    # f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
-                    # f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
+                    f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
+                    f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
                     f"{'-'*50}\n"
                     f"Pulse List:\n{pb.pulser_pulse_list()}"
                     f"{'-'*50}\n"
@@ -3590,19 +3593,19 @@ class Worker():
             import atomize.general_modules.general_functions as general
             if script_test:
                 general.test_flag = 'test'
-            import atomize.device_modules.Spectrum_M4I_2211_X8 as spectrum
+            import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
             import atomize.device_modules.PB_ESR_500_pro as pb_pro
-            # import atomize.device_modules.SR_PTC_10 as ls
-            # import atomize.device_modules.BH_15 as bh
-            # import atomize.device_modules.Micran_X_band_MW_bridge as mwBridge
+            import atomize.device_modules.SR_PTC_10 as ls
+            import atomize.device_modules.BH_15 as bh
+            import atomize.device_modules.Micran_X_band_MW_bridge as mwBridge
             import atomize.general_modules.csv_opener_saver as openfile
 
             pb = pb_pro.PB_ESR_500_Pro()
-            dig = spectrum.Spectrum_M4I_2211_X8()
+            dig = spectrum.Spectrum_M4I_4450_X8()
             file_handler = openfile.Saver_Opener()
-            # bh15 = bh.BH_15()
-            # ptc = ls.SR_PTC_10()
-            # mw = mwBridge.Micran_X_band_MW_bridge()
+            bh15 = bh.BH_15()
+            ptc = ls.SR_PTC_10()
+            mw = mwBridge.Micran_X_band_MW_bridge()
 
             # integration window (point indices) for digitizer_get_curve(integral=True)
             dig.win_left = win_left
@@ -3655,7 +3658,7 @@ class Worker():
             EXP_NAME = exp_name
             CURVE_NAME = curve_name
 
-            #bh15.magnet_field( field )
+            bh15.magnet_field( field )
             general.wait('2000 ms')
 
             # ESEEM tau-shift bookkeeping: for every pulser pulse we record its
@@ -3741,7 +3744,7 @@ class Worker():
             DIG_POINTS = int( DEC_COEF )
             POSTTRIGGER = int( DIG_POINTS / 2 )
             dig.digitizer_card_mode('Average')
-            dig.digitizer_clock_mode('Internal')
+            dig.digitizer_clock_mode('External')
             dig.digitizer_reference_clock(100)
             dig.digitizer_number_of_points( DIG_POINTS )
             dig.digitizer_posttrigger( POSTTRIGGER )
@@ -3782,11 +3785,11 @@ class Worker():
                     break
 
                 for k in _scan_iter():
-                    # sp = ptc.tc_setpoint('Heater')
-                    # ct = ptc.tc_temperature('3A')
+                    sp = ptc.tc_setpoint('Heater')
+                    ct = ptc.tc_temperature('3A')
 
-                    # if np.abs(sp - ct) > 0.8:
-                        # general.wait('8000 ms')
+                    if np.abs(sp - ct) > 0.8:
+                        general.wait('8000 ms')
 
                     if self.command == 'exit':
                         break
@@ -3951,19 +3954,19 @@ class Worker():
             import atomize.general_modules.general_functions as general
             if script_test:
                 general.test_flag = 'test'
-            import atomize.device_modules.Spectrum_M4I_2211_X8 as spectrum
+            import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
             import atomize.device_modules.PB_ESR_500_pro as pb_pro
-            # import atomize.device_modules.SR_PTC_10 as ls
-            # import atomize.device_modules.BH_15 as bh
-            # import atomize.device_modules.Micran_X_band_MW_bridge as mwBridge
+            import atomize.device_modules.SR_PTC_10 as ls
+            import atomize.device_modules.BH_15 as bh
+            import atomize.device_modules.Micran_X_band_MW_bridge as mwBridge
             import atomize.general_modules.csv_opener_saver as openfile
 
             file_handler = openfile.Saver_Opener()
             pb = pb_pro.PB_ESR_500_Pro()
-            dig = spectrum.Spectrum_M4I_2211_X8()
-            #bh15 = bh.BH_15()
-            # ptc = ls.SR_PTC_10()
-            # mw = mwBridge.Micran_X_band_MW_bridge()
+            dig = spectrum.Spectrum_M4I_4450_X8()
+            bh15 = bh.BH_15()
+            ptc = ls.SR_PTC_10()
+            mw = mwBridge.Micran_X_band_MW_bridge()
 
             # integration window (point indices) for digitizer_get_curve(integral=True)
             dig.win_left = win_left
@@ -3982,7 +3985,7 @@ class Worker():
             EXP_NAME = f'{exp_name}_F'
             CURVE_NAME = curve_name
 
-            #bh15.magnet_field( start_field )
+            bh15.magnet_field( start_field )
             general.wait('2000 ms')
 
             if laser_flag != 1:
@@ -4058,7 +4061,7 @@ class Worker():
             DIG_POINTS = int( DEC_COEF )
             POSTTRIGGER = int( DIG_POINTS / 2 )
             dig.digitizer_card_mode('Average')
-            dig.digitizer_clock_mode('Internal')
+            dig.digitizer_clock_mode('External')
             dig.digitizer_reference_clock(100)
             dig.digitizer_number_of_points( DIG_POINTS )
             dig.digitizer_posttrigger( POSTTRIGGER )
@@ -4089,20 +4092,20 @@ class Worker():
                 for k in _scan_iter():
 
                     field = START_FIELD
-                    #bh15.magnet_field(field)
+                    bh15.magnet_field(field)
 
-                    # sp = ptc.tc_setpoint('Heater')
-                    # ct = ptc.tc_temperature('3A')
+                    sp = ptc.tc_setpoint('Heater')
+                    ct = ptc.tc_temperature('3A')
 
-                    # if np.abs(sp - ct) > 0.8:
-                        # general.wait('8000 ms')
+                    if np.abs(sp - ct) > 0.8:
+                        general.wait('8000 ms')
 
                     if self.command == 'exit':
                         break
 
                     for j in range(POINTS):
 
-                        #bh15.magnet_field(field)#, calibration = 'True')
+                        bh15.magnet_field(field)#, calibration = 'True')
 
                         # new field point: reset the pulser so each field starts a fresh
                         # phase cycle. The field sweep has no pulser_shift (pulses are
@@ -4144,7 +4147,7 @@ class Worker():
 
                     while field > START_FIELD:
                         field -= 100
-                        #bh15.magnet_field( field )
+                        bh15.magnet_field( field )
 
                 self.command = 'exit'
 
@@ -4166,18 +4169,18 @@ class Worker():
                     f"{'Start Field:':<{w}} {START_FIELD} G\n"
                     f"{'End Field:':<{w}} {END_FIELD} G\n"
                     f"{'Field Step:':<{w}} {FIELD_STEP} G\n"
-                    # f"{general.fmt(mw.mw_bridge_att_prm(), w)}\n"
-                    # f"{general.fmt(mw.mw_bridge_att1_prd(), w)}\n"
-                    # f"{general.fmt(mw.mw_bridge_att2_prd(), w)}\n"
-                    # f"{general.fmt(mw.mw_bridge_fv_ctrl(), w)}\n"
-                    # f"{general.fmt(mw.mw_bridge_fv_prm(), w)}\n"
-                    # f"{general.fmt(mw.mw_bridge_synthesizer(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_att_prm(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_att1_prd(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_att2_prd(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_fv_ctrl(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_fv_prm(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_synthesizer(), w)}\n"
                     f"{'Repetition Rate:':<{w}} {pb.pulser_repetition_rate()}\n"
                     f"{'Number of Scans:':<{w}} {SCANS}\n"
                     f"{'Averages:':<{w}} {AVERAGES}\n"
                     f"{'Window:':<{w}} {tb} ns\n"
-                    # f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
-                    # f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
+                    f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
+                    f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
                     f"{'-'*50}\n"
                     f"Pulse List:\n{pb.pulser_pulse_list()}"
                     f"{'-'*50}\n"
@@ -4225,11 +4228,11 @@ class Worker():
             import atomize.general_modules.general_functions as general
             if script_test:
                 general.test_flag = 'test'
-            import atomize.device_modules.Spectrum_M4I_2211_X8 as spectrum
+            import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
             import atomize.device_modules.PB_ESR_500_pro as pb_pro
-            # import atomize.device_modules.SR_PTC_10 as ls
-            # import atomize.device_modules.BH_15 as bh
-            # import atomize.device_modules.Micran_X_band_MW_bridge as mwBridge
+            import atomize.device_modules.SR_PTC_10 as ls
+            import atomize.device_modules.BH_15 as bh
+            import atomize.device_modules.Micran_X_band_MW_bridge as mwBridge
             import atomize.general_modules.csv_opener_saver as openfile
 
             ### Nonlinear axis
@@ -4246,10 +4249,10 @@ class Worker():
 
             file_handler = openfile.Saver_Opener()
             pb = pb_pro.PB_ESR_500_Pro()
-            dig = spectrum.Spectrum_M4I_2211_X8()
-            #bh15 = bh.BH_15()
-            # ptc = ls.SR_PTC_10()
-            # mw = mwBridge.Micran_X_band_MW_bridge()
+            dig = spectrum.Spectrum_M4I_4450_X8()
+            bh15 = bh.BH_15()
+            ptc = ls.SR_PTC_10()
+            mw = mwBridge.Micran_X_band_MW_bridge()
 
             # integration window (point indices) for digitizer_get_curve(integral=True)
             dig.win_left = win_left
@@ -4265,7 +4268,7 @@ class Worker():
             EXP_NAME = f'{exp_name}_L'
             CURVE_NAME = curve_name
 
-            #bh15.magnet_field( field )
+            bh15.magnet_field( field )
             general.wait('2000 ms')
 
 
@@ -4370,7 +4373,7 @@ class Worker():
             DIG_POINTS = int( DEC_COEF )
             POSTTRIGGER = int( DIG_POINTS / 2 )
             dig.digitizer_card_mode('Average')
-            dig.digitizer_clock_mode('Internal')
+            dig.digitizer_clock_mode('External')
             dig.digitizer_reference_clock(100)
             dig.digitizer_number_of_points( DIG_POINTS )
             dig.digitizer_posttrigger( POSTTRIGGER )
@@ -4399,11 +4402,11 @@ class Worker():
 
                 for k in _scan_iter():
 
-                    # sp = ptc.tc_setpoint('Heater')
-                    # ct = ptc.tc_temperature('3A')
+                    sp = ptc.tc_setpoint('Heater')
+                    ct = ptc.tc_temperature('3A')
 
-                    # if np.abs(sp - ct) > 0.8:
-                        # general.wait('8000 ms')
+                    if np.abs(sp - ct) > 0.8:
+                        general.wait('8000 ms')
 
                     if self.command == 'exit':
                         break
@@ -4464,12 +4467,12 @@ class Worker():
                     f"{'Date:':<{w}} {now}\n"
                     f"{'Experiment:':<{w}} Pulsed EPR Log Experiment\n"
                     f"{'Field:':<{w}} {FIELD} G\n"
-                    # f"{general.fmt(mw.mw_bridge_att_prm(), w)}\n"
-                    # f"{general.fmt(mw.mw_bridge_att1_prd(), w)}\n"
-                    # f"{general.fmt(mw.mw_bridge_att2_prd(), w)}\n"
-                    # f"{general.fmt(mw.mw_bridge_fv_ctrl(), w)}\n"
-                    # f"{general.fmt(mw.mw_bridge_fv_prm(), w)}\n"
-                    # f"{general.fmt(mw.mw_bridge_synthesizer(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_att_prm(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_att1_prd(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_att2_prd(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_fv_ctrl(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_fv_prm(), w)}\n"
+                    f"{general.fmt(mw.mw_bridge_synthesizer(), w)}\n"
                     f"{'Repetition Rate:':<{w}} {pb.pulser_repetition_rate()}\n"
                     f"{'Number of Scans:':<{w}} {SCANS}\n"
                     f"{'Averages:':<{w}} {AVERAGES}\n"
@@ -4477,8 +4480,8 @@ class Worker():
                     f"{'Window:':<{w}} {tb} ns\n"
                     f"{'Lg(X0/ns):':<{w}} {T_start}\n"
                     f"{'Lg(ΔX/ns):':<{w}} {T_end}\n"
-                    # f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
-                    # f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
+                    f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
+                    f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
                     f"{'-'*50}\n"
                     f"Pulse List:\n{pb.pulser_pulse_list()}"
                     f"{'-'*50}\n"
