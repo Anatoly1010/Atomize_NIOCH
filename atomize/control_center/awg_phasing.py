@@ -3051,11 +3051,12 @@ class MainWindow(QMainWindow):
         if self.opened == 0:
             try:
                 self.parent_conn_dig.send('exit')
-                if self.is_experiment == False:
-                    self.digitizer_process.join()
-                    self.check_process_status()
-                else:
-                    self.monitor_timer.start(200)
+                # Non-blocking stop: poll the worker via monitor_timer instead of
+                # a blocking join(), so the GUI never freezes while the worker
+                # returns the instruments to idle (its finally always runs the
+                # device teardown). check_process_status() finishes the teardown
+                # once the worker has exited.
+                self.monitor_timer.start(200)
             except AttributeError:
                 if self.exit_clicked == 1:
                     sys.exit()
@@ -4026,6 +4027,21 @@ class Worker():
         except BaseException as e:
             exc_info = f"{type(e)} \n{str(e)} \n{traceback.format_exc()}"
             conn.send( ('Error', exc_info) )
+        finally:
+            # Always return the instruments to a safe idle state on every exit
+            # path (normal, Stop, or exception): stop+close the digitizer, stop+
+            # close the AWG (so it cannot keep outputting), and stop the pulse
+            # generator. Each call is guarded (device closes are idempotent), so
+            # cleanup for a device that was never opened cannot mask the error.
+            for _cleanup in (lambda: dig.digitizer_stop(),
+                             lambda: dig.digitizer_close(),
+                             lambda: awg.awg_stop(),
+                             lambda: awg.awg_close(),
+                             lambda: pb.pulser_stop()):
+                try:
+                    _cleanup()
+                except Exception:
+                    pass
 
     def round_to_closest(self, x, y):
         """
@@ -4558,6 +4574,21 @@ class Worker():
         except BaseException as e:
             exc_info = f"{type(e)} \n{str(e)} \n{traceback.format_exc()}"
             conn.send( ('Error', exc_info) )
+        finally:
+            # Always return the instruments to a safe idle state on every exit
+            # path (normal, Stop, or exception): stop+close the digitizer, stop+
+            # close the AWG (so it cannot keep outputting), and stop the pulse
+            # generator. Each call is guarded (device closes are idempotent), so
+            # cleanup for a device that was never opened cannot mask the error.
+            for _cleanup in (lambda: dig.digitizer_stop(),
+                             lambda: dig.digitizer_close(),
+                             lambda: awg.awg_stop(),
+                             lambda: awg.awg_close(),
+                             lambda: pb.pulser_stop()):
+                try:
+                    _cleanup()
+                except Exception:
+                    pass
 
     def exp_eseem(self, conn, decimation, num_ave, scans, points,
             exp_name, curve_name, rect1, rect2,
@@ -5248,6 +5279,21 @@ class Worker():
         except BaseException as e:
             exc_info = f"{type(e)} \n{str(e)} \n{traceback.format_exc()}"
             conn.send( ('Error', exc_info) )
+        finally:
+            # Always return the instruments to a safe idle state on every exit
+            # path (normal, Stop, or exception): stop+close the digitizer, stop+
+            # close the AWG (so it cannot keep outputting), and stop the pulse
+            # generator. Each call is guarded (device closes are idempotent), so
+            # cleanup for a device that was never opened cannot mask the error.
+            for _cleanup in (lambda: dig.digitizer_stop(),
+                             lambda: dig.digitizer_close(),
+                             lambda: awg.awg_stop(),
+                             lambda: awg.awg_close(),
+                             lambda: pb.pulser_stop()):
+                try:
+                    _cleanup()
+                except Exception:
+                    pass
 
     def exp_field(self, conn, decimation, num_ave, scans, start_field,
             end_field, step_field, exp_name,
@@ -5699,6 +5745,21 @@ class Worker():
         except BaseException as e:
             exc_info = f"{type(e)} \n{str(e)} \n{traceback.format_exc()}"
             conn.send( ('Error', exc_info) )
+        finally:
+            # Always return the instruments to a safe idle state on every exit
+            # path (normal, Stop, or exception): stop+close the digitizer, stop+
+            # close the AWG (so it cannot keep outputting), and stop the pulse
+            # generator. Each call is guarded (device closes are idempotent), so
+            # cleanup for a device that was never opened cannot mask the error.
+            for _cleanup in (lambda: dig.digitizer_stop(),
+                             lambda: dig.digitizer_close(),
+                             lambda: awg.awg_stop(),
+                             lambda: awg.awg_close(),
+                             lambda: pb.pulser_stop()):
+                try:
+                    _cleanup()
+                except Exception:
+                    pass
 
     def exp_log(self, conn, decimation, num_ave, scans, points,
             log_start, log_end, exp_name,
@@ -6246,6 +6307,21 @@ class Worker():
         except BaseException as e:
             exc_info = f"{type(e)} \n{str(e)} \n{traceback.format_exc()}"
             conn.send( ('Error', exc_info) )
+        finally:
+            # Always return the instruments to a safe idle state on every exit
+            # path (normal, Stop, or exception): stop+close the digitizer, stop+
+            # close the AWG (so it cannot keep outputting), and stop the pulse
+            # generator. Each call is guarded (device closes are idempotent), so
+            # cleanup for a device that was never opened cannot mask the error.
+            for _cleanup in (lambda: dig.digitizer_stop(),
+                             lambda: dig.digitizer_close(),
+                             lambda: awg.awg_stop(),
+                             lambda: awg.awg_close(),
+                             lambda: pb.pulser_stop()):
+                try:
+                    _cleanup()
+                except Exception:
+                    pass
 
     def exp_amplitude(self, conn, decimation, num_ave, scans, points,
             step_ampl, field, exp_name,
@@ -6759,6 +6835,21 @@ class Worker():
         except BaseException as e:
             exc_info = f"{type(e)} \n{str(e)} \n{traceback.format_exc()}"
             conn.send( ('Error', exc_info) )
+        finally:
+            # Always return the instruments to a safe idle state on every exit
+            # path (normal, Stop, or exception): stop+close the digitizer, stop+
+            # close the AWG (so it cannot keep outputting), and stop the pulse
+            # generator. Each call is guarded (device closes are idempotent), so
+            # cleanup for a device that was never opened cannot mask the error.
+            for _cleanup in (lambda: dig.digitizer_stop(),
+                             lambda: dig.digitizer_close(),
+                             lambda: awg.awg_stop(),
+                             lambda: awg.awg_close(),
+                             lambda: pb.pulser_stop()):
+                try:
+                    _cleanup()
+                except Exception:
+                    pass
 
 def main():
     """
