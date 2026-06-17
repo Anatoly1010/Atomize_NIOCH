@@ -2469,12 +2469,21 @@ class MainWindow(QMainWindow):
         if self.opened == 0:
             try:
                 self.parent_conn_dig.send('exit')
-                # Non-blocking stop: poll the worker via monitor_timer instead of
-                # a blocking join(), so the GUI never freezes while the worker
-                # returns the instruments to idle (its finally always runs the
-                # device teardown). check_process_status() finishes the teardown
-                # once the worker has exited.
-                self.monitor_timer.start(200)
+                # Pulse mode (Run Pulses): tear down synchronously so update() /
+                # start_exp() can restart immediately on the *next* line -- by the
+                # time dig_start()/dig_start_exp() runs, the old worker is dead, so
+                # its is_alive() guard passes and the intermediate button style is
+                # overwritten in the same callback (no visible flash, no
+                # is_experiment race that would make Start Exp run pulses). The
+                # worker's finally always runs the device teardown, and these
+                # instruments re-open cleanly, so the GUI can't get stuck.
+                # Experiment mode (long acquisitions) stays non-blocking via
+                # monitor_timer.
+                if self.is_experiment == False:
+                    self.digitizer_process.join()
+                    self.check_process_status()
+                else:
+                    self.monitor_timer.start(200)
 
             except AttributeError:
                 if self.exit_clicked == 1:
