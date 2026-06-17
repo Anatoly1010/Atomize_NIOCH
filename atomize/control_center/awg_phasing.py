@@ -1536,6 +1536,13 @@ class MainWindow(QMainWindow):
         gridLayout.setColumnStretch(3, 1)
 
     def design_tab_5(self):
+        # measured complex transfer for the 'measured' correction model (loaded
+        # from a 3-column file); None => triple-Lorentzian magnitude-only fit.
+        self.meas_freq_cur = None
+        self.meas_H_cur = None
+        self._meas_h_path = ''
+        self.meas_h_fmt_cur = 'GHz · dB · deg'
+
         dig_setting_page = QWidget()
         gridLayout = QGridLayout()
         gridLayout.setContentsMargins(15, 15, 10, 10)
@@ -1548,7 +1555,7 @@ class MainWindow(QMainWindow):
         self.tab_pulse.tabBar().setTabTextColor(4, QColor(193, 202, 227))
 
         # ---- Labels & Inputs ----
-        labels = [("Amplitude I", "label_a1"), ("Amplitude Q", "label_a2"), ("Phase", "label_a3"), ("N [wurst; sech/tanh]", "label_a4"), ("b [sech/tanh]", "label_a5"), ("Resonator Profile", "label_a6"), ("Correction Model", "label_a7"), ('Resonator f<sub style="font-size: 12pt;">0</sub>', "label_a8"), ("Resonator Q", "label_a9")]
+        labels = [("Amplitude I", "label_a1"), ("Amplitude Q", "label_a2"), ("Phase", "label_a3"), ("N [wurst; sech/tanh]", "label_a4"), ("b [sech/tanh]", "label_a5"), ("Resonator Profile", "label_a6"), ("Correction Model", "label_a7"), ('Resonator f<sub style="font-size: 12pt;">0</sub>', "label_a8"), ("Resonator Q", "label_a9"), ("Measured H(f)", "label_a10"), ("Load H(f)", "label_a11")]
 
         for name, attr_name in labels:
             lbl = QLabel(name)
@@ -1597,7 +1604,8 @@ class MainWindow(QMainWindow):
 
         # ---- Combo box----
         combo_laser = [("No", "Combo_cor", "", self.combo_cor_fun, ["No", "Only Pi/2", "All"]),
-                       ("Measured", "Combo_model", "", self.combo_model_fun, ["Measured", "Ideal RLC", "Ideal RLC + phase"])
+                       ("Measured", "Combo_model", "", self.combo_model_fun, ["Measured", "Ideal RLC", "Ideal RLC + phase"]),
+                       ("GHz · dB · deg", "Combo_resfmt", "", self.resfmt_fun, ["GHz · dB · deg", "GHz · lin · deg", "GHz · lin · rad", "GHz · Re · Im", "MHz · dB · deg", "MHz · Re · Im"])
                       ]
 
         for cur_text, attr_name, par_name, func, item in combo_laser:
@@ -1618,6 +1626,23 @@ class MainWindow(QMainWindow):
 
         self.combo_cor_fun()
         self.combo_model_fun()
+        self.resfmt_fun()
+
+        # ---- Load measured H(f) button + status ----
+        self.Btn_resH = QPushButton("Load…")
+        self.Btn_resH.setFixedSize(170, 26)
+        self.Btn_resH.setStyleSheet("""
+            QPushButton
+            { color : rgb(193, 202, 227);
+            selection-color: rgb(211, 194, 78);
+            selection-background-color: rgb(63, 63, 97);
+            }
+            """)
+        self.Btn_resH.clicked.connect(self.open_resonator)
+
+        self.reson_file_lbl = QLabel("(no file)")
+        self.reson_file_lbl.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.reson_file_lbl.setWordWrap(True)
 
         # ---- Separators ----
         def hline():
@@ -1658,9 +1683,14 @@ class MainWindow(QMainWindow):
         right_grid.addWidget(self.F0_res, 6, 1)
         right_grid.addWidget(self.label_a9, 7, 0)
         right_grid.addWidget(self.Q_res, 7, 1)
-        right_grid.addWidget(hline(), 8, 0, 1, 2)
+        right_grid.addWidget(self.label_a10, 8, 0)
+        right_grid.addWidget(self.Combo_resfmt, 8, 1)
+        right_grid.addWidget(self.label_a11, 9, 0)
+        right_grid.addWidget(self.Btn_resH, 9, 1)
+        right_grid.addWidget(self.reson_file_lbl, 10, 0, 1, 2)
+        right_grid.addWidget(hline(), 11, 0, 1, 2)
 
-        right_grid.setRowStretch(9, 1)
+        right_grid.setRowStretch(12, 1)
         right_grid.setColumnStretch(9, 1)
         
         container_layout.addLayout(left_grid)
@@ -1936,6 +1966,73 @@ class MainWindow(QMainWindow):
     def q_func(self):
         """Loaded Q for the ideal-RLC correction."""
         self.q_cur = float( self.Q_res.value() )
+
+    def resfmt_fun(self):
+        """Column format of the measured H(f) file; re-parse if one is loaded."""
+        self.meas_h_fmt_cur = str( self.Combo_resfmt.currentText() )
+        if getattr(self, '_meas_h_path', ''):
+            self._load_meas_h(self._meas_h_path)
+
+    def _parse_transfer(self, c0, c1, c2):
+        """(freq_MHz, H_complex) from three columns per the H(f) format combo."""
+        fmt = self.meas_h_fmt_cur
+        f = c0 if fmt.startswith('MHz') else c0 * 1000.0      # -> MHz (device uses MHz)
+        if 'Re · Im' in fmt:
+            H = c1 + 1j * c2
+        else:
+            mag = 10.0 ** ( c1 / 20.0 ) if 'dB' in fmt else c1
+            ph = np.deg2rad( c2 ) if 'deg' in fmt else c2
+            H = mag * np.exp( 1j * ph )
+        return f, H
+
+    def open_resonator(self):
+        """Load a 3-column measured transfer function (f, magnitude, phase)."""
+        path = self.file_handler.open_file_dialog( multiprocessing = True,
+                                                   directory = ldir.load('phase_awg', self.path) )
+        if not path or path == 'None':
+            return
+        self._meas_h_path = path
+        self._load_meas_h(path)
+
+    def _load_meas_h(self, path):
+        """Parse the measured complex transfer; store arrays for the worker."""
+        try:
+            _, data = self.file_handler.open_1d(path)
+            data = np.atleast_2d(data)
+            if data.shape[0] < 3:
+                self.reson_file_lbl.setText("✗ needs ≥ 3 columns (f, mag, phase)")
+                self.meas_freq_cur = None
+                self.meas_H_cur = None
+                return
+            f, H = self._parse_transfer( np.asarray(data[0], float),
+                                         np.asarray(data[1], float),
+                                         np.asarray(data[2], float) )
+            mask = ~( np.isnan(f) | np.isnan(H.real) | np.isnan(H.imag) )
+            if mask.sum() < 2:
+                self.reson_file_lbl.setText("✗ < 2 valid points")
+                self.meas_freq_cur = None
+                self.meas_H_cur = None
+                return
+            self.meas_freq_cur = f[mask]
+            self.meas_H_cur = H[mask]
+            self.reson_file_lbl.setText("✓ %s (%d pts)" % ( os.path.basename(path), int(mask.sum()) ))
+        except Exception:
+            self.reson_file_lbl.setText("✗ load failed")
+            self.meas_freq_cur = None
+            self.meas_H_cur = None
+
+    def _hand_correction_to_worker(self, worker):
+        """Copy the AWG resonator-correction GUI state onto a freshly created
+        Worker so its _apply_awg_correction() (running in the child process) can
+        read the model / f0 / Q / phase-correction settings and any measured
+        complex transfer.
+        """
+        worker.cor_model_cur = self.cor_model_cur
+        worker.f0_cur = self.f0_cur
+        worker.q_cur = self.q_cur
+        worker.phase_cor_cur = self.phase_cor_cur
+        worker.meas_freq_cur = self.meas_freq_cur
+        worker.meas_H_cur = self.meas_H_cur
 
     def b_sech_func(self):
         """
@@ -3064,6 +3161,7 @@ class MainWindow(QMainWindow):
     def dig_start_exp(self):
         self.errors.clear()
         worker = Worker()
+        self._hand_correction_to_worker(worker)
 
         self.p1_exp = [self.p1_typ, self.p1_start, self.p1_length,
                         self.ph_1, self.p1_st_increment, self.p1_len_increment, self.p1_freq
@@ -3232,6 +3330,7 @@ class MainWindow(QMainWindow):
         """
         self.errors.clear()
         worker = Worker()
+        self._hand_correction_to_worker(worker)
 
         self.p1_list = [self.p1_typ, self.p1_start, self.p1_length, self.ph_1, self.p1_freq]
 
@@ -3484,6 +3583,7 @@ class MainWindow(QMainWindow):
     def run_main_experiment(self):
 
         worker = Worker()
+        self._hand_correction_to_worker(worker)
         self.parent_conn_dig, self.child_conn_dig = Pipe()
 
         self.digitizer_process = Process( target = worker.dig_on, args = ( self.child_conn_dig, 
@@ -3509,6 +3609,7 @@ class MainWindow(QMainWindow):
     def run_experiment(self):
 
         worker = Worker()
+        self._hand_correction_to_worker(worker)
         self.parent_conn_dig, self.child_conn_dig = Pipe()
         
         if self.cur_sweep == 'Linear Time':
@@ -3690,7 +3791,19 @@ class Worker():
         #from atomize.main.client import LivePlotClient
 
         self.command = 'start'
-        
+
+        # AWG resonator-correction settings; set by the MainWindow before the
+        # process is launched (see _hand_correction_to_worker / _apply_awg_correction).
+        # Defaults keep the worker usable even if they are not provided.
+        self.cor_model_cur = 'measured'
+        self.f0_cur = 9700.0
+        self.q_cur = 88.0
+        self.phase_cor_cur = 'False'
+        # measured complex transfer for the 'measured' model (None => triple-
+        # Lorentzian magnitude-only fit from correction.param)
+        self.meas_freq_cur = None
+        self.meas_H_cur = None
+
     def dig_on(self, conn, dig_points, posttrigger, n_averages, win_left, win_right, rect1, rect2, rect3, rect4, rect5, rect6, rect7, n_wurst, rep_rate, mag_field, fft_flag, cur_phase, ch0_ampl, ch1_ampl, trig_delay, awg2, awg3, awg4, awg5, awg6, awg7, quad, zero_order, first_order, second_order, p_to_drop, b_sech, combo_cor, combo_synt, _reserved, rect8, rect9, awg8, awg9, laser_flag, laser_num, laser_qsw_delay, iq_corr, script_test=False ):
         """
         function that contains updating of the digitizer.
@@ -4054,11 +4167,14 @@ class Worker():
 
         mode 0 = off (no correction applied), 1 = only Pi/2 (high-amplitude
         pulses), 2 = all swept pulses. The measured triple-Lorentzian magnitude
-        fit (+ LOW/LIMIT clamp) comes from correction.param. NIOCH's
-        Spectrum_M4I_6631 awg_correction(only_pi_half, coef_array, low_level,
-        limit) has no model/f0/Q/phase arguments, so those are not passed.
+        fit (+ LOW/LIMIT clamp) comes from correction.param; the model
+        (measured / ideal RLC), f0, Q and the phase-correction flag are handed
+        over from the AWG-tab controls. When a measured complex transfer H(f)
+        has been loaded, its magnitude AND phase are passed to the 'measured'
+        model (meas_freq / meas_H) instead of the magnitude-only Lorentzian fit.
         """
         if mode == 0:
+            awg.awg_correction_off()
             return
 
         path_file = os.path.join( os.path.abspath( os.getcwd() ),
@@ -4070,7 +4186,10 @@ class Worker():
         awg.awg_correction(only_pi_half = ('True' if mode == 1 else 'False'),
             coef_array = coef,
             low_level = float( text_from_file[10].split(' ')[1] ),
-            limit = float( text_from_file[11].split(' ')[1] ) )
+            limit = float( text_from_file[11].split(' ')[1] ),
+            model = self.cor_model_cur, f0 = self.f0_cur, q_factor = self.q_cur,
+            phase_correction = self.phase_cor_cur,
+            meas_freq = self.meas_freq_cur, meas_H = self.meas_H_cur )
 
     def exp(self, conn, decimation, num_ave, scans, points,
             exp_name, curve_name, rect1, rect2,
