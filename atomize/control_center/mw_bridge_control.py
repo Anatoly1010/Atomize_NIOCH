@@ -23,6 +23,13 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).__init__(*args, **kwargs)
         
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # SOCK_DGRAM is UDP
+        # The bridge talks UDP, so a powered-off bridge simply never replies and a
+        # bare recvfrom() blocks forever -- which froze the whole control center on
+        # launch (initialize()/telemetry() run in __init__). A timeout turns that
+        # infinite wait into a fast, recoverable error; every receive goes via
+        # _recv().
+        self.sock.settimeout( 1.0 )
+        self._connected = True
 
         self.destroyed.connect(lambda: self._on_destroyed())         # connect some actions to exit
         # Load the UI Page
@@ -98,8 +105,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cutoff_3.setStyleSheet("QRadioButton { color : rgb(193, 202, 227); }")
 
         #self.synt()
-        self.initialize()
-        self.telemetry()
+        # Defence-in-depth: never let bridge init abort the constructor, or the
+        # window would never appear. _recv() already returns None instead of
+        # blocking when the bridge is off; this catches anything else so the
+        # control center still opens and the user can power the bridge and retry.
+        try:
+            self.initialize()
+            self.telemetry()
+        except Exception as e:
+            self.telemetry_text.appendPlainText('MW bridge initialization skipped: %s' % e)
 
     def _on_destroyed(self):
         """
@@ -109,11 +123,38 @@ class MainWindow(QtWidgets.QMainWindow):
         #sock.shutdown(socket.SHUT_RDWR)
         #sock.close()
 
+    def _recv(self, nbytes):
+        """
+        Receive a reply from the bridge, tolerating a powered-off / unreachable
+        bridge. Returns the raw bytes, or None if the bridge did not answer
+        within the socket timeout. Callers that parse the reply must guard for
+        None. This is what keeps a dead bridge from freezing the GUI (the old
+        bare recvfrom() blocked forever) or aborting the Qt event loop with an
+        unhandled exception in a slot. The connect/disconnect transition is
+        reported once so the log isn't spammed.
+        """
+        try:
+            data_raw, addr = self.sock.recvfrom( nbytes )
+            if not self._connected:
+                self._connected = True
+                self.telemetry_text.appendPlainText('MW bridge is responding again.')
+            return data_raw
+        except ( socket.timeout, OSError ):
+            if self._connected:
+                self._connected = False
+                self.telemetry_text.appendPlainText('MW bridge is not responding '
+                    '(is it powered on and reachable?). Controls will have no '
+                    'effect until it is back.')
+            return None
+
     def quit(self):
         """
         A function to quit the programm
         """
-        self.initialize()
+        try:
+            self.initialize()
+        except Exception:
+            pass
         #sock.shutdown(socket.SHUT_RDWR)
         self.sock.close()
         sys.exit()
@@ -131,13 +172,16 @@ class MainWindow(QtWidgets.QMainWindow):
         #print( struct.pack(">B", int(temp)) )
         
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
-        data_raw, addr = self.sock.recvfrom(3)
+        data_raw = self._recv(3)
 
         # get attenuation
         MESSAGE = b'\x1f' + b'\x01' + b'\x00'
 
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
-        data_raw, addr = self.sock.recvfrom(3)
+        data_raw = self._recv(3)
+
+        if data_raw is None:
+            return
 
         self.telemetry_text.appendPlainText( 'Attenuator 1: ' + str(data_raw[2]/2) + ' dB')
 
@@ -151,13 +195,16 @@ class MainWindow(QtWidgets.QMainWindow):
         MESSAGE = b'\x16' + b'\x01' + struct.pack(">B", int(temp))
         
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
-        data_raw, addr = self.sock.recvfrom(3)
+        data_raw = self._recv(3)
 
         # get attenuation
         MESSAGE = b'\x20' + b'\x01' + b'\x00'
 
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
-        data_raw, addr = self.sock.recvfrom(3)
+        data_raw = self._recv(3)
+
+        if data_raw is None:
+            return
 
         self.telemetry_text.appendPlainText( 'Attenuator 2: ' + str(data_raw[2]/2) + ' dB')
 
@@ -185,13 +232,16 @@ class MainWindow(QtWidgets.QMainWindow):
         MESSAGE = b'\x17' + b'\x01' + struct.pack(">B", int(temp))
         
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
-        data_raw, addr = self.sock.recvfrom(3)
+        data_raw = self._recv(3)
 
         # get phase
         MESSAGE = b'\x21' + b'\x01' + b'\x00'
 
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
-        data_raw, addr = self.sock.recvfrom(3)
+        data_raw = self._recv(3)
+
+        if data_raw is None:
+            return
 
         self.telemetry_text.appendPlainText( 'Pulse Test Phase: ' + str(data_raw[2]*5.625) + ' deg')
 
@@ -219,13 +269,16 @@ class MainWindow(QtWidgets.QMainWindow):
         MESSAGE = b'\x19' + b'\x01' + struct.pack(">B", int(temp))
         
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
-        data_raw, addr = self.sock.recvfrom(3)
+        data_raw = self._recv(3)
 
         # get phase
         MESSAGE = b'\x23' + b'\x01' + b'\x00'
 
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
-        data_raw, addr = self.sock.recvfrom(3)
+        data_raw = self._recv(3)
+
+        if data_raw is None:
+            return
 
         self.telemetry_text.appendPlainText( 'Signal Phase: ' + str(data_raw[2]*5.625) + ' deg')
 
@@ -239,13 +292,16 @@ class MainWindow(QtWidgets.QMainWindow):
         MESSAGE = b'\x1c' + b'\x01' + struct.pack(">B", int(temp))
         
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
-        data_raw, addr = self.sock.recvfrom(3)
+        data_raw = self._recv(3)
 
         # get attenuation
         MESSAGE = b'\x26' + b'\x01' + b'\x00'
 
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
-        data_raw, addr = self.sock.recvfrom(3)
+        data_raw = self._recv(3)
+
+        if data_raw is None:
+            return
 
         self.telemetry_text.appendPlainText( 'Video Gain: ' + str(data_raw[2]*2) + ' dB')
 
@@ -259,13 +315,16 @@ class MainWindow(QtWidgets.QMainWindow):
         MESSAGE = b'\x1a' + b'\x01' + struct.pack(">B", int(temp))
         
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
-        data_raw, addr = self.sock.recvfrom(3)
+        data_raw = self._recv(3)
 
         # get amplification
         MESSAGE = b'\x24' + b'\x01' + b'\x00'
 
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
-        data_raw, addr = self.sock.recvfrom(3)
+        data_raw = self._recv(3)
+
+        if data_raw is None:
+            return
 
         self.telemetry_text.appendPlainText( 'Amplification: ' + str(data_raw[2]*22) + ' dB')
 
@@ -277,13 +336,16 @@ class MainWindow(QtWidgets.QMainWindow):
         MESSAGE = b'\x1b' + b'\x01' + b'\x00'
 
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
-        data_raw, addr = self.sock.recvfrom(3)
+        data_raw = self._recv(3)
 
         # get cutt-off
         MESSAGE = b'\x25' + b'\x01' + b'\x00'
 
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
-        data_raw, addr = self.sock.recvfrom(3)
+        data_raw = self._recv(3)
+
+        if data_raw is None:
+            return
 
         if data_raw[2] == 0:
             freq = '30'
@@ -302,13 +364,16 @@ class MainWindow(QtWidgets.QMainWindow):
         MESSAGE = b'\x1b' + b'\x01' + b'\x01'
 
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
-        data_raw, addr = self.sock.recvfrom(3)
+        data_raw = self._recv(3)
 
         # get cutt-off
         MESSAGE = b'\x25' + b'\x01' + b'\x00'
 
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
-        data_raw, addr = self.sock.recvfrom(3)
+        data_raw = self._recv(3)
+
+        if data_raw is None:
+            return
 
         if data_raw[2] == 0:
             freq = '30'
@@ -327,13 +392,16 @@ class MainWindow(QtWidgets.QMainWindow):
         MESSAGE = b'\x1b' + b'\x01' + b'\x02'
 
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
-        data_raw, addr = self.sock.recvfrom(3)
+        data_raw = self._recv(3)
 
         # get cutt-off
         MESSAGE = b'\x25' + b'\x01' + b'\x00'
 
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
-        data_raw, addr = self.sock.recvfrom(3)
+        data_raw = self._recv(3)
+
+        if data_raw is None:
+            return
 
         if data_raw[2] == 0:
             freq = '30'
@@ -358,14 +426,17 @@ class MainWindow(QtWidgets.QMainWindow):
 
         MESSAGE = b'\x04' + b'\x08' + b'\x00' + b'\x00' + b'\x00' + temp.encode()
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
-        data_raw, addr = self.sock.recvfrom(10)
+        data_raw = self._recv(10)
 
 
         # get frequency
         MESSAGE = b'\x1e' + b'\x08' + (0).to_bytes(8, byteorder='big')
 
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
-        data_raw, addr = self.sock.recvfrom(10)
+        data_raw = self._recv(10)
+
+        if data_raw is None:
+            return
 
         if chr(data_raw[4]) == '1':
             state = 'ON'
@@ -395,18 +466,23 @@ class MainWindow(QtWidgets.QMainWindow):
         # 300 MHz BW
         MESSAGE = b'\x1b' + b'\x01' + b'\x02'
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
-        data_raw, addr = self.sock.recvfrom(3)
+        data_raw = self._recv(3)
+
+        # First exchange; if the bridge didn't answer it is off/unreachable, so
+        # skip the rest rather than waiting out a timeout on every command.
+        if data_raw is None:
+            return
 
         # 15 and 20 dB
         temp = 2*self.Att1_prd.value()
         MESSAGE = b'\x15' + b'\x01' + struct.pack(">B", int(temp))
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
-        data_raw, addr = self.sock.recvfrom(3)
+        data_raw = self._recv(3)
 
         temp = 2*self.Att2_prd.value()
         MESSAGE = b'\x16' + b'\x01' + struct.pack(">B", int(temp))
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
-        data_raw, addr = self.sock.recvfrom(3)
+        data_raw = self._recv(3)
 
         self.telemetry_text.appendPlainText( 'Initialization done' )
 
@@ -424,7 +500,11 @@ class MainWindow(QtWidgets.QMainWindow):
         MESSAGE = b'\x0d' + b'\x08' + (0).to_bytes(8, byteorder='big')
         self.sock.sendto( MESSAGE, (self.UDP_IP, self.UDP_PORT) )
 
-        data_raw, addr = self.sock.recvfrom(10)
+        data_raw = self._recv(10)
+
+        if data_raw is None:
+            self.telemetry_text.appendPlainText('MW bridge telemetry unavailable: bridge not responding.')
+            return
 
         data = data_raw #.decode()
         if int(data[4]) == 1:
