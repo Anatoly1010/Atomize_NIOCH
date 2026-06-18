@@ -155,10 +155,6 @@ class MainWindow(QMainWindow):
         self.deer_band = None
         # P(r) validation band items (on the bottom plot)
         self._band_lo = self._band_hi = self._band_fill = None
-        # a priori mean-distance (M1 ± ME1) error-bar items on the bottom plot
-        self._me1_bar = self._me1_pt = None
-        self._me1 = float('nan')          # a priori ME1 (nm) of the current fit
-        self._r0_disp = float('nan')      # displayed mean distance (nm)
         # draggable background start/end cursors + L-curve marker (top plot)
         self._bg_cursor = None
         self._bg_cursor_end = None
@@ -189,8 +185,8 @@ class MainWindow(QMainWindow):
                                  'gui', 'icon_temp.png')
         self.setWindowIcon(QIcon(icon_path))
         self.setMinimumHeight(740)
-        self.setMinimumWidth(1000)
-        self.resize(1180, 820)
+        self.setMinimumWidth(1090)
+        self.resize(1270, 820)
         # background on the QMainWindow (not the central widget) so spinboxes
         # keep their full native frame
         self.setStyleSheet(f"background-color: {BG};")
@@ -287,11 +283,12 @@ class MainWindow(QMainWindow):
         tabs.addTab(self._scroll(self._build_background_tab()), 'Background')
         tabs.addTab(self._scroll(self._build_deer_tab()), 'Tikhonov')
         tabs.addTab(self._scroll(self._build_mellin_tab()), 'Mellin')
+        tabs.addTab(self._scroll(self._build_gauss_tab()), 'Multi-Gaussian')
         outer.addWidget(tabs, stretch=1)
 
-        # Shared inversion controls (distance grid + top-plot view) used by BOTH
-        # the DEER and Mellin engines, kept always visible below the tabs so
-        # neither tab has to be left to set them.
+        # Shared inversion controls (distance grid + top-plot view) used by ALL
+        # inversion engines (Tikhonov / Mellin / Multi-Gaussian), kept always
+        # visible below the tabs so no tab has to be left to set them.
         outer.addWidget(self._hline())
         outer.addWidget(self._build_shared_controls())
 
@@ -300,7 +297,10 @@ class MainWindow(QMainWindow):
         self.status.setStyleSheet(LABEL_STYLE)
         self.status.setWordWrap(True)
         outer.addWidget(self.status)
-        container.setFixedWidth(430)
+        # Wide enough for all six tab labels to sit on one row (Source / Phase /
+        # Background / Tikhonov / Mellin / Multi-Gaussian); narrower than this and
+        # the tab bar overflows into left/right scroll buttons.
+        container.setFixedWidth(520)
         return container
 
     def _build_shared_controls(self):
@@ -320,12 +320,14 @@ class MainWindow(QMainWindow):
         self.deer_rmin.setSingleStep(0.1); self.deer_rmin.setValue(1.5)
         self.deer_rmin.valueChanged.connect(self._live_update)
         self.deer_rmin.valueChanged.connect(self._mellin_live)
+        self.deer_rmin.valueChanged.connect(self._gauss_live)
         self.deer_rmax = QDoubleSpinBox()
         self.deer_rmax.setStyleSheet(DSPIN_STYLE)
         self.deer_rmax.setRange(0.5, 50.0); self.deer_rmax.setDecimals(2)
         self.deer_rmax.setSingleStep(0.1); self.deer_rmax.setValue(8.0)
         self.deer_rmax.valueChanged.connect(self._live_update)
         self.deer_rmax.valueChanged.connect(self._mellin_live)
+        self.deer_rmax.valueChanged.connect(self._gauss_live)
         btn_autorange = QPushButton('Auto')
         btn_autorange.setStyleSheet(BUTTON_STYLE)
         btn_autorange.setToolTip(
@@ -347,6 +349,7 @@ class MainWindow(QMainWindow):
         self.deer_rn.setRange(20, 2000); self.deer_rn.setValue(200)
         self.deer_rn.valueChanged.connect(self._live_update)
         self.deer_rn.valueChanged.connect(self._mellin_live)
+        self.deer_rn.valueChanged.connect(self._gauss_live)
         grid.addWidget(self.deer_rn, r, 1); r += 1
 
         grid.addWidget(self._label('Show (top plot)'), r, 0)
@@ -368,7 +371,8 @@ class MainWindow(QMainWindow):
             'Shade the 95% confidence interval on P(r). Tikhonov: covariance / '
             'curvature CI (as DeerLab shows by default). Mellin: Monte-Carlo band '
             'from re-inverting the form factor with the fit-residual noise. '
-            'Superseded by the Validate band when that is on.')
+            'Multi-Gaussian: parametric band from the fit-covariance of the '
+            'component parameters. Superseded by the Validate band when that is on.')
         self.deer_ci_chk.stateChanged.connect(self._ci_toggled)
         grid.addWidget(self.deer_ci_chk, r, 0, 1, 2); r += 1
 
@@ -377,9 +381,10 @@ class MainWindow(QMainWindow):
         self.deer_validate_chk.setToolTip(
             'Re-run the inversion over a sweep of background-start times and show '
             'the median P(r) with a 5–95% uncertainty band (DeerAnalysis-style). '
-            'Works for both the Tikhonov and Mellin engines.')
+            'Works for the Tikhonov, Mellin and Multi-Gaussian engines.')
         self.deer_validate_chk.stateChanged.connect(self._live_update)
         self.deer_validate_chk.stateChanged.connect(self._mellin_live)
+        self.deer_validate_chk.stateChanged.connect(self._gauss_live)
         grid.addWidget(self.deer_validate_chk, r, 0, 1, 2); r += 1
         return w
 
@@ -389,11 +394,11 @@ class MainWindow(QMainWindow):
         requested, so toggling it on needs a re-inversion."""
         if self.deer_result is None:
             return
-        if self.deer_result.get('engine', '').startswith('mellin'):
-            if self.real_xy[0] is not None:
-                self.do_mellin()
-            else:
-                self._render()
+        eng = self.deer_result.get('engine', '')
+        if eng.startswith('mellin') and self.real_xy[0] is not None:
+            self.do_mellin()                     # MC band: needs a re-inversion
+        elif eng == 'gauss' and self.real_xy[0] is not None:
+            self.do_gauss()                       # parametric band: re-inversion
         else:
             self._render()
 
@@ -587,7 +592,8 @@ class MainWindow(QMainWindow):
         self.deer_engine = QComboBox()
         self.deer_engine.setStyleSheet(COMBO_STYLE)
         self.deer_engine.addItems(['Sequential', 'Joint (global)',
-                                   'None (no background)'])
+                                   'None (no background)',
+                                   'General (a·exp[b(t+c·dᵗ)])'])
         self.deer_engine.setCurrentIndex(1)            # Joint (global) is the default
         self.deer_engine.setToolTip(
             'Sequential: fit the background on the tail window, divide it out, '
@@ -597,13 +603,84 @@ class MainWindow(QMainWindow):
             'for a clean Mellin fit. Default.\nNone (no background): B(t)=1, fit '
             'only the modulation depth λ. For pre-corrected / simulated / '
             'full-modulation (λ→1) data that has NO background — fitting a decay '
-            'there would absorb the dipolar decay and badly broaden P(r).')
+            'there would absorb the dipolar decay and badly broaden P(r).\n'
+            'General (a·exp[b(t+c·dᵗ)]): flexible empirical background — the four '
+            'parameters a, b, c, d are free — fit on the tail window like '
+            'Sequential. Use when the intermolecular decay is not a stretched '
+            'exponential; needs a clean (well-decayed) tail, since its extra '
+            'freedom will otherwise chase residual modulation.')
         self.deer_engine.currentIndexChanged.connect(self._live_update)
         self.deer_engine.currentIndexChanged.connect(self._mellin_live)
+        self.deer_engine.currentIndexChanged.connect(self._gauss_live)
+        self.deer_engine.currentIndexChanged.connect(self._general_params_update)
         grid.addWidget(self.deer_engine, r, 1); r += 1
+
+        # General-background coefficients g(t) = a·exp(b·(t + c·dᵗ)), one per row.
+        # Auto (default) fits all four and writes the fitted values back here;
+        # uncheck Auto to set them by hand (used directly as the background, no
+        # fitting). Only active for the General background model.
+        grid.addWidget(self._label('General bg (a·exp[b(t+c·dᵗ)])'), r, 0)
+        self.gbg_auto = QCheckBox('Auto (fit)')
+        self.gbg_auto.setStyleSheet(CHECKBOX_STYLE)
+        self.gbg_auto.setChecked(True)
+        self.gbg_auto.setToolTip(
+            'Auto: fit a, b, c, d on the tail window and show the result below. '
+            'Uncheck to set the four coefficients by hand — they are then used '
+            'directly as the background g(t) = a·exp(b·(t + c·dᵗ)) (no fitting). '
+            'Only used by the General background model.')
+        self.gbg_auto.stateChanged.connect(self._general_params_update)
+        self.gbg_auto.stateChanged.connect(self._live_update)
+        self.gbg_auto.stateChanged.connect(self._mellin_live)
+        self.gbg_auto.stateChanged.connect(self._gauss_live)
+        grid.addWidget(self.gbg_auto, r, 1); r += 1
+
+        # ranges are wide so the boxes hold whatever the fit returns (the model can
+        # be over-parametrized for a gentle decay), keeping the auto→manual hand-off
+        # exact. In g = a·exp(b·(t + c·dᵗ)): a is the amplitude (sets λ), b the
+        # decay rate in the exponent, c the weight of the dᵗ term, d its base.
+        self.gbg_a = QDoubleSpinBox(); self.gbg_b = QDoubleSpinBox()
+        self.gbg_c = QDoubleSpinBox(); self.gbg_d = QDoubleSpinBox()
+        for sp, label, lo, hi, dec, val, tip in (
+                (self.gbg_a, '   a (amplitude)', 1e-4, 1e4, 4, 0.6,
+                    'a — amplitude; sets the t=0 background level g(0)=a·exp(b·c) '
+                    'and hence λ. Cancels in the background SHAPE B=g/g(0).'),
+                (self.gbg_b, '   b (rate)',     -1e3, 1e3, 5, -0.05,
+                    'b — decay rate in the exponent (per µs); negative = decaying'),
+                (self.gbg_c, '   c (dᵗ weight)', -1e4, 1e4, 4, 0.0,
+                    'c — weight of the dᵗ term inside the exponent'),
+                (self.gbg_d, '   d (dᵗ base)',   1e-4, 1.0, 4, 0.8,
+                    'd — base of the dᵗ term, 0<d≤1 (decaying)')):
+            sp.setStyleSheet(DSPIN_STYLE)
+            sp.setRange(lo, hi); sp.setDecimals(dec); sp.setValue(val)
+            sp.setSingleStep(0.01); sp.setToolTip(tip)
+            sp.valueChanged.connect(self._live_update)
+            sp.valueChanged.connect(self._mellin_live)
+            sp.valueChanged.connect(self._gauss_live)
+            grid.addWidget(self._label(label), r, 0)
+            grid.addWidget(sp, r, 1); r += 1
+
         panel.addLayout(grid)
         panel.addStretch(1)
+        self._general_params_update()
         return w
+
+    def _general_params_update(self, *args):
+        """Enable the General-background coefficient boxes only when that model is
+        selected, and only let them be edited when Auto (fit) is off."""
+        is_general = self.deer_engine.currentIndex() == 3
+        auto = self.gbg_auto.isChecked()
+        self.gbg_auto.setEnabled(is_general)
+        for sp in (self.gbg_a, self.gbg_b, self.gbg_c, self.gbg_d):
+            sp.setEnabled(is_general and not auto)
+
+    def _general_bg_params(self):
+        """bg_params dict for the General background: None when auto-fitting,
+        else the hand-set {a, b, c, d, fit=False} used directly."""
+        if self.deer_engine.currentIndex() != 3 or self.gbg_auto.isChecked():
+            return None
+        return {'a': float(self.gbg_a.value()), 'b': float(self.gbg_b.value()),
+                'c': float(self.gbg_c.value()), 'd': float(self.gbg_d.value()),
+                'fit': False}
 
     # ---- Tab 4: Tikhonov inversion ----
     def _build_deer_tab(self):
@@ -812,6 +889,158 @@ class MainWindow(QMainWindow):
         panel.addWidget(self.mellin_info)
         panel.addStretch(1)
         return w
+
+    # ---- Tab 6: Multi-Gaussian (parametric sum-of-Gaussians fit) ----
+    def _build_gauss_tab(self):
+        w = QWidget()
+        panel = QVBoxLayout(w)
+        panel.addWidget(self._note(
+            'Parametric inversion: model P(r) as a <b>sum of Gaussians</b> and fit '
+            'their centres, widths and weights directly to the form factor '
+            '(DeerAnalysis "Gaussian" mode / DeerLab <i>dd_gaussN</i>). When the '
+            'distribution really is a few discrete modes this is the most robust '
+            'choice and gives genuine <b>parametric error bars</b> on each peak '
+            'position and width — which the regularized and model-free engines '
+            'cannot. A poor fit (low R²) is itself diagnostic: it means the data '
+            'are not well described by a few Gaussians.'))
+        panel.addWidget(self._note(
+            'Uses the <b>Background</b> tab\'s zero-time / window / dimension / fit '
+            'engine and the shared distance grid below the tabs.'))
+        grid = QGridLayout()
+        r = 0
+
+        grid.addWidget(self._label('Components N'), r, 0)
+        n_row = QHBoxLayout()
+        self.gauss_n = QSpinBox()
+        self.gauss_n.setStyleSheet(SPIN_STYLE)
+        self.gauss_n.setRange(1, 6)
+        self.gauss_n.setValue(2)
+        self.gauss_n.setEnabled(False)
+        self.gauss_n.setToolTip(
+            'Number of Gaussian components to fit. Enabled only when Auto is off; '
+            'with Auto on, N is chosen automatically (see below) and this box '
+            'shows the chosen value after the fit.')
+        self.gauss_n.valueChanged.connect(self._gauss_live)
+        self.gauss_n_auto = QCheckBox('Auto')
+        self.gauss_n_auto.setStyleSheet(CHECKBOX_STYLE)
+        self.gauss_n_auto.setChecked(True)
+        self.gauss_n_auto.setToolTip(
+            'Choose the number of components automatically: fit N = 1…N max and '
+            'keep the N that minimizes the corrected Akaike criterion (AICc), so '
+            'extra Gaussians are not fit into noise. Uncheck to force a fixed N.')
+        self.gauss_n_auto.stateChanged.connect(self._gauss_n_toggle)
+        self.gauss_n_auto.stateChanged.connect(self._gauss_live)
+        n_row.addWidget(self.gauss_n); n_row.addWidget(self.gauss_n_auto)
+        grid.addLayout(n_row, r, 1); r += 1
+
+        grid.addWidget(self._label('N max (auto)'), r, 0)
+        self.gauss_nmax = QSpinBox()
+        self.gauss_nmax.setStyleSheet(SPIN_STYLE)
+        self.gauss_nmax.setRange(1, 6)
+        self.gauss_nmax.setValue(4)
+        self.gauss_nmax.setToolTip(
+            'Largest component count tried during automatic AICc model selection. '
+            '3–4 is usually enough; more components rarely survive the criterion '
+            'and slow the fit.')
+        self.gauss_nmax.valueChanged.connect(self._gauss_live)
+        grid.addWidget(self.gauss_nmax, r, 1); r += 1
+
+        grid.addWidget(self._label('Selection by'), r, 0)
+        self.gauss_ic = QComboBox()
+        self.gauss_ic.setStyleSheet(COMBO_STYLE)
+        self.gauss_ic.addItems(['AICc', 'AIC', 'BIC'])
+        self.gauss_ic.setToolTip(
+            'Information criterion for the automatic component count. AICc '
+            '(corrected Akaike, default) is the usual choice; BIC penalizes extra '
+            'components more strongly (favours fewer Gaussians).')
+        self.gauss_ic.currentIndexChanged.connect(self._gauss_live)
+        grid.addWidget(self.gauss_ic, r, 1); r += 1
+
+        grid.addWidget(self._label('Fit method'), r, 0)
+        self.gauss_method = QComboBox()
+        self.gauss_method.setStyleSheet(COMBO_STYLE)
+        self.gauss_method.addItems(['Least-squares', 'Monte-Carlo (Pake)'])
+        self.gauss_method.setToolTip(
+            'How the Gaussian parameters are found. <b>Least-squares</b> (default): '
+            'fast gradient fit in the time domain. <b>Monte-Carlo (Pake)</b> '
+            '(Dzuba, JMR 275 (2016); Matveeva et al., Z. Phys. Chem. 231 (2017)): '
+            'a random multi-start search in the dipolar frequency (Pake) domain — '
+            'the random starts cannot be trapped in the spurious floor-width-spike '
+            'solution the gradient fit can fall into, and the frequency domain is '
+            'intrinsically immune to ESEEM (fixed frequencies) and background error '
+            '(zero frequency). The data-consistent trials give a non-linearized '
+            'confidence band + per-component error bars. On clean data it matches '
+            'least-squares; its value is robustness on real, artifact-laden traces. '
+            'Slower (~seconds).')
+        self.gauss_method.currentIndexChanged.connect(self._gauss_method_toggle)
+        self.gauss_method.currentIndexChanged.connect(self._gauss_live)
+        grid.addWidget(self.gauss_method, r, 1); r += 1
+
+        self.gauss_comp_chk = QCheckBox('Overlay individual components')
+        self.gauss_comp_chk.setStyleSheet(CHECKBOX_STYLE)
+        self.gauss_comp_chk.setToolTip(
+            'Also draw each fitted Gaussian component separately (dashed), under '
+            'the total P(r).')
+        self.gauss_comp_chk.stateChanged.connect(self._deer_rerender)
+        grid.addWidget(self.gauss_comp_chk, r, 0, 1, 2); r += 1
+
+        self.gauss_support_chk = QCheckBox('Rigorous CIs (support-plane, 95%)')
+        self.gauss_support_chk.setStyleSheet(CHECKBOX_STYLE)
+        self.gauss_support_chk.setToolTip(
+            'Compute per-component confidence intervals by the rigorous support-'
+            'plane / profile-likelihood method (Stein, Beth & Hustedt, Methods '
+            'Enzymol. 2015): each centre / σ is scanned and all other parameters '
+            're-fit, the interval taken where the residual sum of squares rises '
+            'above its minimum by the 95% F-test threshold. Accounts for parameter '
+            'correlations and gives ASYMMETRIC intervals — the magnitudes the fast '
+            'linearized ±σ (default, shown when this is off) can mis-state. Slower '
+            '(many re-fits: ~1–5 s).')
+        self.gauss_support_chk.stateChanged.connect(self._gauss_live)
+        grid.addWidget(self.gauss_support_chk, r, 0, 1, 2); r += 1
+
+        self.gauss_live = QCheckBox('Live update on parameter change')
+        self.gauss_live.setStyleSheet(CHECKBOX_STYLE)
+        grid.addWidget(self.gauss_live, r, 0, 1, 2); r += 1
+
+        run_row = QHBoxLayout()
+        self.gauss_run_btn = QPushButton('Run Multi-Gaussian')
+        self.gauss_run_btn.setStyleSheet(BUTTON_STYLE)
+        self.gauss_run_btn.clicked.connect(self.do_gauss)
+        btn_exp = QPushButton('Export all…')
+        btn_exp.setStyleSheet(BUTTON_STYLE)
+        btn_exp.clicked.connect(self.save_deer_all)
+        run_row.addWidget(self.gauss_run_btn); run_row.addWidget(btn_exp)
+        grid.addLayout(run_row, r, 0, 1, 2); r += 1
+        panel.addLayout(grid)
+
+        self.gauss_info = QLabel('')
+        self.gauss_info.setStyleSheet(LABEL_STYLE)
+        self.gauss_info.setWordWrap(True)
+        self.gauss_info.setTextFormat(Qt.TextFormat.RichText)
+        self.gauss_info.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+        self.gauss_info.setToolTip(self.MOMENTS_TOOLTIP)
+        panel.addWidget(self.gauss_info)
+        panel.addStretch(1)
+        return w
+
+    def _gauss_n_toggle(self, *args):
+        self.gauss_n.setEnabled(not self.gauss_n_auto.isChecked())
+
+    def _gauss_method_toggle(self, *args):
+        """Monte-Carlo mode supplies its own ensemble confidence band, so the
+        support-plane CI option (a least-squares-only re-fit) does not apply."""
+        is_mc = self.gauss_method.currentIndex() == 1
+        self.gauss_support_chk.setEnabled(not is_mc)
+        if is_mc:
+            self.gauss_support_chk.setChecked(False)
+
+    def _gauss_live(self, *args):
+        if self._suppress_live:
+            return
+        if (self.gauss_live.isChecked() and self.real_xy[0] is not None
+                and self.deer_result is not None
+                and self.deer_result.get('engine', '') == 'gauss'):
+            self.do_gauss()
 
     def _mellin_delta_toggle(self, *args):
         self.mellin_delta.setEnabled(not self.mellin_delta_auto.isChecked())
@@ -1237,13 +1466,12 @@ class MainWindow(QMainWindow):
         'noise alone (Nekrasov, Matveeva & Bowman, PCCP 2026). It is set by the '
         'form-factor noise, the time step and the trace length — not by the '
         'distribution — and needs no ground truth. The actual scatter of a '
-        'regularized fit sits at or below this bound. The grey error bar on the '
-        'P(r) plot marks mean r ± ME₁. width δr = rms width √(M₂−M₁²); '
-        'skew = third standardized moment of P(r).')
+        'regularized fit sits at or below this bound. width δr = rms width '
+        '√(M₂−M₁²); skew = third standardized moment of P(r).')
 
     def _bg_start_floor(self):
         """Engine-aware background-start floor (see BG_START_FRAC notes)."""
-        eng = ('sequential', 'joint', 'none')[self.deer_engine.currentIndex()]
+        eng = ('sequential', 'joint', 'none', 'general')[self.deer_engine.currentIndex()]
         return self.BG_START_FRAC_JOINT if eng in ('joint', 'none') else self.BG_START_FRAC
 
     def _auto_bg_start_value(self):
@@ -1408,7 +1636,7 @@ class MainWindow(QMainWindow):
         r = np.linspace(rmin, rmax, int(self.deer_rn.value()))
         alpha = None if self.deer_alpha_auto.isChecked() else float(self.deer_alpha.value())
         afac = float(self.deer_alpha_factor.value())
-        engine = ('sequential', 'joint', 'none')[self.deer_engine.currentIndex()]
+        engine = ('sequential', 'joint', 'none', 'general')[self.deer_engine.currentIndex()]
         dim = float(self.deer_dim.value())
         fit_dim = self.deer_fitdim.isChecked()
         validate = self.deer_validate_chk.isChecked()
@@ -1416,6 +1644,7 @@ class MainWindow(QMainWindow):
         bgs_disp = float(self.deer_bgstart.value())
         bge_disp = float(self.deer_bgend.value())
         t0_cur = float(self.deer_t0.value())
+        bgp = self._general_bg_params()
 
         def compute():
             t0_disp = t0_cur
@@ -1432,12 +1661,14 @@ class MainWindow(QMainWindow):
             if validate:
                 val = deer_module.deer_validate(
                     t_us, v, r=r, bg_start=bg_us, bg_end=bg_end_us, dim=dim,
-                    fit_dim=fit_dim, alpha=alpha, alpha_factor=afac, engine=engine)
+                    fit_dim=fit_dim, alpha=alpha, alpha_factor=afac, engine=engine,
+                    bg_params=bgp)
                 res, band = val['base'], val
             else:
                 res = deer_module.deer_invert(
                     t_us, v, r=r, bg_start=bg_us, bg_end=bg_end_us, dim=dim,
-                    fit_dim=fit_dim, alpha=alpha, alpha_factor=afac, engine=engine)
+                    fit_dim=fit_dim, alpha=alpha, alpha_factor=afac, engine=engine,
+                    bg_params=bgp)
                 band = None
             # display/cursors stay in the original acquisition time; only the
             # kernel used the t0-shifted axis internally
@@ -1481,7 +1712,7 @@ class MainWindow(QMainWindow):
         dim = float(self.deer_dim.value())
         fit_dim = self.deer_fitdim.isChecked()
         fit_t0 = self.deer_fit_t0.isChecked()
-        bg_engine = ('sequential', 'joint', 'none')[self.deer_engine.currentIndex()]
+        bg_engine = ('sequential', 'joint', 'none', 'general')[self.deer_engine.currentIndex()]
         bgs_disp = float(self.deer_bgstart.value())
         bge_disp = float(self.deer_bgend.value())
         t0_cur = float(self.deer_t0.value())
@@ -1492,6 +1723,7 @@ class MainWindow(QMainWindow):
         n_tau = int(self.mellin_ntau.value())
         validate = self.deer_validate_chk.isChecked()
         n_mc = 50 if self.deer_ci_chk.isChecked() else 0
+        bgp = self._general_bg_params()
 
         def compute():
             t0_disp = t0_cur
@@ -1506,7 +1738,7 @@ class MainWindow(QMainWindow):
             bg_end_us = ((bge_disp - t0_disp) * tf if bge_disp > bgs_disp else None)
             delta_us = (delta_disp * tf) if delta_disp > 0 else None
             mk = dict(delta=delta_us, tau_max=tau_max, n_tau=n_tau,
-                      bg_engine=bg_engine,
+                      bg_engine=bg_engine, bg_params=bgp,
                       signed_fit=self.mellin_signed_fit_chk.isChecked())
             if validate:
                 val = deer_module.deer_validate(
@@ -1535,11 +1767,102 @@ class MainWindow(QMainWindow):
         self._deer_worker.done.connect(self._deer_finished)
         self._deer_worker.start()
 
+    def do_gauss(self):
+        """Invert V(t) to P(r) by a parametric sum-of-Gaussians fit (model
+        selection on N by AICc, or a fixed N). Reuses the Background tab's
+        zero-time / window / dimension and the shared distance grid; the
+        Multi-Gaussian tab supplies N / N max / criterion. Runs on the same
+        worker thread + finisher as `do_deer` / `do_mellin`."""
+        x, v = self.real_xy
+        if x is None or len(x) < 8:
+            self.set_status('Load a V(t) trace first (≥ 8 points).')
+            return
+        if self._deer_busy:
+            self.set_status('Busy — wait for the running inversion to finish.')
+            return
+        tf = self._deer_tfactor()
+        rmin, rmax = self.deer_rmin.value(), self.deer_rmax.value()
+        if rmax <= rmin:
+            self.set_status('Distance max must exceed min.')
+            return
+        # snapshot plain values for the worker (no Qt access inside compute)
+        x = np.asarray(x, dtype=float)
+        v = np.asarray(v, dtype=float)
+        r = np.linspace(rmin, rmax, int(self.deer_rn.value()))
+        dim = float(self.deer_dim.value())
+        fit_dim = self.deer_fitdim.isChecked()
+        fit_t0 = self.deer_fit_t0.isChecked()
+        bg_engine = ('sequential', 'joint', 'none', 'general')[self.deer_engine.currentIndex()]
+        bgs_disp = float(self.deer_bgstart.value())
+        bge_disp = float(self.deer_bgend.value())
+        t0_cur = float(self.deer_t0.value())
+        n_gauss = (None if self.gauss_n_auto.isChecked()
+                   else int(self.gauss_n.value()))
+        max_gauss = int(self.gauss_nmax.value())
+        ic = self.gauss_ic.currentText().lower()
+        gmethod = 'mc' if self.gauss_method.currentIndex() == 1 else 'lsq'
+        # Monte-Carlo supplies its own ensemble band; covariance MC / support-plane
+        # CIs do not apply there.
+        n_mc = 0 if gmethod == 'mc' else (200 if self.deer_ci_chk.isChecked() else 0)
+        ci_mode = ('linear' if gmethod == 'mc'
+                   else ('support' if self.gauss_support_chk.isChecked() else 'linear'))
+        validate_flag = self.deer_validate_chk.isChecked()
+        bgp = self._general_bg_params()
+
+        def compute():
+            t0_disp = t0_cur
+            if fit_t0:
+                t0u = deer_module.fit_zero_time(
+                    x * tf, v, bg_start=bgs_disp * tf,
+                    bg_end=(bge_disp * tf if bge_disp > bgs_disp else None),
+                    r=r, dim=dim, fit_dim=fit_dim)
+                t0_disp = t0u / tf
+            t_us = (x - t0_disp) * tf
+            bg_us = (bgs_disp - t0_disp) * tf
+            bg_end_us = ((bge_disp - t0_disp) * tf if bge_disp > bgs_disp else None)
+            gk = dict(n_gauss=n_gauss, max_gauss=max_gauss, ic=ic,
+                      bg_engine=bg_engine, ci_mode=ci_mode, bg_params=bgp,
+                      method=gmethod)
+            if validate_flag and gmethod != 'mc':
+                # band comes from the background-start ensemble; no per-trial MC.
+                # (Skipped for Monte-Carlo, which supplies its own ensemble band and
+                # would make the per-bg-start sweep prohibitively slow.)
+                val = deer_module.deer_validate(
+                    t_us, v, r=r, bg_start=bg_us, bg_end=bg_end_us, dim=dim,
+                    fit_dim=fit_dim, engine='gauss', **gk)
+                res, band = val['base'], val
+            else:
+                res = deer_module.deer_invert_gauss(
+                    t_us, v, r=r, bg_start=bg_us, bg_end=bg_end_us, dim=dim,
+                    fit_dim=fit_dim, n_mc=n_mc, **gk)
+                band = None
+            res['t'] = x * tf
+            if bg_end_us is not None:
+                res['background']['bg_end'] = bge_disp * tf
+            return {'t0_disp': t0_disp, 'res': res, 'band': band}
+
+        self._deer_busy = True
+        self._deer_pending = False
+        self.gauss_run_btn.setEnabled(False)
+        self.gauss_run_btn.setStyleSheet(BUTTON_BUSY_STYLE)
+        self.set_status('Fitting zero-time t0…' if fit_t0
+                        else ('Multi-Gaussian validation: sweeping background '
+                              'start…' if validate_flag
+                              else ('Running Multi-Gaussian fit '
+                                    '(Monte-Carlo, Pake domain)…' if gmethod == 'mc'
+                                    else ('Running Multi-Gaussian fit '
+                                          '(support-plane CIs)…' if ci_mode == 'support'
+                                          else 'Running Multi-Gaussian fit…'))))
+        self._deer_worker = _DeerWorker(compute)
+        self._deer_worker.done.connect(self._deer_finished)
+        self._deer_worker.start()
+
     def _deer_finished(self, payload):
         """Apply a finished inversion (runs on the main thread via the signal).
-        Shared by the Tikhonov (`do_deer`) and Mellin (`do_mellin`) engines."""
+        Shared by the Tikhonov (`do_deer`), Mellin (`do_mellin`) and
+        Multi-Gaussian (`do_gauss`) engines."""
         self._deer_busy = False
-        for btn in (self.deer_run_btn, self.mellin_run_btn):
+        for btn in (self.deer_run_btn, self.mellin_run_btn, self.gauss_run_btn):
             btn.setStyleSheet(BUTTON_STYLE)
             btn.setEnabled(True)
         if isinstance(payload, Exception):
@@ -1553,13 +1876,28 @@ class MainWindow(QMainWindow):
         self.deer_band = band
         tf = self._deer_tfactor()
         is_mellin = res.get('engine', '').startswith('mellin')
+        is_gauss = res.get('engine', '') == 'gauss'
         self.deer_t0.blockSignals(True)
         self.deer_t0.setValue(t0_disp)
         self.deer_t0.blockSignals(False)
-        if not is_mellin and self.deer_alpha_auto.isChecked():
+        if not is_mellin and not is_gauss and self.deer_alpha_auto.isChecked():
             self.deer_alpha.blockSignals(True)
             self.deer_alpha.setValue(float(res['alpha']))
             self.deer_alpha.blockSignals(False)
+        # reflect the auto-fitted general-background coefficients into their boxes
+        gbgp = res.get('background', {}).get('params')
+        if (res.get('background', {}).get('model') == 'general' and gbgp
+                and self.gbg_auto.isChecked()):
+            for sp, key in ((self.gbg_a, 'a'), (self.gbg_b, 'b'),
+                            (self.gbg_c, 'c'), (self.gbg_d, 'd')):
+                sp.blockSignals(True)
+                sp.setValue(float(np.clip(gbgp[key], sp.minimum(), sp.maximum())))
+                sp.blockSignals(False)
+        # reflect the auto-chosen component count back into the (disabled) N box
+        if is_gauss and self.gauss_n_auto.isChecked():
+            self.gauss_n.blockSignals(True)
+            self.gauss_n.setValue(int(res.get('n_gauss', self.gauss_n.value())))
+            self.gauss_n.blockSignals(False)
 
         F, Ff = res['form_factor'], self._fit_curve(res)
         ss_tot = float(np.sum((F - F.mean()) ** 2)) or 1.0
@@ -1603,8 +1941,6 @@ class MainWindow(QMainWindow):
         except Exception:
             me1 = float('nan')
         me1_txt = f' ± {me1:.3f}' if np.isfinite(me1) else ''
-        # remember for the P(r)-plot error bar (drawn in _render)
-        self._me1, self._r0_disp = me1, r_mean
 
         if is_mellin:
             tunit = self.deer_tunit.currentText()
@@ -1629,14 +1965,47 @@ class MainWindow(QMainWindow):
             tag_auto = ' (auto)' if res.get('auto_taumax') else ''
             reg = (f'split δ = {delta_disp:.4g} {tunit}<br>'
                    f'τ max = {res.get("tau_max", 0):.0f}{tag_auto}{disc}')
+        elif is_gauss:
+            n_auto = ' (auto, AICc)' if self.gauss_n_auto.isChecked() else ''
+            support = res.get('ci_mode') == 'support'
+
+            def _ci(c, key):
+                """Asymmetric -lo/+hi (support-plane) or symmetric ±err (linear)."""
+                lo = c.get(f'{key}_ci_lo'); hi = c.get(f'{key}_ci_hi')
+                v = c[key]
+                if support and lo is not None and hi is not None:
+                    return f'(−{v-lo:.3f}/+{hi-v:.3f})'
+                return f'± {c[key+"_err"]:.3f}'
+            comp_lines = '<br>'.join(
+                f'&nbsp;&nbsp;{i+1}: r = {c["center"]:.3f} {_ci(c, "center")}, '
+                f'σ = {c["sigma"]:.3f} {_ci(c, "sigma")} nm, '
+                f'w = {c["weight"]:.2f}'
+                for i, c in enumerate(res.get('components', [])))
+            ic_name = str(res.get('ic', 'aicc')).upper()
+            ic_val = res.get(res.get('ic', 'aicc'), float('nan'))
+            ci_tag = (f', 95% support-plane CI' if support
+                      else ', 1σ linearized')
+            # note when parsimony pruning dropped a spurious (floor-width) component
+            prune_tag = (f' [pruned from {res.get("n_gauss_ic")}]'
+                         if res.get('pruned') else '')
+            reg = (f'{res.get("n_gauss", "?")} Gaussian(s){n_auto}{prune_tag}, '
+                   f'{ic_name} = {ic_val:.1f}{ci_tag}<br>{comp_lines}')
         else:
             reg = f'α = {res["alpha"]:.4g}'
+        # background line: the general model reports its a/b/c/d coefficients
+        # (k / dim are not defined for it), the others their decay rate / dimension
+        bgp = res.get('background', {}).get('params')
+        if res.get('background', {}).get('model') == 'general' and bgp:
+            bg_line = (f'bg: a·exp[b(t+c·dᵗ)] &nbsp;(a={bgp["a"]:.3g}, b={bgp["b"]:.3g}, '
+                       f'c={bgp["c"]:.3g}, d={bgp["d"]:.3g})')
+        else:
+            bg_line = f'bg decay k = {res["k"]:.4g}, dim = {res["dim"]:.2f}'
         info_html = (
             '<div style="line-height: 165%;">'
             f'<b style="color: rgb(211, 194, 78);">P(r)</b>{med_tag}'
             f' &nbsp;<i>({res.get("engine", "—")})</i><br>'
             f'mod. depth λ = {res["lambda"]:.3f}<br>'
-            f'bg decay k = {res["k"]:.4g}, dim = {res["dim"]:.2f}<br>'
+            f'{bg_line}<br>'
             f'{reg}<br>'
             f'peak r = {r_peak:.3f} nm<br>'
             f'mean r = {r_mean:.3f}{me1_txt} nm<br>'
@@ -1645,11 +2014,18 @@ class MainWindow(QMainWindow):
         self.deer_info.setText(info_html)
         if is_mellin:
             self.mellin_info.setText(info_html)
+        if is_gauss:
+            self.gauss_info.setText(info_html)
         self._render()
         if is_mellin:
             self.set_status(f'Mellin: λ={res["lambda"]:.3f}, δ={delta_disp:.3g} '
                             f'{self.deer_tunit.currentText()}, peak r={r_peak:.2f} nm, '
                             f'R²={r2:.3f}.')
+        elif is_gauss:
+            tag = f' ({band["n_trials"]}-trial band)' if band else ''
+            self.set_status(f'Multi-Gaussian: {res.get("n_gauss", "?")} comp., '
+                            f'λ={res["lambda"]:.3f}, peak r={r_peak:.2f} nm, '
+                            f'R²={r2:.3f}{tag}.')
         else:
             tag = f' ({band["n_trials"]}-trial band)' if band else ''
             self.set_status(f'Tikhonov: λ={res["lambda"]:.3f}, α={res["alpha"]:.3g}, '
@@ -1682,10 +2058,13 @@ class MainWindow(QMainWindow):
                           [('P(r) median', b['r'], b['P_density'], C_FIT, 2)],
                           'Distance (nm)', '_pr_key', left_label='P(r) (nm⁻¹)',
                           force=True)
-            self._show_me1_bar(True, self._r0_disp, self._me1, b['P_density'])
         else:
-            # covariance-based 95% confidence band (DeerLab-style), if available
-            if (self.deer_ci_chk.isChecked() and res.get('P_lower') is not None):
+            # covariance-based 95% confidence band (DeerLab-style), if available;
+            # the Monte-Carlo engine's ensemble band always shows (it is the mode's
+            # native uncertainty estimate, not the optional covariance band).
+            if (res.get('P_lower') is not None
+                    and (self.deer_ci_chk.isChecked()
+                         or res.get('ci_mode') == 'mc_ensemble')):
                 self._show_deer_band(True, res['r'], res['P_lower'], res['P_upper'])
             else:
                 self._show_deer_band(False)
@@ -1697,10 +2076,21 @@ class MainWindow(QMainWindow):
                     and self.mellin_signed_chk.isChecked()):
                 pr_curves.append(('P(r) signed', res['r'],
                                   res['P_signed_density'], C_IM, 1))
+            # Multi-Gaussian: optionally overlay each fitted component (each
+            # area-normalized Gaussian scaled by its weight, so the components
+            # sum to the displayed total P(r)).
+            if (res.get('engine', '') == 'gauss'
+                    and self.gauss_comp_chk.isChecked()):
+                rr = np.asarray(res['r'], float)
+                for i, c in enumerate(res.get('components', [])):
+                    s = max(float(c['sigma']), 1e-6)
+                    comp = (float(c['weight'])
+                            * np.exp(-0.5*((rr - float(c['center']))/s)**2)
+                            / (s*np.sqrt(2.0*np.pi)))
+                    pr_curves.append((f'comp {i+1}', rr, comp, C_IM, 1))
             self._repaint(self.p_pr, self.pr_legend, self._pr_items, pr_curves,
                           'Distance (nm)', '_pr_key', left_label='P(r) (nm⁻¹)',
                           force=True)
-            self._show_me1_bar(True, self._r0_disp, self._me1, res['P_density'])
 
         # ---- top plot: chosen time-domain / L-curve view ----
         view = self.deer_show.currentText()
@@ -1869,36 +2259,6 @@ class MainWindow(QMainWindow):
         for it in (self._band_lo, self._band_hi, self._band_fill):
             it.setVisible(True)
 
-    def _show_me1_bar(self, visible, r0=None, me1=None, density=None):
-        """Draw the a priori mean-distance error bar (mean r ± ME1) on the P(r)
-        plot: a grey horizontal bar at ~90% of the peak height, centred on the
-        mean distance, half-width = ME1 (Nekrasov/Matveeva/Bowman, PCCP 2026).
-        Hidden when ME1 is unavailable."""
-        if self._me1_bar is None:
-            pen = pg.mkPen(170, 170, 170, 230, width=1.6)
-            self._me1_bar = pg.ErrorBarItem(pen=pen)
-            self._me1_pt = pg.ScatterPlotItem(pen=None,
-                                              brush=pg.mkBrush(170, 170, 170, 230),
-                                              size=6)
-            self._me1_bar.setZValue(20)
-            self._me1_pt.setZValue(21)
-            self.p_pr.addItem(self._me1_bar)
-            self.p_pr.addItem(self._me1_pt)
-        ok = (visible and r0 is not None and me1 is not None
-              and np.isfinite(r0) and np.isfinite(me1) and me1 > 0)
-        if not ok:
-            self._me1_bar.setVisible(False)
-            self._me1_pt.setVisible(False)
-            return
-        ymax = float(np.max(np.clip(np.asarray(density, float), 0.0, None))) or 1.0
-        y = 0.9*ymax
-        self._me1_bar.setData(x=np.array([float(r0)]), y=np.array([y]),
-                              left=np.array([float(me1)]),
-                              right=np.array([float(me1)]), beam=0.04*ymax)
-        self._me1_pt.setData([float(r0)], [y])
-        self._me1_bar.setVisible(True)
-        self._me1_pt.setVisible(True)
-
     def _on_lcurve_click(self, event):
         """On the L-curve view, pick the α of the nearest L-curve point."""
         if (self.deer_result is None
@@ -2011,14 +2371,38 @@ class MainWindow(QMainWindow):
         t_disp = res['t'] / self._deer_tfactor()
         bg = res['background']
         is_mellin = res.get('engine', '').startswith('mellin')
-        reg_line = (f'lambda = {res["lambda"]:.6g}, k = {res["k"]:.6g}, '
-                    f'dim = {res["dim"]:.6g}, '
-                    + (f'delta = {res.get("delta", 0)/self._deer_tfactor():.6g} {tunit}, '
-                       f'tau_max = {res.get("tau_max", 0):.6g}' if is_mellin
-                       else f'alpha = {res["alpha"]:.6g}'))
+        is_gauss = res.get('engine', '') == 'gauss'
+        if is_mellin:
+            reg = (f'delta = {res.get("delta", 0)/self._deer_tfactor():.6g} {tunit}, '
+                   f'tau_max = {res.get("tau_max", 0):.6g}')
+        elif is_gauss:
+            support = res.get('ci_mode') == 'support'
+
+            def _gci(c, key):
+                lo, hi = c.get(f'{key}_ci_lo'), c.get(f'{key}_ci_hi')
+                if support and lo is not None and hi is not None:
+                    return f'{c[key]:.4g}[{lo:.4g},{hi:.4g}]'
+                return f'{c[key]:.4g}+/-{c[key+"_err"]:.2g}'
+            comps = '; '.join(f'r{i+1}={_gci(c, "center")} sigma={_gci(c, "sigma")} '
+                              f'w={c["weight"]:.3g}'
+                              for i, c in enumerate(res.get('components', [])))
+            ick = str(res.get('ic', 'aicc'))
+            ci_tag = ('95% support-plane CI' if support else '1sigma linearized')
+            reg = (f'N = {res.get("n_gauss", "?")}, {ick.upper()} = '
+                   f'{res.get(ick, float("nan")):.6g}, {ci_tag}, [{comps}]')
+        else:
+            reg = f'alpha = {res["alpha"]:.6g}'
+        bgp = res.get('background', {}).get('params')
+        if res.get('background', {}).get('model') == 'general' and bgp:
+            bg_terms = (f'background a*exp(b*(t+c*d^t)) (a={bgp["a"]:.6g}, b={bgp["b"]:.6g}, '
+                        f'c={bgp["c"]:.6g}, d={bgp["d"]:.6g})')
+        else:
+            bg_terms = f'k = {res["k"]:.6g}, dim = {res["dim"]:.6g}'
+        reg_line = f'lambda = {res["lambda"]:.6g}, {bg_terms}, ' + reg
         hdr = ['DEER/PDS analysis ('
-               + ('analytic Mellin transform, doi 10.1039/C7CP04059H)'
-                  if is_mellin else 'Tikhonov + NNLS)'),
+               + ('analytic Mellin transform, doi 10.1039/C7CP04059H)' if is_mellin
+                  else 'sum-of-Gaussians fit)' if is_gauss
+                  else 'Tikhonov + NNLS)'),
                reg_line,
                f'r {res["r"][0]:.4g}-{res["r"][-1]:.4g} nm ({len(res["r"])} pts), '
                f'time unit {tunit}, bg start {self.deer_bgstart.value():.6g} {tunit}'
