@@ -207,6 +207,87 @@ def background_fit(t, V, bg_start, bg_end=None, dim=3.0, fit_dim=False):
             'bg_end': (None if bg_end is None else float(bg_end)), 'mask': mask}
 
 
+def background_general(t, V, bg_start, bg_end=None,
+                       a=None, b=None, c=None, d=None, fit=True, **_ignored):
+    """General empirical intermolecular background on the tail window
+    bg_start <= t (<= bg_end):
+
+        g(t) = a * exp( b * (t + c * d^t) )       (a, b, c, d free)
+
+    A flexible alternative to the stretched-exponential `background_fit` for traces
+    whose intermolecular decay is not well described by exp(-(k|t|)^(d/3)). Same
+    convention as `background_fit`: V is normalized to V(0)=1, the tail baseline
+    g(t) = (1-lambda)*B(t), so the background normalized to B(0)=1 is
+    B(t) = g(t)/g(0), the modulation depth is lambda = 1 - g(0) (g(0) = a*exp(b*c),
+    since d^0 = 1), and  F(t) = (V(t)/B(t) - (1 - lambda)) / lambda . The amplitude
+    `a` cancels in B = g/g(0), so b / c / d set the background SHAPE and `a` only
+    its t=0 level (hence lambda); B(t) = exp(b*(t + c*(d^t - 1))) stays positive.
+
+    With `fit=True` (default) the four coefficients are fit on the tail; any of
+    a / b / c / d that are supplied are used as the initial guess. With `fit=False`
+    they are used DIRECTLY as the background (manual mode -- the GUI's hand-set
+    coefficients), no fitting. When fitting, `d` is constrained so the d^t term
+    retains >= 5% of its t=0 amplitude across the fit window (d^span >= 0.05):
+    otherwise c and d are unconstrained by the tail (where d^t has vanished) and
+    the fit is degenerate; a faster decay is not an intermolecular background
+    anyway. Time `t` is in microseconds, so the manual coefficients act on t in us.
+    Returns the same dict shape as `background_fit`, with k / dim = NaN and the
+    coefficients in `params` (a, b, c, d) and `model` = 'general'.
+    """
+    _require_scipy()
+    t = np.asarray(t, dtype=float)
+    V = np.asarray(V, dtype=float)
+    V = V/_echo_top(t, V)                              # normalize at t = 0 (robust)
+    if bg_start is None:
+        bg_start = t[0] + 0.5*(t[-1] - t[0])
+    mask = t >= bg_start
+    if bg_end is not None:
+        mask = mask & (t <= bg_end)
+
+    def _model(x, aa, bb, cc, dd):
+        dd = min(max(float(dd), 1e-9), 1.0)
+        return aa*np.exp(bb*(x + cc*np.power(dd, x)))
+
+    if fit:
+        if int(mask.sum()) < 4:
+            raise ValueError('Background region has too few points; widen [bg_start, bg_end].')
+        tt, vv = t[mask], V[mask]
+        span = float(tt[-1] - tt[0]) or 1.0
+        # bound d so the d^t term stays data-constrained over the fit window
+        d_lo = float(np.clip(0.05**(1.0/span), 0.05, 0.95))
+        # in the tail the d^t term has decayed, so g ~ a*exp(b*t): seed a / b from
+        # a log-linear fit of the (positive) tail, c from the early curvature.
+        lv = np.log(np.clip(vv, 1e-6, None))
+        b_lin = float(np.polyfit(tt, lv, 1)[0]) if span > 0 else -0.05
+        a_lin = float(np.exp(np.mean(lv - b_lin*tt)))
+        a0 = float(a) if a is not None else max(a_lin, 1e-6)
+        b0 = float(b) if b is not None else b_lin
+        c0 = float(c) if c is not None else 0.0
+        d0 = float(np.clip(d if d is not None else np.sqrt(d_lo), d_lo, 1.0))
+        p0 = [a0, b0, c0, d0]
+        bounds = ([1e-9, -np.inf, -np.inf, d_lo], [np.inf, np.inf, np.inf, 1.0])
+        try:
+            popt, _ = curve_fit(_model, tt, vv, p0=p0, bounds=bounds, maxfev=10000)
+        except Exception:
+            popt = p0
+        af, bf, cf, df = (float(x) for x in popt)
+    else:                                              # manual: use the given coefficients
+        af = 1.0 if a is None else float(a)
+        bf = 0.0 if b is None else float(b)
+        cf = 0.0 if c is None else float(c)
+        df = float(np.clip(0.8 if d is None else float(d), 1e-6, 1.0))
+    g = _model(t, af, bf, cf, df)                     # = (1-lambda)*B(t) baseline
+    g0 = af*np.exp(bf*cf)                              # g(0): d^0 = 1
+    lam = float(np.clip(1.0 - g0, 0.02, 0.98))
+    B = g/g0 if abs(g0) > 1e-9 else np.ones_like(t)
+    F = (V/np.clip(B, 1e-3, None) - (1 - lam))/lam
+    return {'lambda': lam, 'k': float('nan'), 'dim': float('nan'), 'A': float(g0),
+            'B': B, 'form_factor': F, 'V_norm': V, 't': t,
+            'bg_start': float(bg_start),
+            'bg_end': (None if bg_end is None else float(bg_end)), 'mask': mask,
+            'model': 'general', 'params': {'a': af, 'b': bf, 'c': cf, 'd': df}}
+
+
 # --------------------------------------------------------------------------- #
 #  Tikhonov regularization + non-negativity
 # --------------------------------------------------------------------------- #
@@ -383,6 +464,9 @@ def deer_invert(t, V, r=None, bg_start=None, bg_end=None, dim=3.0, fit_dim=False
       'mellin'     -- analytic integral Mellin transform (`deer_invert_mellin`;
                        model-free, no Tikhonov). Extra Mellin params (delta,
                        tau_max, n_tau, bg_engine, n_mc) pass through via **kwargs.
+      'gauss'      -- parametric sum-of-N-Gaussians fit (`deer_invert_gauss`; N
+                       chosen by AICc). Extra params (n_gauss, max_gauss, ic,
+                       bg_engine, n_mc) pass through via **kwargs.
 
     `t` in us, `r` in nm. With `scan_lcurve` (default) the regularization scan is
     always computed for display, even when an explicit `alpha` is given. Returns a dict:
@@ -390,6 +474,9 @@ def deer_invert(t, V, r=None, bg_start=None, bg_end=None, dim=3.0, fit_dim=False
     (masses, sum = 1), P_density (P_norm / dr, integrates to 1), kernel, alpha,
     l_curve (when scanned), background result, lambda / k / dim, and engine.
     """
+    # coefficients for the 'general' background (a/b/c/d, fit flag); flows through
+    # kwargs so deer_validate and the engine dispatch carry it transparently.
+    bg_params = kwargs.pop('bg_params', None)
     if engine == 'joint':
         return deer_invert_joint(t, V, r=r, bg_start=bg_start, bg_end=bg_end,
                                  dim=dim, fit_dim=fit_dim, alpha=alpha,
@@ -398,7 +485,12 @@ def deer_invert(t, V, r=None, bg_start=None, bg_end=None, dim=3.0, fit_dim=False
                                  alpha_factor=alpha_factor)
     if engine == 'mellin':
         return deer_invert_mellin(t, V, r=r, bg_start=bg_start, bg_end=bg_end,
-                                  dim=dim, fit_dim=fit_dim, nu_dd=nu_dd, **kwargs)
+                                  dim=dim, fit_dim=fit_dim, nu_dd=nu_dd,
+                                  bg_params=bg_params, **kwargs)
+    if engine == 'gauss':
+        return deer_invert_gauss(t, V, r=r, bg_start=bg_start, bg_end=bg_end,
+                                 dim=dim, fit_dim=fit_dim, nu_dd=nu_dd,
+                                 bg_params=bg_params, **kwargs)
     _require_scipy()
     t = np.asarray(t, float)
     V = np.asarray(V, float)
@@ -407,6 +499,8 @@ def deer_invert(t, V, r=None, bg_start=None, bg_end=None, dim=3.0, fit_dim=False
         bg_start = t[0] + 0.5*(t[-1] - t[0])
     if engine == 'none':          # no intermolecular background (B=1); fit lambda only
         bg = _no_background(t, V, bg_start=bg_start, bg_end=bg_end)
+    elif engine == 'general':     # general empirical background a + b*t + c*d^t
+        bg = background_general(t, V, bg_start, bg_end=bg_end, **(bg_params or {}))
     else:
         bg = background_fit(t, V, bg_start, bg_end=bg_end, dim=dim, fit_dim=fit_dim)
     F = bg['form_factor']
@@ -433,7 +527,7 @@ def deer_invert(t, V, r=None, bg_start=None, bg_end=None, dim=3.0, fit_dim=False
             'kernel': K, 'alpha': float(alpha),
             'l_curve': lc, 'background': bg, 'lambda': bg['lambda'],
             'k': bg['k'], 'dim': bg['dim'],
-            'engine': 'none' if engine == 'none' else 'sequential'}
+            'engine': engine if engine in ('none', 'general') else 'sequential'}
 
 
 def deer_invert_joint(t, V, r=None, bg_start=None, bg_end=None, dim=3.0,
@@ -964,7 +1058,8 @@ def moment_error_apriori(eps, dt, n_points, n=1):
 
 def deer_invert_mellin(t, V, r=None, bg_start=None, bg_end=None, dim=3.0,
                        fit_dim=False, nu_dd=NU_DD, delta=None, tau_max=30.0,
-                       n_tau=601, bg_engine='joint', n_mc=0, ci_z=1.96, seed=0,
+                       n_tau=601, bg_engine='joint', bg_params=None,
+                       n_mc=0, ci_z=1.96, seed=0,
                        taumax_method='penalty', noise_space='V',
                        wiener=0.0, taumax_extend=True, extend_short_frac=0.18,
                        fit_rmin_frac=0.18, signed_fit=True, taper_short=True,
@@ -1096,6 +1191,8 @@ def deer_invert_mellin(t, V, r=None, bg_start=None, bg_end=None, dim=3.0,
         # enough to also re-run per background-start during validation
         bg = joint_background(t, V, bg_start=bg_start, bg_end=bg_end,
                               dim=dim, fit_dim=fit_dim, nu_dd=nu_dd)
+    elif bg_engine == 'general':
+        bg = background_general(t, V, bg_start, bg_end=bg_end, **(bg_params or {}))
     else:
         bg = background_fit(t, V, bg_start, bg_end=bg_end, dim=dim, fit_dim=fit_dim)
     F = bg['form_factor']
@@ -1420,6 +1517,356 @@ def deer_invert_mellin(t, V, r=None, bg_start=None, bg_end=None, dim=3.0,
             'sigma_noise': sigma_noise, 'n_mc': int(n_mc),
             'tau': tau, 'V_image': Vimg, 'kernel_image': Phi,
             'whiteness': whiteness}
+
+
+def _gauss_seed_centers(r, P_seed, n):
+    """n seed centres for an n-Gaussian fit, from the peaks of a coarse density
+    `P_seed` on grid `r`: local maxima ranked by height, padded with evenly
+    spaced points across the range when there are fewer peaks than components."""
+    r = np.asarray(r, float)
+    P = np.clip(np.asarray(P_seed, float), 0.0, None)
+    if len(P) >= 3:
+        loc = np.where((P[1:-1] > P[:-2]) & (P[1:-1] >= P[2:]) & (P[1:-1] > 0))[0] + 1
+        loc = loc[np.argsort(P[loc])[::-1]]               # tallest first
+    else:
+        loc = np.array([], int)
+    centers = [float(x) for x in r[loc[:n]]]
+    if len(centers) < n:                                  # pad with an even spread
+        even = np.linspace(r[0], r[-1], n + 2)[1:-1]
+        for e in even:
+            if len(centers) >= n:
+                break
+            centers.append(float(e))
+    return sorted(centers[:n])
+
+
+def deer_invert_gauss(t, V, r=None, bg_start=None, bg_end=None, dim=3.0,
+                      fit_dim=False, nu_dd=NU_DD, n_gauss=None, max_gauss=4,
+                      bg_engine='joint', bg_params=None, ic='aicc', n_mc=0,
+                      ci_z=1.96, seed=0, sigma_min=None, sigma_max=None,
+                      ci_mode='linear', ci_level=0.95, prune_spurious=True,
+                      weight_min=0.02, spike_weight_max=0.10, **_ignored):
+    """Parametric DEER inversion: model P(r) as a SUM OF N GAUSSIANS and fit their
+    amplitudes / centres / widths to the form factor (the DeerAnalysis "Gaussian"
+    mode / DeerLab `dd_gaussN` approach). Complements the regularized (`deer_invert`)
+    and model-free (`deer_invert_mellin`) engines: when the distribution really is
+    a few discrete modes this is the most robust and gives genuine *parametric*
+    error bars from the fit covariance -- something a regularized inversion cannot.
+
+    The number of components N is chosen automatically by an information criterion
+    (`ic`, default corrected Akaike 'aicc'; 'aic' / 'bic' also accepted): each
+    N = 1..`max_gauss` is fit and the N minimizing the criterion is kept. Pass an
+    explicit `n_gauss` to force a fixed N and skip model selection.
+
+    `prune_spurious` (default True) makes that selection robust against OVER-
+    fitting. DEER traces are heavily oversampled, so at low noise the criterion's
+    per-parameter penalty is negligible and it "explains" the small SYSTEMATIC
+    residual left by background / lambda / echo-top preparation (which it wrongly
+    treats as i.i.d. noise) by adding a spurious Gaussian -- recognizable as one
+    pinned at the width-resolution floor (sigma ~ s_lo) AND carrying little weight
+    (< `spike_weight_max`), or carrying negligible weight (< `weight_min`) at any
+    width. The weight gate is essential: a floor-width component with SUBSTANTIAL
+    weight is a real long-distance mode the solver narrowed (a near-delta is the
+    global least-squares optimum there, since the kernel modulates large r only
+    weakly), not an over-fit -- gating on width alone collapsed genuine 3-4
+    Gaussian distributions to N=1. With pruning on, the chosen N is the criterion-
+    best fit that contains NO such spurious component; this keeps simple bimodals
+    from being reported as 3-4 Gaussians without an under-fitting global penalty.
+    `n_gauss_ic` (the unpruned criterion pick) and `pruned` are returned for
+    transparency.
+
+    Model (after background correction, F(0)=1):
+        P(r) = sum_k a_k * exp(-(r - r_k)^2 / (2 sigma_k^2)),  a_k, sigma_k > 0.
+    The amplitudes are fit UN-normalized: the data anchor the overall scale through
+    F(0) = sum(masses) = 1, which removes the scale degeneracy a pre-normalized
+    model would have and keeps the fit covariance well-conditioned. The reported
+    P_norm / P_density are the area-normalized result; `components` carries each
+    Gaussian's centre / sigma / weight with 1-sigma errors from the covariance.
+
+    `bg_engine` selects how V(t) is prepared, exactly as in `deer_invert_mellin`:
+    'joint' (default, lambda-pinned DeerLab-style), 'sequential' (tail-window fit),
+    or 'none' (B=1, fit lambda only). `t` in us, `r` in nm.
+
+    With `n_mc` > 0 a parametric confidence band is returned by sampling the fit
+    parameter covariance `n_mc` times and re-evaluating the (re-normalized) density:
+    P_lower/P_upper = P_density -/+ ci_z*std. This is cheap (no re-inversion).
+
+    `ci_mode` selects the per-component error bars on the centre and width:
+      'linear' (default) -- the 1-sigma diagonal of the linearized covariance
+          (J^T J)^-1 * resvar. Fast (no extra fits); symmetric; the local-quadratic
+          approximation. Good for live use.
+      'support' -- RIGOROUS support-plane / profile-likelihood intervals (Stein,
+          Beth & Hustedt, Methods Enzymol. 563 (2015) 531, doi 10.1016/bs.mie.
+          2015.07.031): for each centre / sigma, fix it on a grid and RE-FIT all
+          other parameters, then take the interval where the residual sum of
+          squares rises above its minimum by the F-test threshold
+          SSR <= SSR_min * (1 + F_{1, N-q}(ci_level)/(N-q)). This accounts for
+          parameter correlations and yields ASYMMETRIC intervals (center_ci_lo/hi,
+          sigma_ci_lo/hi on each component) -- the magnitudes the linearized bar
+          under-/over-states when the chi^2 surface is not parabolic. Costs a fit
+          per grid step per parameter (~1-4 s); opt-in. `ci_level` is the
+          confidence (default 0.95 ~ 2 sigma; 0.66 ~ 1 sigma).
+
+    Returns the same dict shape as `deer_invert` (shared GUI / exporters): t, r,
+    form_factor, F_fit, residuals, P / P_norm / P_density, P_lower / P_upper,
+    kernel, background, lambda / k / dim. Gauss-specific extras: engine='gauss',
+    n_gauss, components (list of {amplitude, center, sigma, weight, center_err,
+    sigma_err, and -- when ci_mode='support' -- center_ci_lo/hi, sigma_ci_lo/hi}),
+    aicc / aic / bic (of the chosen N), ic ('aicc'|'aic'|'bic'), ci_mode, ci_level,
+    ic_curve (list of (N, criterion, rss)), noise_level. alpha is NaN and l_curve
+    is None (no regularization), as for the Mellin engine.
+    """
+    _require_scipy()
+    from scipy.optimize import least_squares
+    t = np.asarray(t, float)
+    V = np.asarray(V, float)
+    r = default_r_axis() if r is None else np.asarray(r, float)
+    if bg_start is None:
+        bg_start = t[0] + 0.5*(t[-1] - t[0])
+    if bg_engine == 'none':
+        bg = _no_background(t, V, bg_start=bg_start, bg_end=bg_end)
+    elif bg_engine == 'joint':
+        bg = joint_background(t, V, bg_start=bg_start, bg_end=bg_end,
+                              dim=dim, fit_dim=fit_dim, nu_dd=nu_dd)
+    elif bg_engine == 'general':
+        bg = background_general(t, V, bg_start, bg_end=bg_end, **(bg_params or {}))
+    else:
+        bg = background_fit(t, V, bg_start, bg_end=bg_end, dim=dim, fit_dim=fit_dim)
+    F = bg['form_factor']
+    Vn, B, lam = bg['V_norm'], bg['B'], bg['lambda']
+    sig_e = _tail_noise(t, Vn)
+    K = dipolar_kernel(t, r, nu_dd=nu_dd)
+    dr = float(r[1] - r[0]) if len(r) > 1 else 1.0
+    rmin, rmax = float(r[0]), float(r[-1])
+    # width bounds: the widest meaningful one spans the half-range. The LOWER
+    # bound regularizes via the distance-discretization length (Dzuba, JMR 275
+    # (2016) 1; Matveeva et al., Z. Phys. Chem. 231 (2017) 463) -- a component
+    # narrower than ~the resolvable distance step is unphysical and just over-
+    # fits a noise wiggle as a near-delta spike. A floor of a few grid steps
+    # (>= 0.05 nm, the practical PDS width resolution) blocks those spikes AND,
+    # by admitting fewer spurious narrow components, sharpens N selection (the
+    # benchmark improves on both N-accuracy and overlap going 0.03 -> 0.05 nm).
+    # The weight-gated spurious test handles the rest. Defaults are overridable.
+    s_lo = float(sigma_min) if sigma_min else max(2.5*dr, 0.05)
+    s_hi = float(sigma_max) if sigma_max else max(0.5*(rmax - rmin), 4*s_lo)
+    s0 = float(np.clip(0.2, s_lo, s_hi))
+    # coarse Tikhonov pass to seed component centres (peak positions). A fixed
+    # moderate alpha is enough just to place peaks; falls back to an even spread.
+    try:
+        L = regularization_matrix(len(r), 2)
+        P_seed = tikhonov_nnls(K, F, 1.0, L)
+    except Exception:
+        P_seed = np.zeros_like(r)
+    npts = len(F)
+
+    def _density(p, n):
+        g = np.zeros_like(r)
+        for kk in range(n):
+            a, c, s = p[3*kk], p[3*kk + 1], p[3*kk + 2]
+            g = g + a*np.exp(-0.5*((r - c)/s)**2)
+        return g
+
+    def _fit_n(n):
+        centers = _gauss_seed_centers(r, P_seed, n)
+        a0 = 1.0/(n*s0*np.sqrt(2.0*np.pi))                # so sum(masses) ~ 1 at seed
+        p0, lo, hi = [], [], []
+        for c in centers:
+            p0 += [a0, float(np.clip(c, rmin, rmax)), s0]
+            lo += [0.0, rmin, s_lo]
+            hi += [np.inf, rmax, s_hi]
+        lo, hi = np.array(lo), np.array(hi)
+        sol = least_squares(lambda p: K@(_density(p, n)*dr) - F, p0,
+                            bounds=(lo, hi), max_nfev=4000)
+        rss = float(np.sum(sol.fun**2))
+        return sol, rss, (lo, hi)
+
+    def _criterion(rss, n):
+        kpar = 3*n + 1                                    # +1 for the noise variance
+        aic = npts*np.log(rss/npts) + 2*kpar if rss > 0 else -np.inf
+        denom = npts - kpar - 1
+        aicc = aic + (2*kpar*(kpar + 1)/denom if denom > 0 else np.inf)
+        bic = npts*np.log(rss/npts) + kpar*np.log(npts) if rss > 0 else -np.inf
+        return {'aic': aic, 'aicc': aicc, 'bic': bic}
+
+    def _has_spurious(pp, n):
+        """Flag a fit whose components include a SPURIOUS one. At low noise the
+        information criterion over-fits the small SYSTEMATIC residual left by
+        background/lambda/echo-top preparation (not random noise, which the
+        criterion assumes) by adding an extra component that shows up as a
+        Gaussian pinned at the width-resolution floor (sigma ~ s_lo) carrying
+        LITTLE weight. Rejecting any N whose best fit contains one keeps the
+        count parsimonious without an under-fitting global penalty.
+
+        The weight gate is essential: a floor-width component that carries
+        SUBSTANTIAL weight is a REAL peak the least-squares solver narrowed (a
+        long-distance mode the kernel modulates only weakly is fit about as well
+        by a narrow spike as by its true broad shape -- the spike is the global
+        LS optimum, not a local-min artifact), NOT an over-fit. Flagging it on
+        width alone collapsed genuine 3-4 Gaussian distributions all the way to
+        N=1. So a floor-width component is spurious only when it ALSO carries
+        < `spike_weight_max` of the area; a negligible-weight component
+        (< `weight_min`, any width) is always spurious."""
+        sig = np.abs(pp[2::3][:n])
+        amp = pp[0::3][:n]
+        area = amp*sig*np.sqrt(2.0*np.pi)
+        tot = float(np.sum(area)) or 1.0
+        w = area/tot
+        floor = sig <= s_lo*1.1
+        return bool(np.any(w < weight_min) or
+                    np.any(floor & (w < spike_weight_max)))
+
+    Ns = [int(n_gauss)] if (n_gauss and int(n_gauss) > 0) else \
+        list(range(1, int(max_gauss) + 1))
+    forced = bool(n_gauss and int(n_gauss) > 0)
+    ic_key = ic if ic in ('aic', 'aicc', 'bic') else 'aicc'
+    best = best_clean = None
+    ic_curve = []
+    for n in Ns:
+        try:
+            sol, rss, bounds = _fit_n(n)
+        except Exception:
+            continue
+        crit = _criterion(rss, n)
+        ic_curve.append((n, float(crit[ic_key]), rss))
+        cand = {'n': n, 'sol': sol, 'rss': rss, 'crit': crit, 'bounds': bounds}
+        if best is None or crit[ic_key] < best['crit'][ic_key]:
+            best = cand
+        if not _has_spurious(sol.x, n) and (
+                best_clean is None or crit[ic_key] < best_clean['crit'][ic_key]):
+            best_clean = cand
+    if best is None:
+        raise RuntimeError('Gaussian fit failed for every component count tried.')
+
+    # Prefer the criterion-best model with NO spurious (floor-width / negligible-
+    # weight) component; fall back to the plain criterion pick if every fit has one
+    # (or N was forced -- then honour the request).
+    n_ic = best['n']
+    chosen = best if (forced or not prune_spurious or best_clean is None) else best_clean
+    n = chosen['n']
+    sol = chosen['sol']
+    best = chosen                                          # downstream reads best['*']
+    p = sol.x
+    lo_b, hi_b = chosen['bounds']
+    # covariance from the Jacobian: cov = (J^T J)^-1 * residual variance. pinv
+    # guards the (near-)singular directions overlapping components produce.
+    nparams = 3*n
+    dof = max(npts - nparams, 1)
+    resvar = best['rss']/dof
+    try:
+        cov = np.linalg.pinv(sol.jac.T@sol.jac)*resvar
+        perr = np.sqrt(np.clip(np.diag(cov), 0.0, None))
+    except Exception:
+        cov, perr = None, np.full(nparams, np.nan)
+
+    g = _density(p, n)
+    masses = g*dr
+    F_fit = K@masses                                      # fitted curve (~F(0)=1)
+    P_norm = _normalize_masses(masses)
+    P_density = P_norm/dr
+
+    components = []
+    for kk in range(n):
+        a, c, s = float(p[3*kk]), float(p[3*kk + 1]), float(abs(p[3*kk + 2]))
+        components.append({'amplitude': a, 'center': c, 'sigma': s,
+                           'area': a*s*np.sqrt(2.0*np.pi),
+                           'center_err': float(perr[3*kk + 1]),
+                           'sigma_err': float(perr[3*kk + 2])})
+    tot_area = sum(cc['area'] for cc in components) or 1.0
+    for cc in components:
+        cc['weight'] = cc['area']/tot_area
+    components.sort(key=lambda d: d['center'])
+
+    # Rigorous support-plane / profile-likelihood confidence intervals (Hustedt,
+    # Methods Enzymol. 2015): for each centre / sigma, fix it and RE-FIT the rest,
+    # and bound the interval where SSR exceeds SSR_min by the F-test threshold.
+    # Accounts for parameter correlations -> asymmetric, correctly-sized intervals.
+    if ci_mode == 'support' and npts > nparams:
+        from scipy.stats import f as _f_dist
+        ssr_min = best['rss']
+        Fq = float(_f_dist.ppf(ci_level, 1, npts - nparams))
+        target = ssr_min*(1.0 + Fq/(npts - nparams))
+
+        def _ssr_fixed(fix_i, val):
+            """Min SSR with parameter fix_i held at val, all others re-fit."""
+            free = [j for j in range(nparams) if j != fix_i]
+            base = p.copy(); base[fix_i] = val
+
+            def resid(pf):
+                pp = base.copy(); pp[free] = pf
+                return K@(_density(pp, n)*dr) - F
+            try:
+                s = least_squares(resid, p[free],
+                                  bounds=(lo_b[free], hi_b[free]), max_nfev=2000)
+                return float(np.sum(s.fun**2))
+            except Exception:
+                return np.inf
+
+        def _bound(fix_i, sign):
+            """Walk fix_i out from its best value (re-fitting the rest) until SSR
+            crosses `target`, then bisect; return the crossing (clamped to the
+            box bound, which it returns when the parameter is unbounded there)."""
+            th0 = float(p[fix_i]); lim = float(hi_b[fix_i] if sign > 0 else lo_b[fix_i])
+            step = perr[fix_i] if (np.isfinite(perr[fix_i]) and perr[fix_i] > 1e-6) \
+                else 0.05*abs(hi_b[fix_i] - lo_b[fix_i])
+            below, above, th = th0, None, th0
+            for _ in range(40):
+                th = th + sign*step
+                if (sign > 0 and th >= lim) or (sign < 0 and th <= lim):
+                    th = lim
+                if _ssr_fixed(fix_i, th) > target:
+                    above = th; break
+                below = th
+                step *= 1.6
+                if th == lim:
+                    break
+            if above is None:
+                return lim                                # CI runs to the box bound
+            a, b = below, above
+            for _ in range(16):                           # ~range/65000 precision
+                m = 0.5*(a + b)
+                if _ssr_fixed(fix_i, m) > target:
+                    b = m
+                else:
+                    a = m
+            return 0.5*(a + b)
+
+        # map sorted components back to their parameter block (sorted by centre)
+        order = sorted(range(n), key=lambda kk: float(p[3*kk + 1]))
+        for cc, kk in zip(components, order):
+            cc['center_ci_lo'] = _bound(3*kk + 1, -1)
+            cc['center_ci_hi'] = _bound(3*kk + 1, +1)
+            cc['sigma_ci_lo'] = _bound(3*kk + 2, -1)
+            cc['sigma_ci_hi'] = _bound(3*kk + 2, +1)
+
+    P_lower = P_upper = P_std = None
+    if n_mc and int(n_mc) > 0 and cov is not None and np.all(np.isfinite(cov)):
+        rng = np.random.default_rng(seed)
+        try:
+            samples = rng.multivariate_normal(p, cov, size=int(n_mc))
+            ens = np.empty((int(n_mc), len(r)))
+            for j in range(int(n_mc)):
+                pj = samples[j].copy()
+                pj[0::3] = np.clip(pj[0::3], 0.0, None)    # amplitudes >= 0
+                pj[2::3] = np.clip(np.abs(pj[2::3]), s_lo, s_hi)
+                ens[j] = _normalize_masses(_density(pj, n)*dr)/dr
+            P_std = ens.std(axis=0)
+            P_lower = P_density - ci_z*P_std
+            P_upper = P_density + ci_z*P_std
+        except Exception:
+            P_lower = P_upper = P_std = None
+
+    return {'t': t, 'r': r, 'form_factor': F, 'F_fit': F_fit,
+            'residuals': F - F_fit, 'P': masses, 'P_norm': P_norm,
+            'P_density': P_density, 'P_lower': P_lower, 'P_upper': P_upper,
+            'P_std': P_std, 'kernel': K, 'alpha': float('nan'), 'l_curve': None,
+            'background': bg, 'lambda': bg['lambda'], 'k': bg['k'],
+            'dim': bg['dim'], 'engine': 'gauss', 'n_gauss': int(n),
+            'components': components, 'ic': ic_key,
+            'aic': float(best['crit']['aic']), 'aicc': float(best['crit']['aicc']),
+            'bic': float(best['crit']['bic']), 'ic_curve': ic_curve,
+            'n_gauss_ic': int(n_ic), 'pruned': bool(n != n_ic),
+            'ci_mode': ci_mode, 'ci_level': float(ci_level),
+            'noise_level': float(sig_e)}
 
 
 def deer_mellin_consensus(t, V, r=None, bg_start=None, bg_end=None, dim=3.0,
