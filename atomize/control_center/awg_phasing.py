@@ -2034,6 +2034,7 @@ class MainWindow(QMainWindow):
         worker.meas_freq_cur = self.meas_freq_cur
         worker.meas_H_cur = self.meas_H_cur
         worker.awg_output_shift = self.awg_output_shift
+        worker.posttrigger = self.posttrigger
 
     def b_sech_func(self):
         """
@@ -4297,6 +4298,7 @@ class Worker():
             awg.awg_clock_mode('External')
             awg.awg_reference_clock(100)
             awg.awg_sample_rate(1000)
+            awg.awg_trigger_delay('0 ns')
             awg.awg_amplitude('CH0', str(ch0_ampl), 'CH1', str(ch1_ampl) )
 
             # Master AWG-card trigger: one TRIGGER_AWG for the whole sequence;
@@ -4452,7 +4454,7 @@ class Worker():
             # DEC_COEF is reinterpreted as the detection record length (points).
             t_res = 2.0
             points_window = int( DEC_COEF )
-            POSTTRIGGER = int( DEC_COEF / 2 )
+            POSTTRIGGER = int( self.posttrigger )
             dig.digitizer_card_mode('Average')
             dig.digitizer_clock_mode('External')
             dig.digitizer_reference_clock(100)
@@ -4845,6 +4847,7 @@ class Worker():
             awg.awg_clock_mode('External')
             awg.awg_reference_clock(100)
             awg.awg_sample_rate(1000)
+            awg.awg_trigger_delay('0 ns')
             awg.awg_amplitude('CH0', str(ch0_ampl), 'CH1', str(ch1_ampl) )
 
             # Master AWG-card trigger: one TRIGGER_AWG for the whole sequence;
@@ -5039,7 +5042,7 @@ class Worker():
             # NIOCH Spectrum digitizer (point/posttrigger based, 2 ns/point).
             t_res = 2.0
             points_window = int( DEC_COEF )
-            POSTTRIGGER = int( DEC_COEF / 2 )
+            POSTTRIGGER = int( self.posttrigger )
             dig.digitizer_card_mode('Average')
             dig.digitizer_clock_mode('External')
             dig.digitizer_reference_clock(100)
@@ -5482,6 +5485,7 @@ class Worker():
             awg.awg_clock_mode('External')
             awg.awg_reference_clock(100)
             awg.awg_sample_rate(1000)
+            awg.awg_trigger_delay('0 ns')
             awg.awg_amplitude('CH0', str(ch0_ampl), 'CH1', str(ch1_ampl) )
 
             # Master AWG-card trigger: one TRIGGER_AWG for the whole sequence;
@@ -5633,7 +5637,7 @@ class Worker():
             # DEC_COEF is reinterpreted as the detection record length (points).
             t_res = 2.0
             points_window = int( DEC_COEF )
-            POSTTRIGGER = int( DEC_COEF / 2 )
+            POSTTRIGGER = int( self.posttrigger )
             dig.digitizer_card_mode('Average')
             dig.digitizer_clock_mode('External')
             dig.digitizer_reference_clock(100)
@@ -5961,6 +5965,7 @@ class Worker():
             awg.awg_clock_mode('External')
             awg.awg_reference_clock(100)
             awg.awg_sample_rate(1000)
+            awg.awg_trigger_delay('0 ns')
             awg.awg_amplitude('CH0', str(ch0_ampl), 'CH1', str(ch1_ampl) )
 
             # Master AWG-card trigger: one TRIGGER_AWG for the whole sequence;
@@ -6188,7 +6193,7 @@ class Worker():
             # NIOCH Spectrum digitizer (point/posttrigger based, 2 ns/point).
             t_res = 2.0
             points_window = int( DEC_COEF )
-            POSTTRIGGER = int( DEC_COEF / 2 )
+            POSTTRIGGER = int( self.posttrigger )
             dig.digitizer_card_mode('Average')
             dig.digitizer_clock_mode('External')
             dig.digitizer_reference_clock(100)
@@ -6513,6 +6518,7 @@ class Worker():
             awg.awg_clock_mode('External')
             awg.awg_reference_clock(100)
             awg.awg_sample_rate(1000)
+            awg.awg_trigger_delay('0 ns')
             awg.awg_amplitude('CH0', str(ch0_ampl), 'CH1', str(ch1_ampl) )
 
             # Master AWG-card trigger: one TRIGGER_AWG for the whole sequence;
@@ -6698,7 +6704,7 @@ class Worker():
             # NIOCH Spectrum digitizer (point/posttrigger based, 2 ns/point).
             t_res = 2.0
             points_window = int( DEC_COEF )
-            POSTTRIGGER = int( DEC_COEF / 2 )
+            POSTTRIGGER = int( self.posttrigger )
             dig.digitizer_card_mode('Average')
             dig.digitizer_clock_mode('External')
             dig.digitizer_reference_clock(100)
