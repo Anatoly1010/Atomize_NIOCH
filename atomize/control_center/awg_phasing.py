@@ -147,7 +147,7 @@ class MainWindow(QMainWindow):
             os.chdir(path_to_main2)
         #####
         
-        self.awg_output_shift = 0 #494 # in ns
+        self.awg_output_shift = 494 # in ns
 
         # Phase correction
         self.deg_rad = 180 / np.pi #57.2957795131
