@@ -63,14 +63,14 @@ class MainWindow(QtWidgets.QMainWindow):
           QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
 
         # text labels
-        self.label.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
-        self.label_2.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
-        self.label_3.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
-        self.label_4.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
-        self.label_5.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
-        self.label_6.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
-        self.label_7.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
-        self.label_8.setStyleSheet("QLabel { color : rgb(193, 202, 227); }")
+        self.label.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
+        self.label_2.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
+        self.label_3.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
+        self.label_4.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
+        self.label_5.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
+        self.label_6.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
+        self.label_7.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
+        self.label_8.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
 
         self.telemetry_text.setStyleSheet("QPlainTextEdit { color : rgb(211, 194, 78); }") # rgb(193, 202, 227)
         
