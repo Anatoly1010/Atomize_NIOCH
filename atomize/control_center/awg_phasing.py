@@ -2033,6 +2033,7 @@ class MainWindow(QMainWindow):
         worker.phase_cor_cur = self.phase_cor_cur
         worker.meas_freq_cur = self.meas_freq_cur
         worker.meas_H_cur = self.meas_H_cur
+        worker.awg_output_shift = self.awg_output_shift
 
     def b_sech_func(self):
         """
@@ -4261,7 +4262,7 @@ class Worker():
                             f_delay = self.round_to_closest( float(p[1].split(' ')[0]), 2)
                             break
                         else:
-                            f_delay = self.round_to_closest( float(rect1[1].split(' ')[0]), 2)
+                            f_delay = self.round_to_closest( float(rect1[1].split(' ')[0]), 2) - self.awg_output_shift
 
                 elif rect1[5] != '0.0 ns':
                     #length_increment
@@ -4271,7 +4272,7 @@ class Worker():
                     for p in pulses2:
                         if p[2] != '0.0 ns':
                             step = round( float( p[2].split(' ')[0] ), 1)
-                            f_delay = self.round_to_closest( float(p[0].split(' ')[0]), 2)
+                            f_delay = self.round_to_closest( float(p[0].split(' ')[0]), 2) - self.awg_output_shift
                             break
                         else:
                             #prevent no increment
@@ -4809,7 +4810,7 @@ class Worker():
                             f_delay = self.round_to_closest( float(p[1].split(' ')[0]), 2)
                             break
                         else:
-                            f_delay = self.round_to_closest( float(rect1[1].split(' ')[0]), 2)
+                            f_delay = self.round_to_closest( float(rect1[1].split(' ')[0]), 2) - self.awg_output_shift
 
                 elif rect1[5] != '0.0 ns':
                     #length_increment
@@ -4819,7 +4820,7 @@ class Worker():
                     for p in pulses2:
                         if p[2] != '0.0 ns':
                             step = round( float( p[2].split(' ')[0] ), 1)
-                            f_delay = self.round_to_closest( float(p[0].split(' ')[0]), 2)
+                            f_delay = self.round_to_closest( float(p[0].split(' ')[0]), 2) - self.awg_output_shift
                             break
                         else:
                             #prevent no increment
@@ -6036,7 +6037,7 @@ class Worker():
             rel_shift = ( (rel_shift ) / next_after_min).astype(int)
 
             if rel_shift[0] != 0.0:
-                x_axis = x_axis * rel_shift[0] + self.round_to_closest( float(rect1[1].split(" ")[0]) , 2)
+                x_axis = x_axis * rel_shift[0] + self.round_to_closest( float(rect1[1].split(" ")[0]) , 2) - self.awg_output_shift
             else:
                 indices = np.where(rel_shift[1:] != 0)[0] + 1
                 if indices.size > 0:
