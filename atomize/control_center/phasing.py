@@ -3470,7 +3470,7 @@ class Worker():
 
                 for k in _scan_iter():
                     sp = ptc.tc_setpoint('Heater')
-                    ct = ptc.tc_temperature('3A')
+                    ct = ptc.tc_temperature('2A')
 
                     if np.abs(sp - ct) > 0.8:
                         general.wait('8000 ms')
@@ -3547,7 +3547,7 @@ class Worker():
                     f"{'Window:':<{w}} {tb} ns\n"
                     f"{'Horizontal Resolution:':<{w}} {STEP} ns\n"
                     f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
-                    f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
+                    f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('2A')} K\n"
                     f"{'-'*50}\n"
                     f"Pulse List:\n{pb.pulser_pulse_list()}"
                     f"{'-'*50}\n"
@@ -3822,7 +3822,7 @@ class Worker():
 
                 for k in _scan_iter():
                     sp = ptc.tc_setpoint('Heater')
-                    ct = ptc.tc_temperature('3A')
+                    ct = ptc.tc_temperature('2A')
 
                     if np.abs(sp - ct) > 0.8:
                         general.wait('8000 ms')
@@ -4144,7 +4144,7 @@ class Worker():
                     bh15.magnet_field(field)
 
                     sp = ptc.tc_setpoint('Heater')
-                    ct = ptc.tc_temperature('3A')
+                    ct = ptc.tc_temperature('2A')
 
                     if np.abs(sp - ct) > 0.8:
                         general.wait('8000 ms')
@@ -4229,7 +4229,7 @@ class Worker():
                     f"{'Averages:':<{w}} {AVERAGES}\n"
                     f"{'Window:':<{w}} {tb} ns\n"
                     f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
-                    f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
+                    f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('2A')} K\n"
                     f"{'-'*50}\n"
                     f"Pulse List:\n{pb.pulser_pulse_list()}"
                     f"{'-'*50}\n"
@@ -4465,7 +4465,7 @@ class Worker():
                 for k in _scan_iter():
 
                     sp = ptc.tc_setpoint('Heater')
-                    ct = ptc.tc_temperature('3A')
+                    ct = ptc.tc_temperature('2A')
 
                     if np.abs(sp - ct) > 0.8:
                         general.wait('8000 ms')
@@ -4543,7 +4543,7 @@ class Worker():
                     f"{'Lg(X0/ns):':<{w}} {T_start}\n"
                     f"{'Lg(ΔX/ns):':<{w}} {T_end}\n"
                     f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
-                    f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('3A')} K\n"
+                    f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('2A')} K\n"
                     f"{'-'*50}\n"
                     f"Pulse List:\n{pb.pulser_pulse_list()}"
                     f"{'-'*50}\n"
