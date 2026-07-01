@@ -220,8 +220,9 @@ class MainExtended(MainWindow):
         path_to_main = Path(__file__).parent
         self.path_to_main = os.path.join(path_to_main, '..', '..', 'libs')
 
-        # NIOCH is a pulsed-only spectrometer: no CW / TR / oscilloscope / temp
-        # control windows. Only the in-scope control-center tools are wired.
+        # NIOCH is a pulsed-only spectrometer: no CW / TR / temp control
+        # windows. The oscilloscope setup window is wired (see start_osc_control);
+        # only the in-scope control-center tools are exposed.
         self.process_field = QtCore.QProcess(self)
         self.process_mw = QtCore.QProcess(self)
         self.process_tune_preset = QtCore.QProcess(self)
@@ -233,12 +234,13 @@ class MainExtended(MainWindow):
         self.process_treatment_2d = QtCore.QProcess(self)
         self.process_deer = QtCore.QProcess(self)
         self.process_spin_sim = QtCore.QProcess(self)
+        self.process_osc = QtCore.QProcess(self)
 
         self.all_processes = [
             self.process_field, self.process_mw, self.process_tune_preset,
             self.process_phasing, self.process_awg_phasing, self.process_sequence_calc,
             self.process_excitation, self.process_treatment, self.process_treatment_2d,
-            self.process_deer, self.process_spin_sim
+            self.process_deer, self.process_spin_sim, self.process_osc
         ]
 
         for process in self.all_processes:
@@ -309,11 +311,11 @@ class MainExtended(MainWindow):
 
         button_list = []
 
-        button_name_1 = ["", "Set MF"]
+        button_name_1 = ["", "Set MF", "Oscilloscope"]
         button_name_2 = ["Pulsed MW Bridge", "", "RECT Channel", "AWG Channel"]
         button_name_3 = ["Resonator Tuning", "", "Data Treatment", "Data Treatment 2D", "DEER / PDS", "Pulse Sequence", "Excitation Profile", "Spin Dynamics"]
 
-        actions_1 = [None, self.start_field_control]
+        actions_1 = [None, self.start_field_control, self.start_osc_control]
         actions_2 = [self.start_mw_control, None, self.start_rect_phasing, self.start_awg_phasing]
         actions_3 = [self.start_tune_preset, None, self.start_treatment_control, self.start_treatment_2d_control, self.start_deer_analysis, self.start_sequence_calculator, self.start_excitation_profile, self.start_spin_sim]
 
@@ -399,7 +401,7 @@ class MainExtended(MainWindow):
             self.process_field, self.process_mw, self.process_tune_preset,
             self.process_phasing, self.process_awg_phasing, self.process_sequence_calc,
             self.process_excitation, self.process_treatment, self.process_treatment_2d,
-            self.process_deer, self.process_spin_sim
+            self.process_deer, self.process_spin_sim, self.process_osc
         ]
 
         active_processes = []
@@ -426,7 +428,7 @@ class MainExtended(MainWindow):
             self.process_field, self.process_mw, self.process_tune_preset,
             self.process_phasing, self.process_awg_phasing, self.process_sequence_calc,
             self.process_excitation, self.process_treatment, self.process_treatment_2d,
-            self.process_deer, self.process_spin_sim
+            self.process_deer, self.process_spin_sim, self.process_osc
         ]
 
         active_processes = []
@@ -621,6 +623,13 @@ class MainExtended(MainWindow):
         """
         self.process_field.setArguments([os.path.join('..','atomize/control_center/field_control.py')])
         self.process_field.start()
+
+    def start_osc_control(self):
+        """
+        A function to run the oscilloscope control window.
+        """
+        self.process_osc.setArguments([os.path.join('..','atomize/control_center/osc_control.py')])
+        self.process_osc.start()
 
 def main():
     """
