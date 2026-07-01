@@ -85,6 +85,9 @@
       </property>
       <item row="1" column="1">
        <widget class="QDoubleSpinBox" name="Att2_prd">
+     <property name="suffix">
+      <string> dB</string>
+     </property>
         <property name="contextMenuPolicy">
          <enum>Qt::NoContextMenu</enum>
         </property>
@@ -145,6 +148,9 @@
       </item>
       <item row="3" column="1">
        <widget class="QDoubleSpinBox" name="Fv_ctrl">
+     <property name="suffix">
+      <string> deg</string>
+     </property>
         <property name="contextMenuPolicy">
          <enum>Qt::NoContextMenu</enum>
         </property>
@@ -181,12 +187,15 @@
          <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
-         <string>Attenuator PRD1 (dB)</string>
+         <string>Attenuator PRD1</string>
         </property>
        </widget>
       </item>
       <item row="0" column="1">
        <widget class="QDoubleSpinBox" name="Att1_prd">
+     <property name="suffix">
+      <string> dB</string>
+     </property>
         <property name="contextMenuPolicy">
          <enum>Qt::NoContextMenu</enum>
         </property>
@@ -228,6 +237,9 @@
       </item>
       <item row="6" column="1">
        <widget class="QSpinBox" name="Att_prm">
+     <property name="suffix">
+      <string> dB</string>
+     </property>
         <property name="contextMenuPolicy">
          <enum>Qt::NoContextMenu</enum>
         </property>
@@ -269,6 +281,9 @@
       </item>
       <item row="4" column="1">
        <widget class="QDoubleSpinBox" name="Fv_prm">
+     <property name="suffix">
+      <string> deg</string>
+     </property>
         <property name="contextMenuPolicy">
          <enum>Qt::NoContextMenu</enum>
         </property>
@@ -334,7 +349,7 @@
          <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
-         <string>Frequency (MHz)</string>
+         <string>Frequency</string>
         </property>
        </widget>
       </item>
@@ -413,7 +428,7 @@
          <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
-         <string>Attenuator PRD2 (dB)</string>
+         <string>Attenuator PRD2</string>
         </property>
        </widget>
       </item>
@@ -429,7 +444,7 @@
          <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
-         <string>Pulse Test Phase (deg)</string>
+         <string>Pulse Test Phase</string>
         </property>
        </widget>
       </item>
@@ -445,7 +460,7 @@
          <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
-         <string>Video Attenuation (dB)</string>
+         <string>Video Attenuation</string>
         </property>
        </widget>
       </item>
@@ -461,7 +476,7 @@
          <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
-         <string>Signal Phase (deg)</string>
+         <string>Signal Phase</string>
         </property>
        </widget>
       </item>
@@ -489,6 +504,9 @@
       </item>
       <item row="7" column="1">
        <widget class="QSpinBox" name="K_prm">
+     <property name="suffix">
+      <string> dB</string>
+     </property>
         <property name="contextMenuPolicy">
          <enum>Qt::NoContextMenu</enum>
         </property>
@@ -514,6 +532,9 @@
       </item>
       <item row="9" column="1">
        <widget class="QSpinBox" name="Synt">
+     <property name="suffix">
+      <string> MHz</string>
+     </property>
         <property name="contextMenuPolicy">
          <enum>Qt::NoContextMenu</enum>
         </property>
@@ -546,7 +567,7 @@
          <enum>Qt::NoContextMenu</enum>
         </property>
         <property name="text">
-         <string>Amplification (dB)</string>
+         <string>Amplification</string>
         </property>
        </widget>
       </item>

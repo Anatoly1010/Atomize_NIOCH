@@ -51,16 +51,16 @@ class MainWindow(QtWidgets.QMainWindow):
         # Connection of different action to different Menus and Buttons
         self.button_initialize.clicked.connect(self.initialize)
         self.button_initialize.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227);}\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
+         border-style: outset; color: rgb(193, 202, 227); font-weight: bold; }\
+          QPushButton:pressed {background-color: rgb(211, 194, 78); border-style: inset; font-weight: bold; }")
         self.button_off.clicked.connect(self.turn_off)
         self.button_off.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227);}\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
+         border-style: outset; color: rgb(193, 202, 227); font-weight: bold; }\
+          QPushButton:pressed {background-color: rgb(211, 194, 78); border-style: inset; font-weight: bold; }")
         self.button_telemetry.clicked.connect(self.telemetry)
         self.button_telemetry.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227);}\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); ; border-style: inset}")
+         border-style: outset; color: rgb(193, 202, 227); font-weight: bold; }\
+          QPushButton:pressed {background-color: rgb(211, 194, 78); border-style: inset; font-weight: bold; }")
 
         # text labels
         self.label.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
@@ -98,11 +98,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Radio Buttons
         self.cutoff_1.clicked.connect(self.cutoff_changed_1)
-        self.cutoff_1.setStyleSheet("QRadioButton { color : rgb(193, 202, 227); }")
+        self.cutoff_1.setStyleSheet("QRadioButton { color : rgb(193, 202, 227); font-weight: bold; }")
         self.cutoff_2.clicked.connect(self.cutoff_changed_2)
-        self.cutoff_2.setStyleSheet("QRadioButton { color : rgb(193, 202, 227); }")
+        self.cutoff_2.setStyleSheet("QRadioButton { color : rgb(193, 202, 227); font-weight: bold; }")
         self.cutoff_3.clicked.connect(self.cutoff_changed_3)
-        self.cutoff_3.setStyleSheet("QRadioButton { color : rgb(193, 202, 227); }")
+        self.cutoff_3.setStyleSheet("QRadioButton { color : rgb(193, 202, 227); font-weight: bold; }")
 
         #self.synt()
         # Defence-in-depth: never let bridge init abort the constructor, or the
