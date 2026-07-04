@@ -18,6 +18,7 @@ import atomize.general_modules.csv_opener_saver as openfile
 import atomize.general_modules.last_dir as ldir
 import atomize.control_center.field_param as field_param
 from atomize.control_center.time_log_spinbox import TimeLogSpinBox
+from atomize.general_modules.gui_style import CHECKBOX_STYLE
 
 # Reload-signal file written by the Sequence Calculator (sequence_calculator.py).
 # While this window is open we poll it and reload the named preset when the
@@ -382,35 +383,7 @@ class MainWindow(QMainWindow):
         """Create a checkbox with the standard dark-theme style and connect it."""
         check = QCheckBox("")
         check.stateChanged.connect(func)
-        check.setStyleSheet("""
-            QCheckBox {
-                color: rgb(193, 202, 227);
-                background-color: transparent;
-                font-weight: bold;
-                spacing: 8px;
-            }
-
-            QCheckBox::indicator {
-                width: 14px;
-                height: 14px;
-                background-color: rgb(63, 63, 97);
-                border: 1px solid rgb(83, 83, 117);
-                border-radius: 3px;
-            }
-
-            QCheckBox::indicator:hover {
-                border: 1px solid rgb(211, 194, 78);
-            }
-
-            QCheckBox::indicator:pressed {
-                background-color: rgb(83, 83, 117);
-            }
-
-            QCheckBox::indicator:checked {
-                background-color: rgb(211, 194, 78);
-                border: 3px solid rgb(63, 63, 97);
-            }
-        """)
+        check.setStyleSheet(CHECKBOX_STYLE)
         check.setFixedSize(170, 26)
         return check
 
@@ -1011,35 +984,7 @@ class MainWindow(QMainWindow):
         self.save_each_cycle = 0
         self.Save_each = QCheckBox("")
         self.Save_each.stateChanged.connect(self.save_each_func)
-        self.Save_each.setStyleSheet("""
-            QCheckBox {
-                color: rgb(193, 202, 227);
-                background-color: transparent;
-                font-weight: bold;
-                spacing: 8px;
-            }
-
-            QCheckBox::indicator {
-                width: 14px;
-                height: 14px;
-                background-color: rgb(63, 63, 97);
-                border: 1px solid rgb(83, 83, 117);
-                border-radius: 3px;
-            }
-
-            QCheckBox::indicator:hover {
-                border: 1px solid rgb(211, 194, 78);
-            }
-
-            QCheckBox::indicator:pressed {
-                background-color: rgb(83, 83, 117);
-            }
-
-            QCheckBox::indicator:checked {
-                background-color: rgb(211, 194, 78);
-                border: 3px solid rgb(63, 63, 97);
-            }
-        """)
+        self.Save_each.setStyleSheet(CHECKBOX_STYLE)
         self.Save_each.setFixedSize(170, 26)
         self.Save_each.setToolTip('ESEEM Avg only: when checked, additionally save each cycle’s raw trace to its own file (suffixed by the cycle index), alongside the averaged result.')
 
