@@ -1040,6 +1040,9 @@ class Worker():
             import numpy as np
             import pyqtgraph as pg
             import atomize.general_modules.general_functions as general
+                        # Route this scan's plot_1d / plot_2d through the non-blocking
+            # coalescing worker so the acquisition loop isn't paced by the GUI.
+            general.set_plotting_async(True)
             import atomize.device_modules.Keysight_3000_Xseries as t3034
             import atomize.device_modules.Micran_X_band_MW_bridge as mwBridge
             import atomize.device_modules.PB_ESR_500_pro as pb_pro
