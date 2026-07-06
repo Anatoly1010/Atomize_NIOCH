@@ -8,17 +8,17 @@ sweep worker. This widget keeps that internal contract unchanged while
 making the UI human-readable.
 
 All values are snapped to the current unit's grid — the smallest
-2-decimal-visible value that is also a multiple of the Insys FPGA pulser
-resolution (3.2 ns). With this scheme the displayed value, read at face
-value, is always a literal 3.2 ns multiple in any unit, with no display
+2-decimal-visible value that is also a multiple of the NIOCH Spectrum
+pulser resolution (2 ns). With this scheme the displayed value, read at
+face value, is always a literal 2 ns multiple in any unit, with no display
 round-off "lie". Per-unit grids:
 
     Unit | grid in unit | grid in ns | ticks
     -----+--------------+------------+--------
-    ns   |   3.20       |     3.2    |       1
-    μs   |   0.08       |    80      |      25
-    ms   |   0.01       | 10000      |    3125
-    s    |   0.01       |   1e7      |  3125000
+    ns   |   2.00       |     2      |       1
+    μs   |   0.01       |    10      |       5
+    ms   |   0.01       | 10000      |    5000
+    s    |   0.01       |   1e7      |  5000000
 
 Drop this file at atomize/control_center/time_log_spinbox.py when integrating.
 """
@@ -35,16 +35,16 @@ _UNIT_FACTOR = {'ns': 1.0, 'μs': 1e3, 'ms': 1e6, 's': 1e9}
 # log10(ns) value without clamping.
 _UNIT_MAX = {'ns': 1e10, 'μs': 1e7, 'ms': 1e4, 's': 10.0}
 # Per-unit display + arrow-button step: the smallest 2-decimal value
-# that is also a 3.2 ns multiple. This is also the grid we snap typed
+# that is also a 2 ns multiple. This is also the grid we snap typed
 # / programmatic values onto.
-_UNIT_STEP = {'ns': 3.2, 'μs': 0.08, 'ms': 0.01, 's': 0.01}
+_UNIT_STEP = {'ns': 2.0, 'μs': 0.01, 'ms': 0.01, 's': 0.01}
 _UNITS = ('ns', 'μs', 'ms', 's')
 
 _DECIMALS = 2
 
-# Insys FPGA pulser/digitizer time resolution (ns). Kept for reference;
+# NIOCH Spectrum pulser/digitizer time resolution (ns). Kept for reference;
 # every entry in _UNIT_STEP is an integer multiple of this.
-_SNAP_NS = 3.2
+_SNAP_NS = 2.0
 
 
 def _snap_to_grid(ns, unit):

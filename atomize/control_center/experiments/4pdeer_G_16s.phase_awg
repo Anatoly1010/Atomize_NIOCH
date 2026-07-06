@@ -16,7 +16,7 @@ Phase:  90.0
 N WURST; SECH/TANH:  10
 B SECH/TANH:  0.02
 Points:  2016
-Horizontal offset:  1024
+Horizontal offset:  384
 Window left:  170.0
 Window right:  300.0
 Acquisitions:  10
@@ -25,7 +25,7 @@ Zero order:  195.0
 First order:  0.0
 Second order:  0.0
 Laser:  Nd:YaG
-Decimation:  1
+Detection Points:  512
 Points:  480
 Scans:  2
 Log Start:  1.0

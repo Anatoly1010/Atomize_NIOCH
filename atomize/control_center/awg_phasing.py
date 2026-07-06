@@ -656,7 +656,7 @@ class MainWindow(QMainWindow):
                 elif (i == 3) and (j == 1):
                     spin_box.setValue(288)
                 elif (i == 3) and (j == 2):
-                    spin_box.setValue(44.8)
+                    spin_box.setValue(48)
                 else:  
                     spin_box.setValue(pulse_set[3])
                 spin_box.setDecimals(pulse_set[5])
@@ -1041,7 +1041,7 @@ class MainWindow(QMainWindow):
         # ---- Boxes ----
         double_boxes = [(QSpinBox, "Acq_number", "number_averages", self.acq_number, 1, 1e4, 1, 1, 0, ""),
                       (SnapSpinBox, "Dec", "dig_points", self.decimat, 100, 20000, 512, 32, 0, ""),
-                      (SnapSpinBox, "Hor_offset", "posttrigger", self.hor_offset, 0, 20000, 320, 32, 0, ""),
+                      (SnapSpinBox, "Hor_offset", "posttrigger", self.hor_offset, 0, 20000, 384, 32, 0, ""),
                       (QDoubleSpinBox, "Win_left", "cur_win_left", self.win_left, 0, 6400, 0, 0.4, 1, " ns"),
                       (QDoubleSpinBox, "Win_right", "cur_win_right", self.win_right, 0, 6400, 320, 0.4, 1, " ns"),
                       (QSpinBox, "box_points", "cur_points", self.points, 1, 20000, 500, 10, 0, ""),
@@ -2658,6 +2658,7 @@ class MainWindow(QMainWindow):
         self.Win_right.setValue( round(float( lines[20].split(':  ')[1] ), 1) )
         self.Acq_number.setValue( int( lines[21].split(':  ')[1] ) )
         self.Dec.setValue( int( lines[27].split(':  ')[1] ) )
+        self.Hor_offset.setValue( int( float( lines[18].split(':  ')[1] ) ) )
 
         try:
             self.P_to_drop.setValue( int( lines[22].split(':  ')[1] ) )
@@ -2814,7 +2815,7 @@ class MainWindow(QMainWindow):
             file.write( 'N WURST; SECH/TANH:  ' + str(self.N_wurst.value()) + '\n' )
             file.write( 'B SECH/TANH:  ' + str(self.B_sech.value()) + '\n' )
             file.write( 'Points:  ' + str( 2016 ) + '\n' )
-            file.write( 'Horizontal offset:  ' + str( 1024 ) + '\n' )
+            file.write( 'Horizontal offset:  ' + str( self.Hor_offset.value() ) + '\n' )
             file.write( 'Window left:  ' + str(self.Win_left.value()) + '\n' )
             file.write( 'Window right:  ' + str(self.Win_right.value()) + '\n' )
             file.write( 'Acquisitions:  ' + str(self.Acq_number.value()) + '\n' )
@@ -2823,7 +2824,7 @@ class MainWindow(QMainWindow):
             file.write( 'First order:  ' + str(self.First_order.value()) + '\n' )
             file.write( 'Second order:  ' + str(self.Second_order.value()) + '\n' )
             file.write( 'Laser:  ' + str( self.Combo_laser.currentText() ) + '\n' )
-            file.write( 'Decimation:  ' + str( self.Dec.value() ) + '\n' )
+            file.write( 'Detection Points:  ' + str( self.Dec.value() ) + '\n' )
 
             file.write( 'Points:  ' + str( self.box_points.value() ) + '\n' )
             file.write( 'Scans:  ' + str( self.box_scan.value() ) + '\n' )
@@ -2915,24 +2916,31 @@ class MainWindow(QMainWindow):
             # Shift Together: keep the gap (record length - posttrigger)
             # constant, so growing/shrinking the window moves the horizontal
             # offset by the same amount and the signal stays at the same place.
+            grid = self.Hor_offset.singleStep()   # 32-point digitizer grid
             gap = self.dig_points - self.posttrigger
             self.dig_points = new_points
             self.posttrigger = self.dig_points - gap
-            # 4450 requires posttrigger divisible by 16, >= 16, and a minimum
-            # gap of 16 below the record length (points - posttrigger >= 16).
-            if self.posttrigger < 16:
-                self.posttrigger = 16
+            # Keep BOTH linked values on the 32-point grid: snap the shifted
+            # posttrigger and clamp it to valid, on-grid bounds. The 4450 needs
+            # posttrigger >= 16 and points - posttrigger >= 16; snapping to the
+            # grid stops the Horizontal Offset spinbox from showing an off-grid
+            # value (setValue() bypasses SnapSpinBox's text-time snapping).
+            self.posttrigger = int( round( self.posttrigger / grid ) ) * grid
+            if self.posttrigger < grid:
+                self.posttrigger = grid
             elif self.posttrigger > self.dig_points - 16:
-                self.posttrigger = self.dig_points - 16
+                self.posttrigger = ( ( self.dig_points - 16 ) // grid ) * grid
             # update the display without re-triggering hor_offset() (we send HO below)
             self.Hor_offset.blockSignals( True )
             self.Hor_offset.setValue( self.posttrigger )
             self.Hor_offset.blockSignals( False )
         else:
             self.dig_points = new_points
-            # keep the posttrigger valid: the 4450 needs points - posttrigger >= 16
+            # keep the posttrigger valid and on the 32-point grid: the 4450 needs
+            # points - posttrigger >= 16
             if self.posttrigger > self.dig_points - 16:
-                self.posttrigger = self.dig_points - 16
+                grid = self.Hor_offset.singleStep()
+                self.posttrigger = ( ( self.dig_points - 16 ) // grid ) * grid
                 self.Hor_offset.setValue( self.posttrigger )
         try:
             self.parent_conn_dig.send( 'PO' + str(self.dig_points) )
@@ -4055,7 +4063,8 @@ class Worker():
                 if fft_flag == 1:
 
                     if quad == 0:
-                        freq_axis, abs_values = fft.fft(x_axis, data_x, data_y, t_res)
+                        # x_axis is in s, t_res is in ns -> convert x_axis to ns
+                        freq_axis, abs_values = fft.fft(x_axis * 1e9, data_x, data_y, t_res)
                         m_val = round( np.amax( abs_values ), 2 )
                         general.plot_1d('FFT', freq_axis, abs_values,
                             xname = 'Freq Offset', label = 'FFT', xscale = 'MHz',
@@ -4066,7 +4075,7 @@ class Worker():
                             p_to_drop = len( data_x ) - 4
                             general.message('Maximum length of the data achieved. A number of drop points was corrected.')
                         # fixed resolution of digitizer; 2 ns
-                        freq, fft_x, fft_y = fft.fft( x_axis[p_to_drop:], data_x[p_to_drop:], data_y[p_to_drop:], t_res, re = 'True' )
+                        freq, fft_x, fft_y = fft.fft( x_axis[p_to_drop:] * 1e9, data_x[p_to_drop:], data_y[p_to_drop:], t_res, re = 'True' )
                         data_fft = fft.ph_correction( freq, fft_x, fft_y, zero_order, first_order, second_order )
                         general.plot_1d('FFT', freq, ( data_fft[0], data_fft[1] ),
                             xname = 'Freq Offset', xscale = 'MHz',
@@ -4213,7 +4222,7 @@ class Worker():
                             f_delay = self.round_to_closest( float(p[1].split(' ')[0]), 2)
                             break
                         else:
-                            f_delay = self.round_to_closest( float(rect1[1].split(' ')[0]), 2) - self.awg_output_shift
+                            f_delay = self.round_to_closest( float(rect1[1].split(' ')[0]), 2)
 
                 elif rect1[5] != '0.0 ns':
                     #length_increment
@@ -4223,7 +4232,7 @@ class Worker():
                     for p in pulses2:
                         if p[2] != '0.0 ns':
                             step = round( float( p[2].split(' ')[0] ), 1)
-                            f_delay = self.round_to_closest( float(p[0].split(' ')[0]), 2) - self.awg_output_shift
+                            f_delay = self.round_to_closest( float(p[0].split(' ')[0]), 2)
                             break
                         else:
                             #prevent no increment
@@ -4440,11 +4449,11 @@ class Worker():
 
                 for k in _scan_iter():
 
-                    sp = ptc.tc_setpoint('Heater')
-                    ct = ptc.tc_temperature('2A')
+                    #sp = ptc.tc_setpoint('Heater')
+                    #ct = ptc.tc_temperature('2A')
 
-                    if np.abs(sp - ct) > 0.8:
-                        general.wait('8000 ms')
+                    #if np.abs(sp - ct) > 0.8:
+                    #    general.wait('8000 ms')
 
                     if self.command == 'exit':
                         break
@@ -4765,7 +4774,7 @@ class Worker():
                             f_delay = self.round_to_closest( float(p[1].split(' ')[0]), 2)
                             break
                         else:
-                            f_delay = self.round_to_closest( float(rect1[1].split(' ')[0]), 2) - self.awg_output_shift
+                            f_delay = self.round_to_closest( float(rect1[1].split(' ')[0]), 2)
 
                 elif rect1[5] != '0.0 ns':
                     #length_increment
@@ -4775,7 +4784,7 @@ class Worker():
                     for p in pulses2:
                         if p[2] != '0.0 ns':
                             step = round( float( p[2].split(' ')[0] ), 1)
-                            f_delay = self.round_to_closest( float(p[0].split(' ')[0]), 2) - self.awg_output_shift
+                            f_delay = self.round_to_closest( float(p[0].split(' ')[0]), 2)
                             break
                         else:
                             #prevent no increment
@@ -5051,11 +5060,11 @@ class Worker():
 
                 for k in _scan_iter():
 
-                    sp = ptc.tc_setpoint('Heater')
-                    ct = ptc.tc_temperature('2A')
+                    #sp = ptc.tc_setpoint('Heater')
+                    #ct = ptc.tc_temperature('2A')
 
-                    if np.abs(sp - ct) > 0.8:
-                        general.wait('8000 ms')
+                    #if np.abs(sp - ct) > 0.8:
+                    #    general.wait('8000 ms')
 
                     if self.command == 'exit':
                         break
@@ -5627,11 +5636,11 @@ class Worker():
                     field = START_FIELD
                     bh15.magnet_field(field)
 
-                    sp = ptc.tc_setpoint('Heater')
-                    ct = ptc.tc_temperature('2A')
+                    #sp = ptc.tc_setpoint('Heater')
+                    #ct = ptc.tc_temperature('2A')
 
-                    if np.abs(sp - ct) > 0.8:
-                        general.wait('8000 ms')
+                    #if np.abs(sp - ct) > 0.8:
+                    #    general.wait('8000 ms')
 
                     if self.command == 'exit':
                         break
@@ -6002,9 +6011,9 @@ class Worker():
 
             if rel_shift[0] != 0.0:
                 if x0 == 0:
-                    x_axis = x_axis * rel_shift[0] + self.round_to_closest( float(rect1[1].split(" ")[0]) , 2) - self.awg_output_shift
+                    x_axis = x_axis * rel_shift[0] + self.round_to_closest( float(rect1[1].split(" ")[0]) , 2)
                 else:
-                    x_axis = x_axis * rel_shift[0] + x0 - self.awg_output_shift
+                    x_axis = x_axis * rel_shift[0] + x0
             else:
                 indices = np.where(rel_shift[1:] != 0)[0] + 1
                 if indices.size > 0:
@@ -6187,11 +6196,11 @@ class Worker():
 
                 for k in _scan_iter():
 
-                    sp = ptc.tc_setpoint('Heater')
-                    ct = ptc.tc_temperature('2A')
+                    #sp = ptc.tc_setpoint('Heater')
+                    #ct = ptc.tc_temperature('2A')
 
-                    if np.abs(sp - ct) > 0.8:
-                        general.wait('8000 ms')
+                    #if np.abs(sp - ct) > 0.8:
+                    #    general.wait('8000 ms')
 
                     if self.command == 'exit':
                         break
@@ -6703,11 +6712,11 @@ class Worker():
 
                 for k in _scan_iter():
 
-                    sp = ptc.tc_setpoint('Heater')
-                    ct = ptc.tc_temperature('2A')
+                    #sp = ptc.tc_setpoint('Heater')
+                    #ct = ptc.tc_temperature('2A')
 
-                    if np.abs(sp - ct) > 0.8:
-                        general.wait('8000 ms')
+                    #if np.abs(sp - ct) > 0.8:
+                    #    general.wait('8000 ms')
 
                     if self.command == 'exit':
                         break
