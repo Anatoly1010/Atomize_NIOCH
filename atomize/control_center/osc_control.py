@@ -64,13 +64,13 @@ class MainWindow(QMainWindow):
 
 
         # ---- Boxes ----
-        double_boxes = [(QDoubleSpinBox, "Hor_offset", "", self.hor_offset, -1e6, 1e6, 0, 1, 1, " us"),
-                      (QDoubleSpinBox, "Wind", "", self.wind, 0.1, 1e6, 500, 1, 1, " us"),
+        double_boxes = [(QDoubleSpinBox, "Hor_offset", "", self.hor_offset, -1000, 1000, 0, 1, 1, " ns"),
+                      (QDoubleSpinBox, "Wind", "", self.wind, 20, 5000, 500, 1, 1, " ns"),
                       (QSpinBox, "Ch1_scale", "", self.ch1_scale, 2, 2000,200, 5, 0, " mV"),
                       (QSpinBox, "Ch1_offset", "", self.ch1_offset, -1e3, 1e3, 0, 1, 0, " mV"),
-                      (QSpinBox, "Ch2_scale", "", self.ch1_scale, 2, 2000,200, 5, 0, " mV"),
-                      (QSpinBox, "Ch2_offset", "", self.ch1_offset, -1e3, 1e3, 0, 1, 0, " mV"),
-                      (QSpinBox, "Acq_number", "", self.acq_number, 2, 1e3, 10, 1, 0, "")
+                      (QSpinBox, "Ch2_scale", "", self.ch2_scale, 2, 2000,100, 5, 0, " mV"),
+                      (QSpinBox, "Ch2_offset", "", self.ch2_offset, -500, 500, 0, 1, 0, " mV"),
+                      (QSpinBox, "Acq_number", "", self.acq_number, 2, 10000, 10, 1, 0, "")
                         ]
 
         for widget_class, attr_name, par_name, func, v_min, v_max, cur_val, v_step, dec, suf in double_boxes:
