@@ -1847,6 +1847,7 @@ class MainWindow(QMainWindow):
 
         unit = delta / f_edit
         self._linking = True
+        clamped = False
         try:
             for j in range(1, 10):
                 if j == index:
@@ -1857,10 +1858,26 @@ class MainWindow(QMainWindow):
                 box_j = getattr(self, f"P{j}{suffix}", None)
                 if box_j is None:
                     continue
-                box_j.setValue(box_j.value() + unit * f_j)
+                target = box_j.value() + unit * f_j
+                # QSpinBox/QDoubleSpinBox silently clamp to their range. For the
+                # amplitude (_cf, 0.1..100 %) a coupled shift can drive a linked
+                # pulse past the 100 % ceiling; detect that so the operator is told
+                # the coupling is no longer strictly proportional instead of it
+                # breaking silently.
+                if target > box_j.maximum() + 1e-9 or target < box_j.minimum() - 1e-9:
+                    clamped = True
+                box_j.setValue(target)
                 self._link_prev[(suffix, j)] = box_j.value()
         finally:
             self._linking = False
+
+        if clamped:
+            if suffix == '_cf':
+                self.message('Link: a coupled amplitude hit the 0.1-100 % limit '
+                             'and was clamped; the link is no longer proportional.')
+            else:
+                self.message('Link: a coupled value hit its limit and was clamped; '
+                             'the link is no longer proportional.')
 
     # ---- Live Edit helpers ----
     def live_edit_toggle(self):
@@ -1924,9 +1941,31 @@ class MainWindow(QMainWindow):
         NIOCH is point/posttrigger-based, so there is no decimation term.
         """
         phases = len(self.ph_1) if getattr(self, 'ph_1', None) is not None else 0
+        # Hash every active pulse's phase text, not just the receiver step count:
+        # phases are not in the live 'PU' payload, so ANY phase-cycle edit (a
+        # content change that keeps the same number of steps, or a step-count
+        # change) must fall back to the announced restart instead of being
+        # silently dropped.
+        phase_sig = self._phase_sig()
         fixed = tuple((e[0], str(getattr(self, f'p{e[0]}_length'))) for e in snap['pulses'])
         det_len = str(getattr(self, 'p1_length', ''))
-        return (phases, self.laser_flag, fixed, det_len)
+        return (phases, phase_sig, self.laser_flag, fixed, det_len)
+
+    def _phase_sig(self):
+        """Normalized phase text of every active (non-zero-length) pulse, keyed by
+        index. Any edit to a phase box changes this, forcing a live-edit restart
+        (phases can only be applied by rebuilding, never via the 'PU' payload)."""
+        out = []
+        for i in range(1, 10):
+            try:
+                if float(str(getattr(self, f'p{i}_length')).split(' ')[0]) == 0:
+                    continue
+            except (ValueError, AttributeError):
+                continue
+            box = getattr(self, f'Phase_{i}', None)
+            if box is not None:
+                out.append((i, box.toPlainText().strip().lower().replace(' ', '')))
+        return tuple(out)
 
     def _live_starts(self, snap):
         """Just the start columns, to detect whether an edit actually moved a pulse."""
@@ -2034,8 +2073,8 @@ class MainWindow(QMainWindow):
         if self._live_starts(snap) != self.live_starts and not self._live_start_safe(snap):
             self.update()
             self.errors.appendPlainText(
-                'Live Edit: Start would overlap or reorder the sequence '
-                '— full restart performed.')
+                'Live Edit: the new Start times would overlap or reorder the '
+                'pulses — full restart performed.')
             return
 
         # Send amplitude / frequency absolute, but starts as GUI-space deltas
@@ -3167,6 +3206,13 @@ class MainWindow(QMainWindow):
         self.quad = 0
         self.opened = 0
 
+        # A freshly loaded preset no longer matches whatever sequence a live
+        # preview is still running (the dig_stop above is a no-op while
+        # opened == 1). In live mode, stop those pulses now so the operator
+        # restarts cleanly with Run Pulses on the loaded sequence.
+        if getattr(self, 'live_edit_on', 0) and self._live_run_alive():
+            self.dig_stop()
+
     def setter(self, text, index, typ, st, leng, sig, freq, w_sweep, coef, phase, d_start, len_inc, d_start2 = None):
         """
         Auxiliary function to set all the values from *.awg file
@@ -3243,6 +3289,11 @@ class MainWindow(QMainWindow):
         self.fft = 0
         self.quad = 0
         self.opened = 0
+
+        # In live mode, stop a still-running preview so the loaded layout is
+        # applied cleanly on the next Run Pulses (see open_file).
+        if getattr(self, 'live_edit_on', 0) and self._live_run_alive():
+            self.dig_stop()
 
     def save_file(self, filename):
         """
@@ -4466,6 +4517,13 @@ class Worker():
             data_x = np.zeros( WIN_ADC )
             data_y = np.zeros( WIN_ADC )
 
+            # Show the AWG pulse list in the log right after setup, so it is
+            # visible on every start and restart. Live edits refresh the same
+            # block in place from the 'PU' handler below. This replaces the old
+            # preflight 'test' pulse table so only one live block is shown.
+            if not script_test:
+                conn.send( ('PulseList', awg.awg_pulse_list()) )
+
             # the idea of automatic and dynamic changing is
             # sending a new value of repetition rate via self.command
             # in each cycle we will check the current value of self.command
@@ -4690,18 +4748,19 @@ class Worker():
                         )
 
                 if fft_flag == 1:
-                    # The 'Dig' and 'FFT' plot_1d calls fire back-to-back through the
-                    # async shared-memory plotter; without a gap the second payload can
-                    # race the first's transfer and corrupt both curves (wrong x-axis on
-                    # 'ch', garbled 'ch_1') and the FFT. A short wait lets the 'Dig' send
-                    # complete before the 'FFT' payload reuses the channel.
-                    general.wait('1 ms')
+                    # The 'Dig' and 'FFT' plot_1d calls fire back-to-back; a short
+                    # wait immediately before the 'FFT' send throttles the pair so
+                    # the 'Dig' frame is fully handed off first (otherwise the two
+                    # frames pile into the socket and can desync -> wrong x-axis on
+                    # 'ch', garbled 'ch_1', broken FFT). Placed right before plot_1d
+                    # because that is the only spot that gates the actual send.
 
                     if quad == 0:
                         # x_axis is in s, t_res is in ns -> convert x_axis to ns
                         freq_axis, abs_values = fft.fft(x_axis * 1e9, data_x, data_y, t_res)
                         m_val = round( np.amax( abs_values ), 2 )
                         # fft.fft returns MHz; the axis auto-SI-prefixes, so pass Hz
+                        general.wait('1 ms')
                         general.plot_1d('FFT', freq_axis * 1e6, abs_values,
                             xname = 'Freq Offset', label = 'FFT', xscale = 'Hz',
                             yscale = 'Arb. U.', text = 'Max ' + str(m_val)
@@ -4714,6 +4773,7 @@ class Worker():
                         freq, fft_x, fft_y = fft.fft( x_axis[p_to_drop:] * 1e9, data_x[p_to_drop:], data_y[p_to_drop:], t_res, re = 'True' )
                         data_fft = fft.ph_correction( freq, fft_x, fft_y, zero_order, first_order, second_order )
                         # ph_correction uses freq in MHz; the axis auto-SI-prefixes, so plot Hz
+                        general.wait('1 ms')
                         general.plot_1d('FFT', freq * 1e6, ( data_fft[0], data_fft[1] ),
                             xname = 'Freq Offset', xscale = 'Hz',
                             yscale = 'Arb. U.', label = 'FFT'
@@ -4742,7 +4802,10 @@ class Worker():
                 if not script_test:
                     conn.send( ('', f'Pulses are stopped') )
                 else:
-                    conn.send( ('test', f'{awg.awg_pulse_list()}') )
+                    # The composed pulse list is now shown live via 'PulseList'
+                    # after setup in the real preview, so the preflight copy here
+                    # is redundant (matches awg_phasing_insys.py). Just close.
+                    conn.close()
 
         except BaseException as e:
             exc_info = f"{type(e)} \n{str(e)} \n{traceback.format_exc()}"
