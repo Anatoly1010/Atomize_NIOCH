@@ -6,6 +6,7 @@ import re
 import sys
 import math
 import time
+import json
 import tempfile
 import traceback
 import numpy as np
@@ -64,10 +65,24 @@ class MainWindow(QMainWindow):
         self.first_order_coef = 180 / np.pi * 1e-9
         self.sec_order_coef = 180 / np.pi * 1e-18
 
+        # ---- Link mode state ----
+        # link_param selects which pulse parameter is coupled ('Off' when
+        # disabled); link_factor maps pulse index -> weight (0 = No). Editing a
+        # linked pulse's active parameter by delta shifts every other linked
+        # pulse proportionally (unit = delta / factor_edited; pulse_j += unit *
+        # factor_j). Initialised before design_tab_1(), because the pulse
+        # spin-boxes connect link_source_changed during that build. Defaulting
+        # link_param to 'Off' keeps build-time value snaps inert.
+        self.link_param = 'Off'
+        self.link_factor = {i: 0.0 for i in range(1, 10)}
+        self._linking = False
+        self._link_prev = {}
+
         self.design_tab_1()
         self.design_tab_2()
         self.design_tab_3()
         self.design_tab_4()
+        self.design_tab_5()
 
         self.laser_q_switch_delay = 0 #160000 # in ns
 
@@ -83,6 +98,24 @@ class MainWindow(QMainWindow):
         self.monitor_timer = QTimer()
         self.monitor_timer.timeout.connect(self.check_process_status)
         self.file_handler = openfile.Saver_Opener()
+
+        # ---- Live Edit (no-restart re-arm) ----
+        # When enabled, edits to a running preview's pulse Start / Length are
+        # pushed to the worker over the existing pipe and applied by rewriting
+        # pulse_array / pulse_array_init + pulser_next_phase -- no card teardown.
+        # Debounced so a burst of edits coalesces into one re-arm. live_sig
+        # captures the structure the running worker was opened with (active-pulse
+        # count, phase-cycle length, channel/type, detection-pulse length); an
+        # edit that changes it falls back to a full restart. Timing overlap --
+        # including the auto-inserted AMP_ON / LNA_PROTECT windows, which the
+        # pulser may legally join -- is validated in the worker with a test-mode
+        # rebuild, so a genuinely colliding edit is rejected there and the running
+        # preview is kept.
+        self.live_edit_on = 0
+        self.live_sig = None
+        self.live_timer = QTimer()
+        self.live_timer.setSingleShot(True)
+        self.live_timer.timeout.connect(self.live_apply)
 
         # Watch for "Open in RECT" requests from the Sequence Calculator and
         # reload the preset into this already-open window. Seed the seen-nonce
@@ -397,7 +430,7 @@ class MainWindow(QMainWindow):
         self.setWindowIcon( QIcon(icon_path) )
         self.path = os.path.join(path_to_main, '..', '..', '..', '..', 'experimental_data')
 
-        self.setMinimumHeight(610)
+        self.setMinimumHeight(644)
         self.setMinimumWidth(1720)
         self.setMaximumWidth(2660)
 
@@ -560,9 +593,14 @@ class MainWindow(QMainWindow):
                 setattr(self, f"P{i}{pulse_set[7]}", spin_box)
                 # parameter name pulse_set[8]
                 spin_box.valueChanged.connect(
-                        lambda val, idx = i, s7 = pulse_set[7], s8 = pulse_set[8]: 
+                        lambda val, idx = i, s7 = pulse_set[7], s8 = pulse_set[8]:
                         self.update_pulse_param(idx, s7, s8)
                         )
+                # Start / Length are linkable (Position / Length).
+                if pulse_set[7] in ('_st', '_len'):
+                    spin_box.valueChanged.connect(
+                        lambda val, idx = i, s7 = pulse_set[7]: self.link_source_changed(idx, s7)
+                    )
 
                 start_value = self.round_and_change(spin_box)
                 setattr(self, f"p{i}{pulse_set[8]}", start_value)
@@ -685,6 +723,34 @@ class MainWindow(QMainWindow):
         label_widget.setFixedSize(170, 26)
         self.gridLayout.addWidget(label_widget, 11, 0)
         self.gridLayout.addWidget(hline(), 12, 0, 1, 10)
+
+        # ---- Link factor row ----
+        # Per-pulse weight for Link mode. The coupled parameter is chosen in the
+        # Settings tab; the weight here (No / 0.5x / 1x / 2x) scales how far this
+        # pulse moves relative to the pulse being edited.
+        self.link_row_label = QLabel("Link")
+        self.link_row_label.setFixedSize(170, 26)
+        self.link_row_label.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
+        self.gridLayout.addWidget(self.link_row_label, 13, 0)
+
+        for i in range(1, 10):
+            combo = QComboBox()
+            combo.addItems(["No", "0.5x", "1x", "2x"])
+            combo.setCurrentText("No")
+            combo.setFixedSize(170, 26)
+            combo.setStyleSheet("""
+                QComboBox
+                { color : rgb(193, 202, 227);
+                selection-color: rgb(211, 194, 78);
+                selection-background-color: rgb(63, 63, 97);
+                outline: none;
+                }
+                """)
+            setattr(self, f"P{i}_lk", combo)
+            combo.currentTextChanged.connect(lambda _, idx = i: self.update_link_factor(idx))
+            self.gridLayout.addWidget(combo, 13, i)
+
+        self.gridLayout.addWidget(hline(), 14, 0, 1, 10)
 
 
         # ---- Boxes----
@@ -1275,6 +1341,292 @@ class MainWindow(QMainWindow):
 
         gridLayout.setRowStretch(2, 1)
         gridLayout.setColumnStretch(2, 1)
+
+    def design_tab_5(self):
+        settings_page = QWidget()
+        gridLayout = QGridLayout()
+        gridLayout.setContentsMargins(15, 15, 10, 10)
+        gridLayout.setVerticalSpacing(4)
+        gridLayout.setHorizontalSpacing(20)
+
+        settings_page.setLayout(gridLayout)
+
+        self.tab_pulse.addTab(settings_page, "Settings")
+        self.tab_pulse.tabBar().setTabTextColor(4, QColor(193, 202, 227))
+
+        # ---- Separator ----
+        def hline():
+            line = QFrame()
+            line.setFrameShape(QFrame.Shape.HLine)
+            line.setFrameShadow(QFrame.Shadow.Sunken)
+            line.setLineWidth(2)
+            return line
+
+        # ---- Live Edit controls ----
+        live_label = QLabel("Live mode")
+        live_label.setFixedSize(170, 26)
+        live_label.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
+        self.live_edit_box = QCheckBox("")
+        self.live_edit_box.setStyleSheet(CHECKBOX_STYLE)
+        self.live_edit_box.setFixedSize(170, 26)
+        self.live_edit_box.setToolTip(
+            "When enabled, edits to a pulse's Start and Length are applied to the "
+            "running sequence immediately, without restarting the card. Changing the "
+            "channel/type, phase-cycle length, the number of pulses, or the detection "
+            "pulse triggers an automatic restart instead. An edit that would make two "
+            "pulses collide (accounting for the AMP_ON / LNA_PROTECT protection "
+            "windows) is rejected and the running preview is kept. No effect until a "
+            "sequence is running.")
+        self.live_edit_box.stateChanged.connect(self.live_edit_toggle)
+
+        debounce_label = QLabel("Apply delay")
+        debounce_label.setFixedSize(170, 26)
+        debounce_label.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
+        self.Debounce = QSpinBox()
+        self.Debounce.setRange(200, 5000)
+        self.Debounce.setSingleStep(50)
+        self.Debounce.setValue(800)
+        self.Debounce.setSuffix(" ms")
+        self.Debounce.setFixedSize(170, 26)
+        self.Debounce.setButtonSymbols(QSpinBox.ButtonSymbols.PlusMinus)
+        self.Debounce.setContextMenuPolicy(Qt.ContextMenuPolicy.NoContextMenu)
+        self.Debounce.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); selection-background-color: rgb(211, 194, 78); selection-color: rgb(63, 63, 97);}")
+        self.Debounce.setToolTip("Delay after the last pulse edit before it is pushed to the running sequence.")
+
+        # ---- Link mode: coupled parameter ----
+        link_param_label = QLabel("Link Parameter")
+        link_param_label.setFixedSize(170, 26)
+        link_param_label.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
+        self.Combo_link = QComboBox()
+        self.Combo_link.addItems(["Off", "Length", "Position"])
+        self.Combo_link.setCurrentText("Off")
+        self.Combo_link.setFixedSize(170, 26)
+        self.Combo_link.setStyleSheet("""
+            QComboBox
+            { color : rgb(193, 202, 227);
+            selection-color: rgb(211, 194, 78);
+            selection-background-color: rgb(63, 63, 97);
+            outline: none;
+            }
+            """)
+        self.Combo_link.setToolTip(
+            "Couple this parameter across pulses. Set a per-pulse weight "
+            "(No / 0.5x / 1x / 2x) in the Link row of the Pulses tab; editing "
+            "the parameter on any linked pulse shifts every other linked pulse "
+            "proportionally to its weight.")
+        self.Combo_link.currentTextChanged.connect(self.link_param_changed)
+
+        gridLayout.addWidget(live_label, 0, 0)
+        gridLayout.addWidget(self.live_edit_box, 0, 1)
+        gridLayout.addWidget(debounce_label, 1, 0)
+        gridLayout.addWidget(self.Debounce, 1, 1)
+        gridLayout.addWidget(hline(), 2, 0, 1, 2)
+        gridLayout.addWidget(link_param_label, 3, 0)
+        gridLayout.addWidget(self.Combo_link, 3, 1)
+        gridLayout.addWidget(hline(), 4, 0, 1, 2)
+
+        gridLayout.setColumnStretch(2, 1)
+        gridLayout.setRowStretch(5, 1)
+
+        # All pulse spin-boxes now exist; snapshot their values so the first
+        # linked edit computes the correct delta.
+        self._seed_link_prev()
+
+    # ---- Link mode helpers ----
+    def _link_suffix(self):
+        """Spin-box suffix for the currently coupled parameter, or None."""
+        return {'Length': '_len', 'Position': '_st'}.get(self.link_param)
+
+    def _seed_link_prev(self):
+        for suf in ('_st', '_len'):
+            for i in range(1, 10):
+                box = getattr(self, f"P{i}{suf}", None)
+                if box is not None:
+                    self._link_prev[(suf, i)] = box.value()
+
+    def link_param_changed(self, _text = None):
+        self.link_param = self.Combo_link.currentText()
+
+    def update_link_factor(self, index):
+        txt = getattr(self, f"P{index}_lk").currentText()
+        self.link_factor[index] = {'No': 0.0, '0.5x': 0.5, '1x': 1.0, '2x': 2.0}.get(txt, 0.0)
+
+    def link_source_changed(self, index, suffix):
+        """A linkable spin-box changed: shift the other linked pulses in step."""
+        box = getattr(self, f"P{index}{suffix}")
+        new_val = box.value()
+        prev = self._link_prev.get((suffix, index), new_val)
+        self._link_prev[(suffix, index)] = new_val
+
+        # Re-entrancy guard (we are the one moving the other boxes), inactive
+        # parameter, or this pulse is not linked -> nothing to propagate.
+        if self._linking or suffix != self._link_suffix():
+            return
+        f_edit = self.link_factor.get(index, 0.0)
+        if f_edit == 0.0:
+            return
+        delta = new_val - prev
+        if delta == 0:
+            return
+
+        unit = delta / f_edit
+        self._linking = True
+        try:
+            for j in range(1, 10):
+                if j == index:
+                    continue
+                f_j = self.link_factor.get(j, 0.0)
+                if f_j == 0.0:
+                    continue
+                box_j = getattr(self, f"P{j}{suffix}", None)
+                if box_j is None:
+                    continue
+                box_j.setValue(box_j.value() + unit * f_j)
+                self._link_prev[(suffix, j)] = box_j.value()
+        finally:
+            self._linking = False
+
+    # ---- Live Edit helpers ----
+    def live_edit_toggle(self):
+        self.live_edit_on = 1 if self.live_edit_box.isChecked() else 0
+
+    def _live_run_alive(self):
+        """A dig_on preview is running (not a long experiment) and reachable."""
+        if getattr(self, 'is_experiment', False):
+            return False
+        proc = getattr(self, 'digitizer_process', None)
+        try:
+            return proc is not None and proc.is_alive()
+        except (AttributeError, ValueError):
+            return False
+
+    def _live_snapshot(self):
+        """Current pulse table as [[typ, start, length, phase_list], ...] for P1..P9."""
+        snap = []
+        for i in range(1, 10):
+            snap.append([
+                getattr(self, f'p{i}_typ'),
+                getattr(self, f'p{i}_start'),
+                getattr(self, f'p{i}_length'),
+                getattr(self, f'ph_{i}'),
+            ])
+        return snap
+
+    def _structure_sig(self, snap):
+        """
+        Signature of everything that is NOT live-editable (only Start / Length
+        are): the count of active (non-zero-length) pulses, the phase-cycle
+        length, and the per-pulse channel/type (so a DETECTION/MW/LASER change
+        forces a restart rather than a partial live apply). A change here cannot
+        be re-armed live. The DETECTION pulse also sets the digitizer trigger, so
+        its length is included and a detection change forces a restart.
+        """
+        active = [p for p in snap if int(float(str(p[2]).split(' ')[0])) != 0]
+        phases = len(snap[0][3]) if snap and snap[0][3] is not None else 0
+        types = tuple(p[0] for p in active)
+        det_len = tuple(str(p[2]) for p in snap if p[0] == 'DETECTION')
+        return (len(active), phases, types, det_len)
+
+    def _validate_live_edit(self):
+        """
+        Reject-and-keep-running pre-check for a live edit: return an error string
+        if the proposed pulse table is invalid, else None. Only the cheap,
+        pulser-independent checks live here -- unrecognized phase tokens and a
+        phase-cycle length mismatch. Timing overlap is NOT checked here: because
+        the pulser may legally join the AMP_ON / LNA_PROTECT windows of nearby
+        pulses, overlap is validated in the worker with a full test-mode rebuild
+        (which reuses the exact join/merge/assert logic) before the edit is
+        applied.
+
+        Checks: (1) every phase token in a plain comma list is recognized;
+        (2) all *cycled* (>=2-step) plain lists share one length (a length-1 list
+        is a non-cycling fixed phase and is exempt; bracket/paren notation is an
+        intentional Kronecker expansion and is skipped).
+        """
+        valid = {'+x', '-x', '+y', '-y', 'x', 'y', 'i', '-i', '+', '-', '0'}
+        simple_lens = []          # (i, nsteps) for plain cycled lists
+        for i in range(1, 10):
+            length = float(str(getattr(self, f'p{i}_length')).split(' ')[0])
+            if length == 0:
+                continue
+            raw = getattr(self, f'Phase_{i}').toPlainText().strip()
+            if '[' not in raw and '(' not in raw:
+                toks = [t.strip().lower().replace(' ', '')
+                        for t in raw.split(',') if t.strip()]
+                for t in toks:
+                    if t not in valid:
+                        return f'unrecognized phase "{t}" in pulse P{i}.'
+                if len(toks) >= 2:
+                    simple_lens.append((i, len(toks)))
+
+        if simple_lens:
+            i0, L0 = simple_lens[0]
+            for i, L in simple_lens[1:]:
+                if L != L0:
+                    return (f'phase-cycle length mismatch: P{i} has {L} steps but '
+                            f'P{i0} has {L0} (receiver and every cycled pulse must '
+                            f'share one length).')
+        return None
+
+    def schedule_live_apply(self):
+        """(Re)start the debounce timer when live edit is armed and a preview runs.
+        Defensive getattr: this is invoked from update_pulse_phase() during widget
+        construction, before live_edit_on / opened are set."""
+        if (getattr(self, 'live_edit_on', 0) and getattr(self, 'opened', 1) == 0
+                and self._live_run_alive()):
+            self.live_timer.start(int(self.Debounce.value()))
+
+    def live_apply(self):
+        """
+        Debounce fired: push the current pulse table into the running worker.
+        Geometry-preserving edits go over the pipe as a 'PU' snapshot; a
+        structural change transparently restarts the card with a notice; an
+        invalid edit (phase cycle) is rejected and the running preview is left
+        untouched. A timing overlap is caught later, in the worker.
+        """
+        if not (self.live_edit_on and self.opened == 0 and self._live_run_alive()):
+            return
+
+        err = self._validate_live_edit()
+        if err is not None:
+            self.errors.appendPlainText(
+                'Live Edit rejected — ' + err
+                + ' Preview left running; fix the value.')
+            return
+
+        snap = self._live_snapshot()
+        if self._structure_sig(snap) != self.live_sig:
+            # update() tears down the worker via dig_stop(), whose
+            # check_process_status() clears the log -- so announce the restart
+            # AFTER it. The new preview then appends its pulse list below.
+            self.update()
+            self.errors.appendPlainText(
+                'Live Edit: rebuild-only parameter changed (channel/type / phase '
+                'cycle / pulse count / detection pulse) — full restart performed.')
+            return
+
+        try:
+            self.parent_conn_dig.send('PU' + json.dumps(snap))
+        except (AttributeError, BrokenPipeError, OSError):
+            pass
+
+    def update_pulse_list_display(self, text):
+        """
+        Show the current pulse list in the log after a live edit, refreshing the
+        block in place (from the marker line to the end) so repeated live edits
+        do not stack copies. Any messages above the marker are left untouched.
+        """
+        marker = '--- Live pulse list ---'
+        block = marker + '\n' + text
+        idx = self.errors.toPlainText().rfind(marker)
+        cursor = self.errors.textCursor()
+        if idx != -1:
+            cursor.setPosition(idx)
+            cursor.movePosition(QTextCursor.MoveOperation.End,
+                                QTextCursor.MoveMode.KeepAnchor)
+            cursor.insertText(block)
+        else:
+            self.errors.appendPlainText(block)
 
     def x0(self):
         self.cur_x0 = self.round_and_change_no_ns(self.X0)
@@ -1970,6 +2322,15 @@ class MainWindow(QMainWindow):
         self.path = os.path.dirname(filename)
         ldir.save('phase', self.path)
         self.opened = 1
+
+        # A preset does not define pulse linking; reset the Link row to No and
+        # the Settings Link parameter to Off so a freshly loaded sequence starts
+        # uncoupled (this also keeps the pulse values loaded below from
+        # triggering link propagation).
+        self.Combo_link.setCurrentText("Off")
+        for i in range(1, 10):
+            getattr(self, f"P{i}_lk").setCurrentText("No")
+
         text = open(filename).read()
         lines = text.split('\n')
 
@@ -2073,6 +2434,15 @@ class MainWindow(QMainWindow):
         (length 0) when the new sequence no longer uses it.
         """
         self.opened = 1
+
+        # A preset does not define pulse linking; reset the Link row to No and
+        # the Settings Link parameter to Off so the pushed layout starts
+        # uncoupled (this also keeps the pulse Starts set below from triggering
+        # link propagation).
+        self.Combo_link.setCurrentText("Off")
+        for i in range(1, 10):
+            getattr(self, f"P{i}_lk").setCurrentText("No")
+
         lines = open(filename).read().split('\n')
         for i in range(1, 10):
             try:
@@ -2188,18 +2558,23 @@ class MainWindow(QMainWindow):
             for i, pulse_phase in enumerate(a['pulses']):
                 setattr(self, f"ph_{num_pulses[i+1]}", pulse_phase)
 
-                        
+
             #if len(temp) >= 2: #and temp[0] == '[' and temp[-1] == ']':
             #    content = temp[:].split(',') #[1:-1]
             #    phases = [p.strip() for p in content if p.strip()]
-                
+
             #    if len(phases) == 1:
             #        phases.append(phases[0])
-                
+
             #    setattr(self, f"ph_{index}", phases)
 
         except (IndexError, AttributeError, Exception) as e:
             pass
+
+        # The phase cycle is not live-editable (it changes the number of phases /
+        # the buffer layout). Route it through the debounced path so the edit
+        # auto-restarts (announced) instead of silently waiting for Run Pulses.
+        self.schedule_live_apply()
 
     def remove_ns(self, string1):
         return string1.split(' ')[0]
@@ -2320,22 +2695,30 @@ class MainWindow(QMainWindow):
         spin_widget = getattr(self, f"P{index}{attr_suffix}")
         new_value = self.round_and_change(spin_widget)
         setattr(self, f"p{index}{val_suffix}", new_value)
-        
+
         if attr_suffix == "_len":
             self.update_pulse_phase(1)
         #print(f"Updated: p{index}{val_suffix} = {new_value}")
+
+        # Start / Length are the live-editable fields; schedule a debounced re-arm.
+        if attr_suffix in ("_st", "_len"):
+            self.schedule_live_apply()
 
     def update_pulse_type(self, index):
 
         combo = getattr(self, f"P{index}_type")
         text = combo.currentText()
-        
+
         setattr(self, f"p{index}_typ", text)
-        
+
         if index == 2:
             self.laser_flag = 1 if text == 'LASER' else 0
-            
+
         #print(f"Pulse {index} type set to: {text}")
+        # Channel/type is not live-editable; schedule the debounced path so the
+        # change auto-restarts (announced) instead of silently waiting for Run
+        # Pulses.
+        self.schedule_live_apply()
 
     def rep_rate(self):
         """
@@ -2667,6 +3050,16 @@ class MainWindow(QMainWindow):
             self.Acq_number.setValue(int(data))
         elif msg_type == 'Count':
             self.update_count_nip(data)
+        elif msg_type == 'PulseList':
+            # Side-effect-free live-edit refresh: update the pulse-list block in
+            # place without touching the message-pump timer or run state.
+            self.update_pulse_list_display(data)
+        elif msg_type == 'LiveReject':
+            # The worker's test-mode rebuild found the live edit invalid (e.g. an
+            # overlap the AMP_ON/LNA_PROTECT join cannot resolve). The running
+            # preview was left on the previous sequence; surface the reason.
+            self.errors.appendPlainText('Live Edit rejected — ' + str(data)
+                + ' Preview left running; fix the value.')
         else:
             self.timer.stop()
             if ( data.startswith('Exp') ) and (msg_type == 'test'):
@@ -2792,13 +3185,18 @@ class MainWindow(QMainWindow):
 
         worker = Worker()
         self.parent_conn_dig, self.child_conn_dig = Pipe()
-        
+
+        # Capture the structure this preview is opened with; a later live edit
+        # that changes it (channel/type, phase count, pulse count, detection
+        # pulse) falls back to a full restart instead of a live re-arm.
+        self.live_sig = self._structure_sig(self._live_snapshot())
+
         self.digitizer_process = Process( target = worker.dig_on, args = ( self.child_conn_dig,
-            self.dig_points, self.posttrigger, self.number_averages, self.cur_win_left, 
-            self.cur_win_right, self.p1_list, self.p2_list, self.p3_list, self.p4_list, 
-            self.p5_list, self.p6_list, self.p7_list, self.laser_flag, 
-            self.repetition_rate.split(' ')[0], 
-            self.mag_field, self.fft, self.quad, self.zero_order, self.first_order, 
+            self.dig_points, self.posttrigger, self.number_averages, self.cur_win_left,
+            self.cur_win_right, self.p1_list, self.p2_list, self.p3_list, self.p4_list,
+            self.p5_list, self.p6_list, self.p7_list, self.laser_flag,
+            self.repetition_rate.split(' ')[0],
+            self.mag_field, self.fft, self.quad, self.zero_order, self.first_order,
             self.second_order, self.p_to_drop, self.combo_laser_num, self.laser_q_switch_delay,
             self.p8_list, self.p9_list ) )
 
@@ -3135,6 +3533,96 @@ class Worker():
                     second_order = float( self.command[2:] )
                 elif self.command[0:2] == 'PD':
                     p_to_drop = int( self.command[2:] )
+
+                elif self.command[0:2] == 'PU':
+                    # Live Edit: re-arm the running sequence with an edited pulse
+                    # table (Start / Length) without a card restart. Only pulses
+                    # already present are touched; adding/removing a pulse is a
+                    # structural change the GUI handles with a restart, so an
+                    # unknown name is simply skipped.
+                    #
+                    # Overlap is prohibited on this pulser, but the AMP_ON /
+                    # LNA_PROTECT protection windows of nearby pulses are legally
+                    # auto-joined -- so "close" is not necessarily "colliding".
+                    # We therefore validate the proposed table in a throwaway
+                    # TEST-mode pulser first: replaying pulser_pulse + a full
+                    # pulser_next_phase() cycle reuses the exact join/merge and
+                    # overlap-assert logic. Only if it does not assert do we
+                    # rewrite the running arrays; otherwise the edit is rejected
+                    # and the current sequence keeps running.
+                    try:
+                        snap = json.loads( self.command[2:] )
+                    except (ValueError, TypeError):
+                        snap = None
+
+                    if snap is not None:
+                        def _edited_start(idx, entry):
+                            # Mirror the setup start handling: in LASER mode every
+                            # pulse except the LASER pulse (idx 1) is shifted by the
+                            # Q-switch delay and snapped to the 2 ns grid.
+                            if laser_flag == 1 and idx != 1:
+                                sv = float(entry[1].split(' ')[0]) + laser_qsw_delay
+                                return f"{self.round_to_closest(sv, 2)} ns"
+                            return entry[1]
+
+                        reject = None
+                        saved_argv = sys.argv
+                        try:
+                            sys.argv = ['', 'test']
+                            pbt = pb_pro.PB_ESR_500_Pro()
+                            for idx, entry in enumerate(snap):
+                                if int(float(entry[2].split(' ')[0])) == 0:
+                                    continue
+                                kwargs = {
+                                    'name': f'P{idx}',
+                                    'channel': entry[0],
+                                    'start': _edited_start(idx, entry),
+                                    'length': entry[2],
+                                }
+                                if not (laser_flag == 1 and idx == 1):
+                                    kwargs['phase_list'] = entry[3]
+                                pbt.pulser_pulse(**kwargs)
+                            pbt.pulser_repetition_rate( str(rep_rate) + ' Hz' )
+                            # one full phase cycle -> base + phase-pulse overlap
+                            # checks fire, exactly like the preflight.
+                            for _ in range( len( rect1[3] ) ):
+                                pbt.pulser_next_phase()
+                        except AssertionError as ae:
+                            reject = str(ae) or 'pulses overlap after the edit'
+                        except BaseException as be:
+                            reject = str(be)
+                        finally:
+                            sys.argv = saved_argv
+
+                        if reject is not None:
+                            if not script_test:
+                                conn.send( ('LiveReject', reject) )
+                        else:
+                            # Commit to the running sequence. Write BOTH the live
+                            # and init arrays: pulser_pulse_reset() deep-copies the
+                            # init array back over the live one after every phase
+                            # cycle, so an edit that skips the init copy would be
+                            # reverted. shift_count = 1 makes the next
+                            # pulser_next_phase() re-arm with the new values,
+                            # preserving the acquisition cadence.
+                            live_by_name = { p['name']: p for p in pb.pulse_array }
+                            init_by_name = { p['name']: p for p in pb.pulse_array_init }
+                            for idx, entry in enumerate(snap):
+                                if int(float(entry[2].split(' ')[0])) == 0:
+                                    continue
+                                new_start = _edited_start(idx, entry)
+                                pulse = live_by_name.get(f'P{idx}')
+                                if pulse is not None:
+                                    pulse['start'] = new_start
+                                    pulse['length'] = entry[2]
+                                init_pulse = init_by_name.get(f'P{idx}')
+                                if init_pulse is not None:
+                                    init_pulse['start'] = new_start
+                                    init_pulse['length'] = entry[2]
+                                pb.shift_count = 1
+
+                            if not script_test:
+                                conn.send( ('PulseList', pb.pulser_pulse_list()) )
 
                 # check integration window
                 if win_left > WIN_ADC:
