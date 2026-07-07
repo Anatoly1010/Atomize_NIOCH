@@ -429,6 +429,24 @@ class MainExtended(MainWindow):
             sys.exit()
 
     # redefined method
+    def _phasing_busy(self):
+        """True if a live preview/experiment is active in the Rect/AWG phasing
+        tool. Requires BOTH a phasing subprocess alive AND the libs/status flag
+        On, so a stale flag from a crash never permanently blocks experiments."""
+        procs = ( getattr(self, 'process_phasing', None),
+                  getattr(self, 'process_awg_phasing', None) )
+        alive = any( p is not None and p.state() != QtCore.QProcess.ProcessState.NotRunning
+                     for p in procs )
+        if not alive:
+            return False
+        try:
+            path_status_file = os.path.join(self.path_to_main, 'status')
+            with open(path_status_file, 'r') as f:
+                first = f.read().split('\n')[0]
+            return first.split(':  ')[1].strip() == 'On'
+        except Exception:
+            return False
+
     def start_experiment(self):
         """
         A function to run an experimental script using python.exe.
@@ -449,6 +467,15 @@ class MainExtended(MainWindow):
             stamp = os.stat(name).st_mtime
         else:
             self.text_errors.appendPlainText('No experimental script is opened')
+            return
+
+        # Refuse to launch while a live preview/experiment is running in the
+        # Rect/AWG phasing tool -- it holds the digitizer, so a second
+        # acquisition would clash on the hardware.
+        if self._phasing_busy():
+            self.text_errors.appendPlainText('Experiment cannot be started: a pulse '
+                'preview or experiment is running in the Rect/AWG phasing window. '
+                'Stop it there first.')
             return
 
         # mod
