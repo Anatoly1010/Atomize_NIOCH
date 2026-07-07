@@ -2341,6 +2341,14 @@ class MainWindow(QMainWindow):
         A function to open a pulse list
         :param filename: string
         """
+        # Block loading a preset while an experiment is running: it would
+        # overwrite the GUI and leak digitizer/field commands into the running
+        # experiment's command pipe. Only valid when idle or previewing
+        # (Run Pulses).
+        if self.is_experiment:
+            self.message('Cannot load a preset while an experiment is running.')
+            return
+
         self.path = os.path.dirname(filename)
         ldir.save('phase', self.path)
         self.opened = 1
@@ -2421,9 +2429,9 @@ class MainWindow(QMainWindow):
 
         # A freshly loaded preset no longer matches whatever sequence a live
         # preview is still running (the dig_stop above is a no-op while
-        # opened == 1). In live mode, stop those pulses now so the operator
+        # opened == 1). If Run Pulses is active, stop it now so the operator
         # restarts cleanly with Run Pulses on the loaded sequence.
-        if getattr(self, 'live_edit_on', 0) and self._live_run_alive():
+        if self._live_run_alive():
             self.dig_stop()
 
     def setter(self, text, index, typ, st, leng, phase, d_start, len_inc):
@@ -2462,6 +2470,11 @@ class MainWindow(QMainWindow):
         newly switches on (currently length 0), and we switch a pulse off
         (length 0) when the new sequence no longer uses it.
         """
+        # Same pipe-leak risk as open_file: block while an experiment runs.
+        if self.is_experiment:
+            self.message('Cannot apply pulses while an experiment is running.')
+            return
+
         self.opened = 1
 
         # A preset does not define pulse linking; reset the Link row to No and
@@ -2495,9 +2508,9 @@ class MainWindow(QMainWindow):
         self.quad = 0
         self.opened = 0
 
-        # In live mode, stop a still-running preview so the loaded layout is
-        # applied cleanly on the next Run Pulses (see open_file).
-        if getattr(self, 'live_edit_on', 0) and self._live_run_alive():
+        # If Run Pulses is active, stop the running preview so the loaded layout
+        # is applied cleanly on the next Run Pulses (see open_file).
+        if self._live_run_alive():
             self.dig_stop()
 
     ###
