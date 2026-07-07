@@ -197,9 +197,26 @@ class MainWindow(QMainWindow):
     def read_from(self, conn, memory):
         logging.debug('reading data')
 
+        # The client writes a fixed 320-byte meta frame, but a local socket may
+        # deliver it in fragments, firing readyRead with < 320 bytes. Reading once
+        # would then parse truncated JSON (-> JSONDecodeError -> the previous
+        # frame's self.meta silently reused, so the new array is reshaped with the
+        # old shape: wrong x-axis on 'ch', garbled 'ch_1', broken FFT) AND leave the
+        # frame's tail in the buffer, desyncing every later frame until restart.
+        # Block until the whole 320-byte frame is in hand.
+        raw = bytearray()
+        while len(raw) < 320:
+            if conn.bytesAvailable() == 0 and not conn.waitForReadyRead(2000):
+                logging.warning("Timeout: incomplete meta frame (%d/320 bytes)" % len(raw))
+                break
+            chunk = conn.read(320 - len(raw))
+            if not chunk:
+                break
+            raw += bytes(chunk)
+
         try:
-            self.meta = json.loads(conn.read(320).decode())
-        except json.decoder.JSONDecodeError:
+            self.meta = json.loads(bytes(raw).decode())
+        except (json.decoder.JSONDecodeError, UnicodeDecodeError):
             #print('error')
             pass
 
