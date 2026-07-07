@@ -3380,6 +3380,7 @@ class MainWindow(QMainWindow):
         """
         new_points = int( self.Dec.value() )
         self.time_per_point = 2  # NIOCH: fixed 2 ns / digitizer point
+        old_points = self.dig_points   # card's current record length, before we change it
         if self.shift_together == 1:
             # Shift Together: keep the gap (record length - posttrigger)
             # constant, so growing/shrinking the window moves the horizontal
@@ -3410,9 +3411,18 @@ class MainWindow(QMainWindow):
                 grid = self.Hor_offset.singleStep()
                 self.posttrigger = ( ( self.dig_points - 16 ) // grid ) * grid
                 self.Hor_offset.setValue( self.posttrigger )
+        # Send PO/HO in an order that never creates a transient where the card's
+        # record length is smaller than its posttrigger. The worker reconfigures the
+        # card (stop + set + digitizer_setup) on EACH message, so points - posttrigger
+        # >= 16 must hold after every single send, not just at the end. Shrinking the
+        # window: lower the offset first. Growing it: raise the points first.
         try:
-            self.parent_conn_dig.send( 'PO' + str(self.dig_points) )
-            self.parent_conn_dig.send( 'HO' + str(self.posttrigger) )
+            if self.dig_points < old_points:
+                self.parent_conn_dig.send( 'HO' + str(self.posttrigger) )
+                self.parent_conn_dig.send( 'PO' + str(self.dig_points) )
+            else:
+                self.parent_conn_dig.send( 'PO' + str(self.dig_points) )
+                self.parent_conn_dig.send( 'HO' + str(self.posttrigger) )
         except (AttributeError, BrokenPipeError, OSError):
             pass
         self.win_left()
@@ -4680,13 +4690,20 @@ class Worker():
                         )
 
                 if fft_flag == 1:
+                    # The 'Dig' and 'FFT' plot_1d calls fire back-to-back through the
+                    # async shared-memory plotter; without a gap the second payload can
+                    # race the first's transfer and corrupt both curves (wrong x-axis on
+                    # 'ch', garbled 'ch_1') and the FFT. A short wait lets the 'Dig' send
+                    # complete before the 'FFT' payload reuses the channel.
+                    general.wait('1 ms')
 
                     if quad == 0:
                         # x_axis is in s, t_res is in ns -> convert x_axis to ns
                         freq_axis, abs_values = fft.fft(x_axis * 1e9, data_x, data_y, t_res)
                         m_val = round( np.amax( abs_values ), 2 )
-                        general.plot_1d('FFT', freq_axis, abs_values,
-                            xname = 'Freq Offset', label = 'FFT', xscale = 'MHz',
+                        # fft.fft returns MHz; the axis auto-SI-prefixes, so pass Hz
+                        general.plot_1d('FFT', freq_axis * 1e6, abs_values,
+                            xname = 'Freq Offset', label = 'FFT', xscale = 'Hz',
                             yscale = 'Arb. U.', text = 'Max ' + str(m_val)
                             )
                     else:
@@ -4696,8 +4713,9 @@ class Worker():
                         # fixed resolution of digitizer; 2 ns
                         freq, fft_x, fft_y = fft.fft( x_axis[p_to_drop:] * 1e9, data_x[p_to_drop:], data_y[p_to_drop:], t_res, re = 'True' )
                         data_fft = fft.ph_correction( freq, fft_x, fft_y, zero_order, first_order, second_order )
-                        general.plot_1d('FFT', freq, ( data_fft[0], data_fft[1] ),
-                            xname = 'Freq Offset', xscale = 'MHz',
+                        # ph_correction uses freq in MHz; the axis auto-SI-prefixes, so plot Hz
+                        general.plot_1d('FFT', freq * 1e6, ( data_fft[0], data_fft[1] ),
+                            xname = 'Freq Offset', xscale = 'Hz',
                             yscale = 'Arb. U.', label = 'FFT'
                             )
 
