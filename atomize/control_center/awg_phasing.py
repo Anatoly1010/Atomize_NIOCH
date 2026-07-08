@@ -104,6 +104,18 @@ class _NullDigitizer:
 # markers and the real digitizer captures; the AWG calls become no-ops.
 AWG_PRESENT = True
 
+# --- AWG -> digitizer sample-clock chaining (2026-07 4 ns hunt) ---
+# 1 = the digitizer external reference comes from the AWG "Clock Out" MMCX
+#     connector (sampling clock / 4 = 250 MHz at 1 GS/s) instead of the house
+#     100 MHz. REQUIRES the cable AWG Clock Out -> digitizer Clk In. The AWG
+#     itself stays on the house 100 MHz reference (keeps the MW-bridge lock
+#     chain). Goal: both cards derive their sample clocks from one source, so
+#     the per-run independent PLL relocks become common-mode and the sporadic
+#     4 ns AWG<->digitizer echo shift between restarts disappears.
+# 0 = classic wiring: house 100 MHz reference on both cards.
+DIG_REF_FROM_AWG = 1
+DIG_REF_CLOCK = 250 if DIG_REF_FROM_AWG else 100
+
 class _NullAWG:
     """Stand-in for Spectrum_M4I_6631_X8 when no AWG card is installed.
     Configuration / playback calls (setup/next_phase/stop/close/increment/
@@ -4399,6 +4411,9 @@ class Worker():
             awg.awg_card_mode('Single Joined')
             awg.awg_clock_mode('External')
             awg.awg_reference_clock(100)
+            if DIG_REF_FROM_AWG:
+                # feed the digitizer reference from the AWG sampling clock / 4
+                awg.awg_clock_output('On')
             awg.awg_sample_rate(1000)
             awg.awg_trigger_delay( trig_delay )
             awg.phase_shift_ch1_seq_mode = cur_phase
@@ -4538,7 +4553,7 @@ class Worker():
 
             dig.digitizer_card_mode('Average')
             dig.digitizer_clock_mode('External')
-            dig.digitizer_reference_clock(100)
+            dig.digitizer_reference_clock( DIG_REF_CLOCK )
             dig.digitizer_number_of_points( dig_points )
             dig.digitizer_posttrigger( posttrigger )
             dig.digitizer_number_of_averages( n_averages )
@@ -4992,6 +5007,9 @@ class Worker():
             awg.awg_card_mode('Single Joined')
             awg.awg_clock_mode('External')
             awg.awg_reference_clock(100)
+            if DIG_REF_FROM_AWG:
+                # feed the digitizer reference from the AWG sampling clock / 4
+                awg.awg_clock_output('On')
             awg.awg_sample_rate(1000)
             awg.awg_trigger_delay('0 ns')
             awg.awg_amplitude('CH0', str(ch0_ampl), 'CH1', str(ch1_ampl) )
@@ -5152,7 +5170,7 @@ class Worker():
             POSTTRIGGER = int( self.posttrigger )
             dig.digitizer_card_mode('Average')
             dig.digitizer_clock_mode('External')
-            dig.digitizer_reference_clock(100)
+            dig.digitizer_reference_clock( DIG_REF_CLOCK )
             dig.digitizer_number_of_points( points_window )
             dig.digitizer_posttrigger( POSTTRIGGER )
             dig.digitizer_number_of_averages(AVERAGES)
@@ -5544,6 +5562,9 @@ class Worker():
             awg.awg_card_mode('Single Joined')
             awg.awg_clock_mode('External')
             awg.awg_reference_clock(100)
+            if DIG_REF_FROM_AWG:
+                # feed the digitizer reference from the AWG sampling clock / 4
+                awg.awg_clock_output('On')
             awg.awg_sample_rate(1000)
             awg.awg_trigger_delay('0 ns')
             awg.awg_amplitude('CH0', str(ch0_ampl), 'CH1', str(ch1_ampl) )
@@ -5743,7 +5764,7 @@ class Worker():
             POSTTRIGGER = int( self.posttrigger )
             dig.digitizer_card_mode('Average')
             dig.digitizer_clock_mode('External')
-            dig.digitizer_reference_clock(100)
+            dig.digitizer_reference_clock( DIG_REF_CLOCK )
             dig.digitizer_number_of_points( points_window )
             dig.digitizer_posttrigger( POSTTRIGGER )
             dig.digitizer_number_of_averages(AVERAGES)
@@ -6185,6 +6206,9 @@ class Worker():
             awg.awg_card_mode('Single Joined')
             awg.awg_clock_mode('External')
             awg.awg_reference_clock(100)
+            if DIG_REF_FROM_AWG:
+                # feed the digitizer reference from the AWG sampling clock / 4
+                awg.awg_clock_output('On')
             awg.awg_sample_rate(1000)
             awg.awg_trigger_delay('0 ns')
             awg.awg_amplitude('CH0', str(ch0_ampl), 'CH1', str(ch1_ampl) )
@@ -6341,7 +6365,7 @@ class Worker():
             POSTTRIGGER = int( self.posttrigger )
             dig.digitizer_card_mode('Average')
             dig.digitizer_clock_mode('External')
-            dig.digitizer_reference_clock(100)
+            dig.digitizer_reference_clock( DIG_REF_CLOCK )
             dig.digitizer_number_of_points( points_window )
             dig.digitizer_posttrigger( POSTTRIGGER )
             dig.digitizer_number_of_averages(AVERAGES)
@@ -6668,6 +6692,9 @@ class Worker():
             awg.awg_card_mode('Single Joined')
             awg.awg_clock_mode('External')
             awg.awg_reference_clock(100)
+            if DIG_REF_FROM_AWG:
+                # feed the digitizer reference from the AWG sampling clock / 4
+                awg.awg_clock_output('On')
             awg.awg_sample_rate(1000)
             awg.awg_trigger_delay('0 ns')
             awg.awg_amplitude('CH0', str(ch0_ampl), 'CH1', str(ch1_ampl) )
@@ -6906,7 +6933,7 @@ class Worker():
             POSTTRIGGER = int( self.posttrigger )
             dig.digitizer_card_mode('Average')
             dig.digitizer_clock_mode('External')
-            dig.digitizer_reference_clock(100)
+            dig.digitizer_reference_clock( DIG_REF_CLOCK )
             dig.digitizer_number_of_points( points_window )
             dig.digitizer_posttrigger( POSTTRIGGER )
             dig.digitizer_number_of_averages(AVERAGES)
@@ -7230,6 +7257,9 @@ class Worker():
             awg.awg_card_mode('Single Joined')
             awg.awg_clock_mode('External')
             awg.awg_reference_clock(100)
+            if DIG_REF_FROM_AWG:
+                # feed the digitizer reference from the AWG sampling clock / 4
+                awg.awg_clock_output('On')
             awg.awg_sample_rate(1000)
             awg.awg_trigger_delay('0 ns')
             awg.awg_amplitude('CH0', str(ch0_ampl), 'CH1', str(ch1_ampl) )
@@ -7420,7 +7450,7 @@ class Worker():
             POSTTRIGGER = int( self.posttrigger )
             dig.digitizer_card_mode('Average')
             dig.digitizer_clock_mode('External')
-            dig.digitizer_reference_clock(100)
+            dig.digitizer_reference_clock( DIG_REF_CLOCK )
             dig.digitizer_number_of_points( points_window )
             dig.digitizer_posttrigger( POSTTRIGGER )
             dig.digitizer_number_of_averages(AVERAGES)

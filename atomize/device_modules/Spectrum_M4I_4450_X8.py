@@ -63,7 +63,7 @@ class Spectrum_M4I_4450_X8:
         self.amplitude_min = 80 # mV
         self.sample_rate_max = 500 # MHz
         self.sample_rate_min = 0.001907 # MHz
-        self.sample_ref_clock_max = 100 # MHz
+        self.sample_ref_clock_max = 1000 # MHz; datasheet: 10 MHz to 1 GHz
         self.sample_ref_clock_min = 10 # MHz
         self.averages_max = 100000
         self.delay_max = 8589934576
@@ -933,7 +933,7 @@ class Spectrum_M4I_4450_X8:
     def digitizer_reference_clock(self, *ref_clock):
         """
         Set or query reference clock; the driver needs to know the external fed in frequency
-        Input: digitizer_reference_clock(100); Reference clock is in MHz; Range: 10 - 100
+        Input: digitizer_reference_clock(100); Reference clock is in MHz; Range: 10 - 1000
         Default: '100';
         Output: '200 MHz'
         """
@@ -954,13 +954,13 @@ class Spectrum_M4I_4450_X8:
             if len(ref_clock) == 1:
                 rate = int(ref_clock[0])
                 assert(rate <= self.sample_ref_clock_max and rate >= self.sample_ref_clock_min), \
-                    "Incorrect reference clock. The available range is from 10 MHz to 100 MHz"
+                    "Incorrect reference clock. The available range is from 10 MHz to 1000 MHz"
                 self.reference_clock = rate
 
             elif len(ref_clock) == 0:
                 return self.test_ref_clock
             else:
-                assert( 1 == 2 ), 'Incorrect argument; clock: int [10 - 100]'
+                assert( 1 == 2 ), 'Incorrect argument; clock: int [10 - 1000]'
 
     def digitizer_card_mode(self, *mode):
         """
