@@ -113,7 +113,7 @@ AWG_PRESENT = True
 #     the per-run independent PLL relocks become common-mode and the sporadic
 #     4 ns AWG<->digitizer echo shift between restarts disappears.
 # 0 = classic wiring: house 100 MHz reference on both cards.
-DIG_REF_FROM_AWG = 1
+DIG_REF_FROM_AWG = 0
 DIG_REF_CLOCK = 125 if DIG_REF_FROM_AWG else 100
 
 class _NullAWG:
