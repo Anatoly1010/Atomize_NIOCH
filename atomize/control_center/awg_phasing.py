@@ -106,7 +106,7 @@ AWG_PRESENT = True
 
 # --- AWG -> digitizer sample-clock chaining (2026-07 4 ns hunt) ---
 # 1 = the digitizer external reference comes from the AWG "Clock Out" MMCX
-#     connector (sampling clock / 4 = 250 MHz at 1 GS/s) instead of the house
+#     connector (sampling clock / 8 = 125 MHz at 1 GS/s) instead of the house
 #     100 MHz. REQUIRES the cable AWG Clock Out -> digitizer Clk In. The AWG
 #     itself stays on the house 100 MHz reference (keeps the MW-bridge lock
 #     chain). Goal: both cards derive their sample clocks from one source, so
@@ -114,7 +114,7 @@ AWG_PRESENT = True
 #     4 ns AWG<->digitizer echo shift between restarts disappears.
 # 0 = classic wiring: house 100 MHz reference on both cards.
 DIG_REF_FROM_AWG = 1
-DIG_REF_CLOCK = 250 if DIG_REF_FROM_AWG else 100
+DIG_REF_CLOCK = 125 if DIG_REF_FROM_AWG else 100
 
 class _NullAWG:
     """Stand-in for Spectrum_M4I_6631_X8 when no AWG card is installed.
@@ -4416,7 +4416,7 @@ class Worker():
             awg.awg_clock_mode('External')
             awg.awg_reference_clock(100)
             if DIG_REF_FROM_AWG:
-                # feed the digitizer reference from the AWG sampling clock / 4
+                # feed the digitizer reference from the AWG sampling clock / 8
                 awg.awg_clock_output('On')
             awg.awg_sample_rate(1000)
             awg.awg_trigger_delay( trig_delay )
@@ -5024,7 +5024,7 @@ class Worker():
             awg.awg_clock_mode('External')
             awg.awg_reference_clock(100)
             if DIG_REF_FROM_AWG:
-                # feed the digitizer reference from the AWG sampling clock / 4
+                # feed the digitizer reference from the AWG sampling clock / 8
                 awg.awg_clock_output('On')
             awg.awg_sample_rate(1000)
             awg.awg_trigger_delay('0 ns')
@@ -5579,7 +5579,7 @@ class Worker():
             awg.awg_clock_mode('External')
             awg.awg_reference_clock(100)
             if DIG_REF_FROM_AWG:
-                # feed the digitizer reference from the AWG sampling clock / 4
+                # feed the digitizer reference from the AWG sampling clock / 8
                 awg.awg_clock_output('On')
             awg.awg_sample_rate(1000)
             awg.awg_trigger_delay('0 ns')
@@ -6223,7 +6223,7 @@ class Worker():
             awg.awg_clock_mode('External')
             awg.awg_reference_clock(100)
             if DIG_REF_FROM_AWG:
-                # feed the digitizer reference from the AWG sampling clock / 4
+                # feed the digitizer reference from the AWG sampling clock / 8
                 awg.awg_clock_output('On')
             awg.awg_sample_rate(1000)
             awg.awg_trigger_delay('0 ns')
@@ -6709,7 +6709,7 @@ class Worker():
             awg.awg_clock_mode('External')
             awg.awg_reference_clock(100)
             if DIG_REF_FROM_AWG:
-                # feed the digitizer reference from the AWG sampling clock / 4
+                # feed the digitizer reference from the AWG sampling clock / 8
                 awg.awg_clock_output('On')
             awg.awg_sample_rate(1000)
             awg.awg_trigger_delay('0 ns')
@@ -7274,7 +7274,7 @@ class Worker():
             awg.awg_clock_mode('External')
             awg.awg_reference_clock(100)
             if DIG_REF_FROM_AWG:
-                # feed the digitizer reference from the AWG sampling clock / 4
+                # feed the digitizer reference from the AWG sampling clock / 8
                 awg.awg_clock_output('On')
             awg.awg_sample_rate(1000)
             awg.awg_trigger_delay('0 ns')
