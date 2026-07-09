@@ -4959,7 +4959,8 @@ class Worker():
             import atomize.device_modules.SR_PTC_10 as ls
             import atomize.device_modules.BH_15 as bh
             import atomize.device_modules.Micran_X_band_MW_bridge as mwBridge
-            import atomize.general_modules.csv_opener_saver as openfile
+            # inversion-aware saver: honours "i" + legend-click sign flips
+            import atomize.general_modules.csv_opener_saver_invert as openfile
 
             file_handler = openfile.Saver_Opener()
             pb = pb_pro.PB_ESR_500_Pro()
@@ -5420,7 +5421,8 @@ class Worker():
                             file_data,
                             np.c_[x_axis_plot, data_x, data_y],
                             header = header2,
-                            mode = 'w'
+                            mode = 'w',
+                            plot = EXP_NAME, label = curve_name
                             )
                         if save2d == 1:
                             file_data2 = file_data.replace(".csv", "_2d.csv")
@@ -5514,7 +5516,8 @@ class Worker():
             import atomize.device_modules.SR_PTC_10 as ls
             import atomize.device_modules.BH_15 as bh
             import atomize.device_modules.Micran_X_band_MW_bridge as mwBridge
-            import atomize.general_modules.csv_opener_saver as openfile
+            # inversion-aware saver: honours "i" + legend-click sign flips
+            import atomize.general_modules.csv_opener_saver_invert as openfile
 
             file_handler = openfile.Saver_Opener()
             pb = pb_pro.PB_ESR_500_Pro()
@@ -6110,7 +6113,8 @@ class Worker():
                             file_data,
                             np.c_[x_axis_plot, data_x, data_y],
                             header = header2,
-                            mode = 'w'
+                            mode = 'w',
+                            plot = EXP_NAME, label = curve_name
                             )
                         if save2d == 1:
                             file_data2 = file_data.replace(".csv", "_2d.csv")
@@ -6142,7 +6146,8 @@ class Worker():
                                 file_handler.save_data(cpath, cdat, header = header, mode = 'w')
                             elif iq_cor == 1:
                                 cdx, cdy = dig.digitizer_iq(cdat[0], cdat[1], iq_freq, zp, first_order, sec_order, integral = True)
-                                file_handler.save_data(cpath, np.c_[x_axis_plot, cdx, cdy], header = header2, mode = 'w')
+                                # same run -> same clock state: per-cycle traces follow the average's sign
+                                file_handler.save_data(cpath, np.c_[x_axis_plot, cdx, cdy], header = header2, mode = 'w', plot = EXP_NAME, label = curve_name)
 
                     conn.send( ('', f'Experiment {EXP_NAME} finished') )
 
@@ -6197,7 +6202,8 @@ class Worker():
             import atomize.device_modules.SR_PTC_10 as ls
             import atomize.device_modules.BH_15 as bh
             import atomize.device_modules.Micran_X_band_MW_bridge as mwBridge
-            import atomize.general_modules.csv_opener_saver as openfile
+            # inversion-aware saver: honours "i" + legend-click sign flips
+            import atomize.general_modules.csv_opener_saver_invert as openfile
 
             file_handler = openfile.Saver_Opener()
             pb = pb_pro.PB_ESR_500_Pro()
@@ -6604,7 +6610,8 @@ class Worker():
                             file_data,
                             np.c_[x_axis, data_x, data_y],
                             header = header2,
-                            mode = 'w'
+                            mode = 'w',
+                            plot = EXP_NAME, label = curve_name
                             )
 
                         if save2d == 1:
@@ -6671,7 +6678,8 @@ class Worker():
             import atomize.device_modules.SR_PTC_10 as ls
             import atomize.device_modules.BH_15 as bh
             import atomize.device_modules.Micran_X_band_MW_bridge as mwBridge
-            import atomize.general_modules.csv_opener_saver as openfile
+            # inversion-aware saver: honours "i" + legend-click sign flips
+            import atomize.general_modules.csv_opener_saver_invert as openfile
 
             ### Nonlinear axis
             POINTS = points
@@ -7180,7 +7188,8 @@ class Worker():
                             file_data,
                             np.c_[x_axis_plot, data_x, data_y],
                             header = header2,
-                            mode = 'w'
+                            mode = 'w',
+                            plot = EXP_NAME, label = curve_name
                             )
 
                         if save2d == 1:
@@ -7245,7 +7254,8 @@ class Worker():
             import atomize.device_modules.SR_PTC_10 as ls
             import atomize.device_modules.BH_15 as bh
             import atomize.device_modules.Micran_X_band_MW_bridge as mwBridge
-            import atomize.general_modules.csv_opener_saver as openfile
+            # inversion-aware saver: honours "i" + legend-click sign flips
+            import atomize.general_modules.csv_opener_saver_invert as openfile
 
             file_handler = openfile.Saver_Opener()
             pb = pb_pro.PB_ESR_500_Pro()
@@ -7715,7 +7725,8 @@ class Worker():
                             file_data,
                             np.c_[x_axis_plot, data_x, data_y],
                             header = header2,
-                            mode = 'w'
+                            mode = 'w',
+                            plot = EXP_NAME, label = curve_name
                             )
                         if save2d == 1:
                             file_data2 = file_data.replace(".csv", "_2d.csv")

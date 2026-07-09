@@ -12,7 +12,9 @@ from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import QWidget, QGridLayout, QLabel, QPushButton, QComboBox, QCheckBox, QVBoxLayout, QApplication
 from PyQt6.QtGui import QColor
 from atomize.main.main_window import MainWindow, NameList
+from atomize.main import widgets_invert
 from atomize.general_modules.gui_style import apply_app_style, CHECKBOX_STYLE
+import atomize.general_modules.inversion_param as inversion_param
 os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 
 ###
@@ -67,7 +69,9 @@ class MyExtendedNameList(NameList):
         maxlen = 0
         used_colors = getattr(dock, 'used_colors', {})
         for label in dock.curves:
-            x, y = dock.get_raw_data(label)
+            # prefer the displayed (sign-corrected) samples on inversion-aware
+            # docks; get_raw_data there returns pipeline-raw data for append/redraw
+            x, y = getattr(dock, 'get_export_data', dock.get_raw_data)(label)
             x = np.asarray(x, dtype=float)
             y = np.asarray(y, dtype=float)
             if x.size == 0:
@@ -232,6 +236,14 @@ class MainExtended(MainWindow):
         path_to_main = Path(__file__).parent
         self.path_to_main = os.path.join(path_to_main, '..', '..', 'libs')
 
+        # curve sign-inversion counters ("i" + legend click) are per-session;
+        # a stale odd parity from a previous run must never silently negate
+        # freshly saved data. A broken file must not block GUI startup.
+        try:
+            inversion_param.reset()
+        except Exception:
+            pass
+
         # NIOCH is a pulsed-only spectrometer: no CW / TR / temp control
         # windows. The oscilloscope setup window is wired (see start_osc_control);
         # only the in-scope control-center tools are exposed.
@@ -275,6 +287,15 @@ class MainExtended(MainWindow):
 
     def create_namelist(self):
         return MyExtendedNameList(self)
+
+    def add_new_plot(self, rank, name):
+        # 1D docks come from widgets_invert: the upstream CrosshairDock plus
+        # "i" + legend-click manual sign inversion (the 125 MHz clock-flip
+        # correction); widgets.py itself stays aligned with upstream
+        pw = widgets_invert.get_widget(rank, name)
+        self.add_plot(pw)
+        self.namelist[name] = pw
+        return pw
 
     def handle_output_control_center(self):
         sending_process = self.sender()
