@@ -4398,7 +4398,8 @@ class Worker():
             # Route this scan's plot_1d / plot_2d through the non-blocking
             # coalescing worker so the acquisition loop isn't paced by the GUI.
             general.set_plotting_async(True)
-            import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
+            # records the DETECTION freq for the "i"+legend-click phase correction
+            import atomize.device_modules.Spectrum_M4I_4450_X8_invert as spectrum
             import atomize.device_modules.Spectrum_M4I_6631_X8 as spectrum_awg
             import atomize.device_modules.PB_ESR_500_pro as pb_pro
             import atomize.math_modules.fft as fft_module
@@ -4959,7 +4960,8 @@ class Worker():
             # Route this scan's plot_1d / plot_2d through the non-blocking
             # coalescing worker so the acquisition loop isn't paced by the GUI.
             general.set_plotting_async(True)
-            import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
+            # records the DETECTION freq for the "i"+legend-click phase correction
+            import atomize.device_modules.Spectrum_M4I_4450_X8_invert as spectrum
             import atomize.device_modules.Spectrum_M4I_6631_X8 as spectrum_awg
             import atomize.device_modules.PB_ESR_500_pro as pb_pro
             import atomize.device_modules.SR_PTC_10 as ls
@@ -5516,7 +5518,8 @@ class Worker():
             # Route this scan's plot_1d / plot_2d through the non-blocking
             # coalescing worker so the acquisition loop isn't paced by the GUI.
             general.set_plotting_async(True)
-            import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
+            # records the DETECTION freq for the "i"+legend-click phase correction
+            import atomize.device_modules.Spectrum_M4I_4450_X8_invert as spectrum
             import atomize.device_modules.Spectrum_M4I_6631_X8 as spectrum_awg
             import atomize.device_modules.PB_ESR_500_pro as pb_pro
             import atomize.device_modules.SR_PTC_10 as ls
@@ -6202,7 +6205,8 @@ class Worker():
             # Route this scan's plot_1d / plot_2d through the non-blocking
             # coalescing worker so the acquisition loop isn't paced by the GUI.
             general.set_plotting_async(True)
-            import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
+            # records the DETECTION freq for the "i"+legend-click phase correction
+            import atomize.device_modules.Spectrum_M4I_4450_X8_invert as spectrum
             import atomize.device_modules.Spectrum_M4I_6631_X8 as spectrum_awg
             import atomize.device_modules.PB_ESR_500_pro as pb_pro
             import atomize.device_modules.SR_PTC_10 as ls
@@ -6678,7 +6682,8 @@ class Worker():
             # Route this scan's plot_1d / plot_2d through the non-blocking
             # coalescing worker so the acquisition loop isn't paced by the GUI.
             general.set_plotting_async(True)
-            import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
+            # records the DETECTION freq for the "i"+legend-click phase correction
+            import atomize.device_modules.Spectrum_M4I_4450_X8_invert as spectrum
             import atomize.device_modules.Spectrum_M4I_6631_X8 as spectrum_awg
             import atomize.device_modules.PB_ESR_500_pro as pb_pro
             import atomize.device_modules.SR_PTC_10 as ls
@@ -7254,7 +7259,8 @@ class Worker():
             # Route this scan's plot_1d / plot_2d through the non-blocking
             # coalescing worker so the acquisition loop isn't paced by the GUI.
             general.set_plotting_async(True)
-            import atomize.device_modules.Spectrum_M4I_4450_X8 as spectrum
+            # records the DETECTION freq for the "i"+legend-click phase correction
+            import atomize.device_modules.Spectrum_M4I_4450_X8_invert as spectrum
             import atomize.device_modules.Spectrum_M4I_6631_X8 as spectrum_awg
             import atomize.device_modules.PB_ESR_500_pro as pb_pro
             import atomize.device_modules.SR_PTC_10 as ls

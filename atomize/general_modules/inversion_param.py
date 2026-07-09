@@ -1,18 +1,31 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Cross-process registry of manual curve sign inversions ("i" + legend click
-# in the main-window 1D plots, see atomize/main/widgets_invert.py). One line
-# per curve, '<dock name>/<curve label>:  <count>'; the effective sign is
-# count % 2. The GUI process is the only writer (atomic tmp + os.replace, so
-# readers never see a torn file); experiment scripts read at save time via
-# csv_opener_saver_invert. Wiped at every GUI start.
+# Cross-process registry for the manual I/Q phase correction of the 4 ns
+# AWG<->digitizer clock flip ("i" + legend click in the main-window 1D plots,
+# see atomize/main/widgets_invert.py). One entry per line, float values:
+#
+#   Detection freq:  <signed MHz>      - the frequency last passed to
+#       digitizer_iq, recorded by Spectrum_M4I_4450_X8_invert from the
+#       acquisition process. A 4 ns flip advances the demodulated phase by
+#       phi = (freq / 250) * 360 deg, which is what the click applies.
+#   <dock name>/<curve label>:  <deg>  - the NET phase currently applied to
+#       that curve pair by the GUI, keyed by the base curve of the pair
+#       (0 / absent = none).
+#
+# Two writers (GUI click, acquisition worker). Both go through the locked
+# read-modify-write + atomic tmp + os.replace below, so readers never see a
+# torn file; the freq is written once per run (write-if-changed cache), so a
+# cross-process write collision is practically impossible. Wiped at every
+# GUI start.
 
 import os
 import threading
 
 _KEY_SEP = ':  '
-_HEADER = '# Atomize curve sign-inversion counters. Auto-generated; wiped at GUI start.'
+_DET_KEY = 'Detection freq'
+_HEADER = '# Atomize I/Q phase-shift registry (4 ns clock-flip correction). Auto-generated; wiped at GUI start.'
 _io_lock = threading.Lock()
+_last_freq = None   # in-process cache so per-scan digitizer_iq calls skip file IO
 
 
 def path():
@@ -28,16 +41,16 @@ def key(plot, label):
 def read():
     data = {}
     try:
-        with open(path(), encoding='utf-8') as counter_file:
-            for line in counter_file:
+        with open(path(), encoding='utf-8') as registry_file:
+            for line in registry_file:
                 line = line.strip()
                 if not line or line.startswith('#') or ':' not in line:
                     continue
-                # the value is a pure integer, so split on the LAST colon and
+                # the value is a pure number, so split on the LAST colon and
                 # any ':' inside a dock/curve name stays part of the key
                 key_part, value = line.rsplit(':', 1)
                 try:
-                    data[key_part.strip()] = int(value)
+                    data[key_part.strip()] = float(value)
                 except ValueError:
                     continue
     except FileNotFoundError:
@@ -49,37 +62,52 @@ def _write(data):
     directory = os.path.dirname(os.path.abspath(path()))
     os.makedirs(directory, exist_ok=True)
     lines = [_HEADER]
-    lines += [f'{k}{_KEY_SEP}{v}' for k, v in data.items()]
+    lines += [f'{k}{_KEY_SEP}{v:g}' for k, v in data.items()]
     temp_path = path() + '.tmp'
-    with open(temp_path, 'w', encoding='utf-8') as counter_file:
-        counter_file.write('\n'.join(lines) + '\n')
+    with open(temp_path, 'w', encoding='utf-8') as registry_file:
+        registry_file.write('\n'.join(lines) + '\n')
     os.replace(temp_path, path())
 
 
-def count(plot, label):
-    return read().get(key(plot, label), 0)
+def applied_phase(plot, label):
+    """NET phase (deg) currently applied to the pair keyed by its base curve."""
+    return read().get(key(plot, label), 0.0)
 
 
-def parity(plot, label):
-    return count(plot, label) % 2
-
-
-def increment(plot, label):
+def set_phase(plot, label, deg):
     with _io_lock:
         data = read()
         k = key(plot, label)
-        data[k] = data.get(k, 0) + 1
+        if deg:
+            data[k] = float(deg)
+        else:
+            data.pop(k, None)
         _write(data)
-        return data[k]
 
 
-def remove(plot, label):
+def detection_freq(default = -125.0):
+    """Signed MHz as digitizer_iq received it (GUI box 125 -> iq_freq -125).
+    The default keeps pre-first-run behavior equal to the old 180-deg
+    inversion at the recommended 125 MHz offset."""
+    return read().get(_DET_KEY, default)
+
+
+def set_detection_freq(freq):
+    """Record the demodulation frequency; skips file IO when unchanged."""
+    global _last_freq
+    freq = float(freq)
+    if _last_freq == freq:
+        return
     with _io_lock:
         data = read()
-        if data.pop(key(plot, label), None) is not None:
+        if data.get(_DET_KEY) != freq:
+            data[_DET_KEY] = freq
             _write(data)
+        _last_freq = freq
 
 
 def reset():
+    global _last_freq
     with _io_lock:
         _write({})
+        _last_freq = None
