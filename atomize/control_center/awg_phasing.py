@@ -116,6 +116,111 @@ AWG_PRESENT = True
 DIG_REF_FROM_AWG = 0
 DIG_REF_CLOCK = 125 if DIG_REF_FROM_AWG else 100
 
+# --- digitizer clock-divider state alignment (2026-07 4 ns hunt, "software roll") ---
+# After every PLL relock (each worker process re-opens the cards) the
+# digitizer's internal fs/2 = 250 MHz divider lands in one of two states,
+# 4 ns = exactly 2 points apart at 500 MS/s; the state is frozen for the
+# process's life. Each worker therefore detects its state ONCE, against a
+# stored reference echo, and undoes it with a lossless integer np.roll on
+# every combined curve. Detection is a matched filter over the three
+# physical states (np.roll of the reference by -2/0/+2 points, free overall
+# amplitude and flat MW phase), gated by a K-fold t-statistic: the spectrum
+# is split into K interleaved folds, the best-vs-runner-up correlation gap
+# is measured per fold, and the state is accepted only when mean/SEM of the
+# per-fold gaps exceeds CLOCK_ALIGN_MIN_T (Monte-Carlo calibrated: 0 wrong
+# calls above t = 5 across 2300 synthetic echoes; the worst wrong call sat
+# at t = 3.6). The reference is created/renewed only by Run Pulses and only
+# when the trace actually contains an echo; the experiment workers just
+# read it. No echo / ambiguous detection -> no correction and an explicit
+# message, never a silent guess.
+CLOCK_ALIGN_LAGS = (-2, 0, 2)    # candidate shifts in points (4 ns = 2 pts)
+CLOCK_ALIGN_MIN_SIGNAL = 4.0     # peak/median magnitude to accept a trace as echo
+CLOCK_ALIGN_MIN_CORR = 0.75     # matched-filter correlation to trust the reference
+CLOCK_ALIGN_MIN_T = 5.0          # min t-statistic of the best-vs-runner-up gap
+CLOCK_ALIGN_FOLDS = 8            # interleaved spectral folds for the t-statistic
+
+def _clock_ref_path():
+    # same location convention as digitizer.param (cwd is libs/ under the main GUI)
+    return os.path.join(os.path.abspath(os.getcwd()), '../atomize/control_center/clock_ref.trace')
+
+def _clock_detect(data_x, data_y, allow_create):
+    dx = np.asarray(data_x, dtype = float)
+    dy = np.asarray(data_y, dtype = float)
+    mag = np.sqrt(dx**2 + dy**2)
+    if np.max(mag) < CLOCK_ALIGN_MIN_SIGNAL * (np.median(mag) + 1e-12):
+        general.message('Clock state: no echo in the first trace; the 4 ns correction is OFF for this run')
+        return 0
+    path = _clock_ref_path()
+    try:
+        ref = np.loadtxt(path)
+        assert ref.ndim == 2 and ref.shape[1] == 2
+    except (OSError, ValueError, AssertionError):
+        if allow_create:
+            np.savetxt(path, np.column_stack((dx, dy)), header = 'digitizer clock-divider reference trace (I Q); delete to re-take')
+            general.message('Clock state: reference trace created')
+        else:
+            general.message('Clock state: no reference trace (run Run Pulses first); the 4 ns correction is OFF')
+        return 0
+    if ref.shape[0] != dx.size:
+        general.message('Clock state: reference length differs (' + str(ref.shape[0]) + ' vs ' + str(dx.size) + ' points); the 4 ns correction is OFF')
+        return 0
+    z_ref = np.fft.fft(ref[:, 0] + 1j * ref[:, 1])
+    z_cur = np.fft.fft(dx + 1j * dy)
+    f = np.fft.fftfreq(dx.size)    # cycles / point
+    e_ref = np.sum(np.abs(z_ref)**2)
+    e_cur = np.sum(np.abs(z_cur)**2)
+    if e_ref == 0 or e_cur == 0:
+        return 0
+    # matched filter over the three states; a delay of d points multiplies the
+    # spectrum by exp(-2j*pi*f*d); |.| makes it immune to run-to-run MW phase
+    # drift and amplitude change
+    rho = np.array([ np.abs(np.sum(np.conj(z_ref * np.exp(-2j * np.pi * f * d)) * z_cur)) for d in CLOCK_ALIGN_LAGS ]) / np.sqrt(e_ref * e_cur)
+    order = np.argsort(rho)
+    best = CLOCK_ALIGN_LAGS[order[-1]]
+    if rho[order[-1]] < CLOCK_ALIGN_MIN_CORR:
+        if allow_create and rho[order[-1]] < 0.5:
+            # a genuine echo that matches NO candidate: the sequence changed;
+            # this run defines a new baseline (the 4 ns lottery is re-drawn)
+            np.savetxt(path, np.column_stack((dx, dy)), header = 'digitizer clock-divider reference trace (I Q); delete to re-take')
+            general.message('Clock state: echo does not match the reference (sequence changed?); reference RE-TAKEN -> re-check the phase corrections')
+        else:
+            general.message('Clock state: echo poorly matches the reference (corr ' + str(round(float(rho[order[-1]]), 2)) + '); the 4 ns correction is OFF for this run')
+        return 0
+    # confidence: per-fold best-vs-runner-up correlation gap, mean/SEM over
+    # K interleaved spectral folds
+    folds = np.arange(dx.size) % CLOCK_ALIGN_FOLDS
+    gaps = np.zeros(CLOCK_ALIGN_FOLDS)
+    for k in range(CLOCK_ALIGN_FOLDS):
+        m = folds == k
+        e_r = np.sum(np.abs(z_ref[m])**2)
+        e_c = np.sum(np.abs(z_cur[m])**2)
+        if e_r == 0 or e_c == 0:
+            continue
+        r2 = [ np.abs(np.sum(np.conj(z_ref[m] * np.exp(-2j * np.pi * f[m] * CLOCK_ALIGN_LAGS[i])) * z_cur[m]))**2 / (e_r * e_c) for i in (order[-1], order[-2]) ]
+        gaps[k] = r2[0] - r2[1]
+    t_gap = np.mean(gaps) / max(np.std(gaps, ddof = 1) / np.sqrt(CLOCK_ALIGN_FOLDS), 1e-30)
+    if t_gap < CLOCK_ALIGN_MIN_T:
+        general.message('Clock state: cannot distinguish the states reliably (t = ' + str(round(float(t_gap), 1)) + ' < ' + str(CLOCK_ALIGN_MIN_T) + ', best guess ' + str(2 * best) + ' ns); the 4 ns correction is OFF for this run -> increase averages or sharpen the echo')
+        return 0
+    if best != 0:
+        general.message('Clock state: digitizer is ' + str(2 * best) + ' ns off the reference (t = ' + str(round(float(t_gap), 1)) + '); correcting (roll ' + str(-best) + ' points)')
+    else:
+        general.message('Clock state: matches the reference (t = ' + str(round(float(t_gap), 1)) + ')')
+    return -best
+
+def _clock_align(data_x, data_y, roll, allow_create = False, script_test = False):
+    """Detect the digitizer clock-divider state once per worker process and
+    undo it. Pass roll = None on the first call and feed the returned value
+    back on the following ones. Returns (data_x, data_y, roll)."""
+    if script_test:
+        return data_x, data_y, 0
+    if roll is None:
+        roll = _clock_detect(data_x, data_y, allow_create)
+    if roll:
+        data_x = np.roll(data_x, roll)
+        data_y = np.roll(data_y, roll)
+    return data_x, data_y, roll
+
 class _NullAWG:
     """Stand-in for Spectrum_M4I_6631_X8 when no AWG card is installed.
     Configuration / playback calls (setup/next_phase/stop/close/increment/
@@ -4409,6 +4514,7 @@ class Worker():
             process = 'None'
             num_ave = n_averages
             iq_cor = iq_corr
+            clock_roll = None    # 4 ns divider state: detected on the first curve
 
             # AWG channel + clock configuration (NIOCH Spectrum M4I-6631)
             awg.awg_channel('CH0', 'CH1')
@@ -4796,6 +4902,7 @@ class Worker():
                     k += 1
 
                 data_x, data_y = pb.pulser_acquisition_cycle( cycle_data_x, cycle_data_y, acq_cycle = rect1[3] )
+                data_x, data_y, clock_roll = _clock_align(data_x, data_y, clock_roll, allow_create = True, script_test = script_test)
 
                 if iq_cor == 1:
                     data_x, data_y = dig.digitizer_iq(data_x, data_y, iq_freq, zero_order, first_order, second_order)
@@ -4970,6 +5077,7 @@ class Worker():
             mw = mwBridge.Micran_X_band_MW_bridge()
 
             iq_cor = iq_corr
+            clock_roll = None    # 4 ns divider state: detected on the first curve
             dig.win_left = win_left
             dig.win_right = win_right
             zp = zero_phase
@@ -5241,6 +5349,7 @@ class Worker():
                             ph += 1
 
                         data_x, data_y = pb.pulser_acquisition_cycle( cycle_data_x, cycle_data_y, acq_cycle = rect1[3] )
+                        data_x, data_y, clock_roll = _clock_align(data_x, data_y, clock_roll, script_test = script_test)
 
                         # scan-average the oscillogram into the 2D array
                         data[0, :, j] = ( data[0, :, j] * (k - 1) + data_x ) / k
@@ -5525,6 +5634,7 @@ class Worker():
             mw = mwBridge.Micran_X_band_MW_bridge()
 
             iq_cor = iq_corr
+            clock_roll = None    # 4 ns divider state: detected on the first curve
             dig.win_left = win_left
             dig.win_right = win_right
             zp = zero_phase
@@ -5868,6 +5978,7 @@ class Worker():
                             ph += 1
 
                         data_x, data_y = pb.pulser_acquisition_cycle( cycle_data_x, cycle_data_y, acq_cycle = rect1[3] )
+                        data_x, data_y, clock_roll = _clock_align(data_x, data_y, clock_roll, script_test = script_test)
                         # cumulative tau-average across every (cycle, scan) pass at
                         # this point: m counts passes so the running mean is the
                         # ESEEM-averaged result and the cycle-boundary snapshots stay
@@ -6208,6 +6319,7 @@ class Worker():
             mw = mwBridge.Micran_X_band_MW_bridge()
 
             iq_cor = iq_corr
+            clock_roll = None    # 4 ns divider state: detected on the first curve
             dig.win_left = win_left
             dig.win_right = win_right
             zp = zero_phase
@@ -6443,6 +6555,7 @@ class Worker():
                             ph += 1
 
                         data_x, data_y = pb.pulser_acquisition_cycle( cycle_data_x, cycle_data_y, acq_cycle = rect1[3] )
+                        data_x, data_y, clock_roll = _clock_align(data_x, data_y, clock_roll, script_test = script_test)
                         data[0, :, j] = ( data[0, :, j] * (k - 1) + data_x ) / k
                         data[1, :, j] = ( data[1, :, j] * (k - 1) + data_y ) / k
 
@@ -6694,6 +6807,7 @@ class Worker():
             mw = mwBridge.Micran_X_band_MW_bridge()
 
             iq_cor = iq_corr
+            clock_roll = None    # 4 ns divider state: detected on the first curve
             dig.win_left = win_left
             dig.win_right = win_right
             zp = zero_phase
@@ -6997,6 +7111,7 @@ class Worker():
                             ph += 1
 
                         data_x, data_y = pb.pulser_acquisition_cycle( cycle_data_x, cycle_data_y, acq_cycle = rect1[3] )
+                        data_x, data_y, clock_roll = _clock_align(data_x, data_y, clock_roll, script_test = script_test)
                         data[0, :, j] = ( data[0, :, j] * (k - 1) + data_x ) / k
                         data[1, :, j] = ( data[1, :, j] * (k - 1) + data_y ) / k
 
@@ -7256,6 +7371,7 @@ class Worker():
             mw = mwBridge.Micran_X_band_MW_bridge()
 
             iq_cor = iq_corr
+            clock_roll = None    # 4 ns divider state: detected on the first curve
             dig.win_left = win_left
             dig.win_right = win_right
             zp = zero_phase
@@ -7516,6 +7632,7 @@ class Worker():
                             ph += 1
 
                         data_x, data_y = pb.pulser_acquisition_cycle( cycle_data_x, cycle_data_y, acq_cycle = rect1[3] )
+                        data_x, data_y, clock_roll = _clock_align(data_x, data_y, clock_roll, script_test = script_test)
                         data[0, :, j] = ( data[0, :, j] * (k - 1) + data_x ) / k
                         data[1, :, j] = ( data[1, :, j] * (k - 1) + data_y ) / k
 
