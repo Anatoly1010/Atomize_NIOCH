@@ -1471,6 +1471,7 @@ class MainWindow(QMainWindow):
 
         unit = delta / f_edit
         self._linking = True
+        clamped = False
         try:
             for j in range(1, 10):
                 if j == index:
@@ -1481,10 +1482,24 @@ class MainWindow(QMainWindow):
                 box_j = getattr(self, f"P{j}{suffix}", None)
                 if box_j is None:
                     continue
-                box_j.setValue(box_j.value() + unit * f_j)
+                # A fixed-range box (min == max) cannot be shifted -- skip it so a
+                # coupled edit neither no-ops against it nor trips the warning.
+                if box_j.maximum() - box_j.minimum() < 1e-9:
+                    continue
+                target = box_j.value() + unit * f_j
+                # QDoubleSpinBox silently clamps to its range; a coupled shift can
+                # drive a linked pulse past a limit (e.g. the length ceiling), so
+                # flag it -- the coupling is then no longer strictly proportional.
+                if target > box_j.maximum() + 1e-9 or target < box_j.minimum() - 1e-9:
+                    clamped = True
+                box_j.setValue(target)
                 self._link_prev[(suffix, j)] = box_j.value()
         finally:
             self._linking = False
+
+        if clamped:
+            self.message('Link: a coupled value hit its limit and was clamped; '
+                         'the link is no longer proportional.')
 
     # ---- Live Edit helpers ----
     def live_edit_toggle(self):

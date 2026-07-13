@@ -1870,6 +1870,13 @@ class MainWindow(QMainWindow):
                 box_j = getattr(self, f"P{j}{suffix}", None)
                 if box_j is None:
                     continue
+                # A fixed-range box (min == max, e.g. the DETECTION pulse's
+                # amplitude locked at 100 %) cannot be shifted -- skip it so a
+                # coupled edit neither no-ops against it nor trips the clamp
+                # warning below. Its frequency box is not fixed, so freq link
+                # (which retunes the digitizer IQ demod) still propagates.
+                if box_j.maximum() - box_j.minimum() < 1e-9:
+                    continue
                 target = box_j.value() + unit * f_j
                 # QSpinBox/QDoubleSpinBox silently clamp to their range. For the
                 # amplitude (_cf, 0.1..100 %) a coupled shift can drive a linked
@@ -1950,7 +1957,10 @@ class MainWindow(QMainWindow):
                 getattr(self, f'p{k}_sigma'),
             ])
         return {'p1': getattr(self, 'p1_start'),
-                'p1_freq': getattr(self, 'p1_freq', None), 'pulses': pulses}
+                'p1_freq': getattr(self, 'p1_freq', None),
+                'n_wurst': getattr(self, 'n_wurst_cur', None),
+                'b_sech': getattr(self, 'b_sech_cur', None),
+                'pulses': pulses}
 
     def _structure_sig(self, snap):
         """
@@ -2105,7 +2115,9 @@ class MainWindow(QMainWindow):
         if base is None:
             return
         payload = {'p1_d': self._ns(snap['p1']) - base['p1'],
-                   'p1_freq': snap.get('p1_freq'), 'pulses': []}
+                   'p1_freq': snap.get('p1_freq'),
+                   'n_wurst': snap.get('n_wurst'), 'b_sech': snap.get('b_sech'),
+                   'pulses': []}
         for e in snap['pulses']:
             k = e[0]
             if k not in base['pulses']:
@@ -2497,6 +2509,10 @@ class MainWindow(QMainWindow):
         A function to set b_sech parameter for the SECH/TANH pulse
         """
         self.b_sech_cur = float( self.B_sech.value() )
+        # N/B change the WURST/SECH DAC samples but not dac_window, so they
+        # re-arm live like amplitude/type -- nudge the debounce to push the new
+        # chirp through the 'PU' payload (carried as snap['n_wurst']/['b_sech']).
+        self.schedule_live_apply()
 
     def quad_online(self):
         """
@@ -3546,6 +3562,8 @@ class MainWindow(QMainWindow):
         A function to set n_wurst parameter for the WURST and SECH/TANH pulses
         """
         self.n_wurst_cur = int( self.N_wurst.value() )
+        # See b_sech_func: N re-arms the DAC waveform live via the 'PU' payload.
+        self.schedule_live_apply()
 
     def ch0_amp(self):
         """
@@ -4745,8 +4763,10 @@ class Worker():
                                     if float(amp) > 0:
                                         ap['amp'] = 100.0 / float(amp)
                                     if is_complex:
-                                        ap['n'] = n_wurst
-                                        ap['b'] = b_sech
+                                        # N/B re-arm live: use the payload values
+                                        # (current GUI), not the opened baseline.
+                                        ap['n'] = snap.get('n_wurst', n_wurst)
+                                        ap['b'] = snap.get('b_sech', b_sech)
                                     if awg_name in _orig_awg_start:
                                         ap['start'] = _shift_start(_orig_awg_start[awg_name], a_delta)
                                     ai = awg_init.get(awg_name)
