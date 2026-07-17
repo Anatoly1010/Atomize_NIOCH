@@ -5,7 +5,7 @@
 # see atomize/main/widgets_invert.py). One entry per line, float values:
 #
 #   Detection freq:  <signed MHz>      - the frequency last passed to
-#       digitizer_iq, recorded by Spectrum_M4I_4450_X8_invert from the
+#       digitizer_demodulate, recorded by Spectrum_M4I_4450_X8_invert from the
 #       acquisition process. A 4 ns flip advances the demodulated phase by
 #       phi = (freq / 250) * 360 deg, which is what the click applies.
 #   <dock name>/<curve label>:  <deg>  - the NET phase currently applied to
@@ -25,7 +25,7 @@ _KEY_SEP = ':  '
 _DET_KEY = 'Detection freq'
 _HEADER = '# Atomize I/Q phase-shift registry (4 ns clock-flip correction). Auto-generated; wiped at GUI start.'
 _io_lock = threading.Lock()
-_last_freq = None   # in-process cache so per-scan digitizer_iq calls skip file IO
+_last_freq = None   # in-process cache so per-scan digitizer_demodulate calls skip file IO
 
 
 def path():
@@ -86,7 +86,7 @@ def set_phase(plot, label, deg):
 
 
 def detection_freq(default = -125.0):
-    """Signed MHz as digitizer_iq received it (GUI box 125 -> iq_freq -125).
+    """Signed MHz as digitizer_demodulate received it (GUI box 125 -> iq_freq -125).
     The default keeps pre-first-run behavior equal to the old 180-deg
     inversion at the recommended 125 MHz offset."""
     return read().get(_DET_KEY, default)

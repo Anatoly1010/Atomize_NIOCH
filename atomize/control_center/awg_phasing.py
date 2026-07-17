@@ -88,7 +88,12 @@ class _NullDigitizer:
         x_axis = np.arange(self.points) * 2e-9
         return x_axis, np.zeros(self.points), np.zeros(self.points)
 
-    def digitizer_iq(self, data_x, data_y, *args, integral=False, **kwargs):
+    def digitizer_iq(self, *args, **kwargs):
+        # Deprecated alias for digitizer_demodulate (renamed 2026-07); kept
+        # so existing user scripts keep working.
+        return self.digitizer_demodulate(*args, **kwargs)
+
+    def digitizer_demodulate(self, data_x, data_y, *args, integral=False, **kwargs):
         n = data_x.shape[1] if getattr(data_x, 'ndim', 1) > 1 else len(data_x)
         return np.zeros(n), np.zeros(n)
 
@@ -4840,7 +4845,7 @@ class Worker():
                 data_x, data_y = pb.pulser_acquisition_cycle( cycle_data_x, cycle_data_y, acq_cycle = rect1[3] )
 
                 if iq_cor == 1:
-                    data_x, data_y = dig.digitizer_iq(data_x, data_y, iq_freq, zero_order, first_order, second_order)
+                    data_x, data_y = dig.digitizer_demodulate(data_x, data_y, iq_freq, zero_order, first_order, second_order)
 
                 if script_test:
                     general.plot_1d('Dig', x_axis, ( data_x, data_y ),
@@ -5305,7 +5310,7 @@ class Worker():
                                         zname = 'Intensity', zscale = 'mV',
                                         text = f"Scan / Time: {k} / {j * STEP:.1f}", pr = process)
                             elif iq_cor == 1:
-                                area_x, area_y = dig.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                                area_x, area_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
                                 if step != 1:
                                     general.plot_1d(EXP_NAME, x_axis_plot, ( area_x, area_y ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Time: ' + str(k) + ' / ' + str(round(j*STEP, 1)))
                                 else:
@@ -5373,7 +5378,7 @@ class Worker():
                             text = f"Scan / Time: {k} / {j * STEP:.1f}"
                         )
                 elif iq_cor == 1:
-                    data_x, data_y = dig.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                    data_x, data_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
                     if step != 1:
                         general.plot_1d(EXP_NAME, x_axis_plot, ( data_x, data_y ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Time: ' + str(k) + ' / ' + str(round(j*STEP, 1)))
                     else:
@@ -5954,7 +5959,7 @@ class Worker():
                                         pr = process
                                     )
                             elif iq_cor == 1:
-                                area_x, area_y = dig.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                                area_x, area_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
                                 if step != 1:
                                     general.plot_1d(EXP_NAME, x_axis_plot, ( area_x, area_y ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = f'Cycle {cycle + 1}/{CYCLES} Scan {k}')
                                 else:
@@ -6008,7 +6013,7 @@ class Worker():
                         else:
                             general.plot_2d(EXP_NAME, data, start_step = ((0, dec_calc), (0, 1)), xname = 'Time', xscale = 's', yname = 'Point', yscale = '', zname = 'Intensity', zscale = 'mV', text = f"ESEEM average over {completed_cycles} cycle(s)")
                     elif iq_cor == 1:
-                        rdx, rdy = dig.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                        rdx, rdy = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
                         if step != 1:
                             general.plot_1d(EXP_NAME, x_axis_plot, ( rdx, rdy ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = f"ESEEM average over {completed_cycles} cycle(s)")
                         else:
@@ -6056,7 +6061,7 @@ class Worker():
                             text = f"ESEEM average over {completed_cycles} cycle(s)"
                         )
                 elif iq_cor == 1:
-                    data_x, data_y = dig.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                    data_x, data_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
                     if step != 1:
                         general.plot_1d(EXP_NAME, x_axis_plot, ( data_x, data_y ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = f"ESEEM average over {completed_cycles} cycle(s)")
                     else:
@@ -6189,7 +6194,7 @@ class Worker():
                             if iq_cor == 0:
                                 file_handler.save_data(cpath, cdat, header = header, mode = 'w')
                             elif iq_cor == 1:
-                                cdx, cdy = dig.digitizer_iq(cdat[0], cdat[1], iq_freq, zp, first_order, sec_order, integral = True)
+                                cdx, cdy = dig.digitizer_demodulate(cdat[0], cdat[1], iq_freq, zp, first_order, sec_order, integral = True)
                                 # same run -> same clock state: per-cycle traces follow the average's sign
                                 file_handler.save_data(cpath, np.c_[x_axis_plot, cdx, cdy], header = header2, mode = 'w', plot = EXP_NAME, label = curve_name)
 
@@ -6513,7 +6518,7 @@ class Worker():
                                     pr = process
                                 )
                             elif iq_cor == 1:
-                                area_x, area_y = dig.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                                area_x, area_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
                                 process = general.plot_1d(EXP_NAME, x_axis, ( area_x, area_y ), xname = 'Field', xscale = 'G', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Field: ' + str(k) + ' / ' + str(field), pr = process)
 
                         field = round( (FIELD_STEP + field), 3 )
@@ -6567,7 +6572,7 @@ class Worker():
                         text = f"Scan / Field: {k} / {field}"
                         )
                 elif iq_cor == 1:
-                    data_x, data_y = dig.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                    data_x, data_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
                     general.plot_1d(EXP_NAME, x_axis, ( data_x, data_y ), xname = 'Field', xscale = 'G', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Field: ' + str(k) + ' / ' + str(field))
 
                 now = datetime.datetime.now().strftime("%d-%m-%Y %H-%M-%S")
@@ -7070,7 +7075,7 @@ class Worker():
                                     pr = process
                                 )
                             elif iq_cor == 1:
-                                area_x, area_y = dig.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                                area_x, area_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
                                 process = general.plot_1d(EXP_NAME, x_axis_plot, ( area_x, area_y ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Point: ' + str(k) + ' / ' + str(j), pr = process)
 
                         # nonlinear (log) spacing: redefine both the pulser pulses and
@@ -7128,7 +7133,7 @@ class Worker():
                         text = f"Scan / Point: {k} / {j}"
                     )
                 elif iq_cor == 1:
-                    data_x, data_y = dig.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                    data_x, data_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
                     general.plot_1d(EXP_NAME, x_axis_plot, ( data_x, data_y ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Point: ' + str(k) + ' / ' + str(j))
 
                 now = datetime.datetime.now().strftime("%d-%m-%Y %H-%M-%S")
@@ -7607,7 +7612,7 @@ class Worker():
                                         pr = process
                                     )
                             elif iq_cor == 1:
-                                area_x, area_y = dig.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                                area_x, area_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
                                 if point_flag != 1:
                                     general.plot_1d(EXP_NAME, x_axis_plot, ( area_x, area_y ), xname = 'Amplitude', xscale = '%', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Amplitude: ' + str(k) + ' / ' + str(round(f_delay + j * STEP, 1)))
                                 else:
@@ -7680,7 +7685,7 @@ class Worker():
                             pr = process
                         )
                 elif iq_cor == 1:
-                    data_x, data_y = dig.digitizer_iq(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                    data_x, data_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
                     if point_flag != 1:
                         general.plot_1d(EXP_NAME, x_axis_plot, ( data_x, data_y ), xname = 'Amplitude', xscale = '%', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Amplitude: ' + str(k) + ' / ' + str(round(f_delay + j * STEP, 1)))
                     else:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Drop-in Spectrum_M4I_4450_X8 that records the DETECTION (demodulation)
-# frequency passed to digitizer_iq into inversion.param, so the main-window
+# frequency passed to digitizer_demodulate into inversion.param, so the main-window
 # "i" + legend-click phase correction (atomize/main/widgets_invert.py) can
 # compute the exact 4 ns clock-flip rotation phi = (freq / 250) * 360 deg.
 # Import this module instead of Spectrum_M4I_4450_X8 (same class name, the
@@ -17,10 +17,15 @@ import atomize.general_modules.inversion_param as inv_par
 
 class Spectrum_M4I_4450_X8(base_module.Spectrum_M4I_4450_X8):
 
-    def digitizer_iq(self, arr_i, arr_q, freq, ph = None, ph1 = None, ph2 = None, integral = False):
+    def digitizer_iq(self, *args, **kwargs):
+        # Deprecated alias for digitizer_demodulate (renamed 2026-07); kept
+        # so existing user scripts keep working.
+        return self.digitizer_demodulate(*args, **kwargs)
+
+    def digitizer_demodulate(self, arr_i, arr_q, freq, ph = None, ph1 = None, ph2 = None, integral = False):
         # a failed registry write must never break the acquisition
         try:
             inv_par.set_detection_freq(freq)
         except (OSError, TypeError, ValueError):
             pass
-        return super().digitizer_iq(arr_i, arr_q, freq, ph, ph1, ph2, integral = integral)
+        return super().digitizer_demodulate(arr_i, arr_q, freq, ph, ph1, ph2, integral = integral)
