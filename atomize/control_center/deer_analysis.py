@@ -703,6 +703,27 @@ class MainWindow(QMainWindow):
         self.deer_engine.currentIndexChanged.connect(self._general_params_update)
         grid.addWidget(self.deer_engine, r, 1); r += 1
 
+        self.deer_echo_head = QCheckBox('Parabolic echo-top head (guarded)')
+        self.deer_echo_head.setStyleSheet(CHECKBOX_STYLE)
+        self.deer_echo_head.setToolTip(
+            'Replace the echo top with an even parabola fitted to the trace\'s own '
+            'even part, [F(u)+F(−u)]/2. F is even about t₀, so the head carries far '
+            'fewer degrees of freedom than it has samples and this denoises the '
+            'highest-leverage part of the trace.\n'
+            'Worth +0.0035 distance-overlap over 756 synthetic traces (t = 4.7); '
+            'guarded it holds +0.0034 while declining the head on 27 % of them.\n'
+            'The guard compares the recovered mean distance with the distance the '
+            'echo-top curvature alone implies and skips the head when they disagree '
+            'by more than 25 % — a BREADTH test: a broad P(r) has an echo top '
+            'dominated by its shortest component (⟨ω²⟩ ∝ r⁻⁶), and a two-parameter '
+            'head cannot stand in for that mixture. Without it the head shifted the '
+            'mean distance +0.07…+0.15 nm on the broad real traces of the ring test.\n'
+            'Joint background only, and it needs pre-t₀ samples (the mirrored pairs '
+            'are what make the fit unbiased). Costs a second regularization scan '
+            'when it fires, so it is off by default.')
+        self.deer_echo_head.stateChanged.connect(self._live_update)
+        grid.addWidget(self.deer_echo_head, r, 0, 1, 2); r += 1
+
         # General-background coefficients g(t) = a·exp(b·(t + c·dᵗ)), one per row.
         # Auto (default) fits all four and writes the fitted values back here;
         # uncheck Auto to set them by hand (used directly as the background, no
@@ -1889,6 +1910,7 @@ class MainWindow(QMainWindow):
         engine = ('sequential', 'joint', 'none', 'general')[self.deer_engine.currentIndex()]
         dim = float(self.deer_dim.value())
         fit_dim = self.deer_fitdim.isChecked()
+        echo_head = self.deer_echo_head.isChecked() and engine == 'joint'
         validate = self.deer_validate_chk.isChecked()
         fit_t0 = self.deer_fit_t0.isChecked()
         bgs_disp = float(self.deer_bgstart.value())
@@ -1918,11 +1940,12 @@ class MainWindow(QMainWindow):
                 res = deer_module.deer_invert(
                     t_us, v, r=r, bg_start=bg_us, bg_end=bg_end_us, dim=dim,
                     fit_dim=fit_dim, alpha=alpha, alpha_factor=afac, engine=engine,
-                    bg_params=bgp, scan_lcurve=scan_lc)
+                    bg_params=bgp, scan_lcurve=scan_lc, echo_head=echo_head)
                 band = None
-            # display axis stays in acquisition time, cropped like the engine's pre-t0 drop
-            res['t'] = x[t_us >= 0] * tf
-            res['pre'] = self._pre_zero(res, x, v, t_us, tf)
+            # display axis in acquisition time, over exactly the samples the engine kept
+            t_eng = np.asarray(res['t'], float)
+            res['pre'] = self._pre_zero(res, x, v, t_us, tf, t_eng)
+            res['t'] = t_eng + t0_disp * tf
             if bg_end_us is not None:
                 res['background']['bg_end'] = bge_disp * tf
             return {'t0_disp': t0_disp, 'res': res, 'band': band}
@@ -2002,9 +2025,10 @@ class MainWindow(QMainWindow):
                     t_us, v, r=r, bg_start=bg_us, bg_end=bg_end_us, dim=dim,
                     fit_dim=fit_dim, n_mc=n_mc, **mk)
                 band = None
-            # display axis stays in acquisition time, cropped like the engine's pre-t0 drop
-            res['t'] = x[t_us >= 0] * tf
-            res['pre'] = self._pre_zero(res, x, v, t_us, tf)
+            # display axis in acquisition time, over exactly the samples the engine kept
+            t_eng = np.asarray(res['t'], float)
+            res['pre'] = self._pre_zero(res, x, v, t_us, tf, t_eng)
+            res['t'] = t_eng + t0_disp * tf
             if bg_end_us is not None:
                 res['background']['bg_end'] = bge_disp * tf
             return {'t0_disp': t0_disp, 'res': res, 'band': band}
@@ -2091,9 +2115,10 @@ class MainWindow(QMainWindow):
                     t_us, v, r=r, bg_start=bg_us, bg_end=bg_end_us, dim=dim,
                     fit_dim=fit_dim, n_mc=n_mc, **gk)
                 band = None
-            # display axis stays in acquisition time, cropped like the engine's pre-t0 drop
-            res['t'] = x[t_us >= 0] * tf
-            res['pre'] = self._pre_zero(res, x, v, t_us, tf)
+            # display axis in acquisition time, over exactly the samples the engine kept
+            t_eng = np.asarray(res['t'], float)
+            res['pre'] = self._pre_zero(res, x, v, t_us, tf, t_eng)
+            res['t'] = t_eng + t0_disp * tf
             if bg_end_us is not None:
                 res['background']['bg_end'] = bge_disp * tf
             return {'t0_disp': t0_disp, 'res': res, 'band': band}
@@ -2593,6 +2618,16 @@ class MainWindow(QMainWindow):
         if wht is not None and np.isfinite(wht['durbin_watson']):
             verdict = (' &nbsp;<i>(' + ('white' if wht['white'] else 'structured')
                        + f', r₁={wht["acf1"]:+.2f})</i>')
+        # sampling-resolution limit: grid points below it are unconstrained
+        ra = res.get('r_alias')
+        alias_line = ''
+        try:
+            if ra and float(np.min(np.asarray(res['r'], float))) < float(ra) - 1e-9:
+                alias_line = (
+                    '<span style="color: rgb(214, 39, 40);">r min below the '
+                    f'{float(ra):.2f} nm sampling limit</span><br>')
+        except Exception:
+            alias_line = ''
         info_html = (
             '<div style="line-height: 150%;">'
             f'<b style="color: rgb(211, 194, 78);">P(r)</b>{med_tag}'
@@ -2601,7 +2636,7 @@ class MainWindow(QMainWindow):
                                        'gauss' if is_gauss else 'tikhonov')
             + verdict
             + '<div style="line-height: 160%; margin-top: 3px;">'
-            f'{bg_line}<br>{reg}<br>'
+            f'{bg_line}<br>{reg}<br>{alias_line}'
             f'skew = {dsc["skew"]:+.2f}{extra}</div></div>')
         self.deer_info.setText(info_html)
         if is_mellin:
@@ -2799,12 +2834,18 @@ class MainWindow(QMainWindow):
         this curve. Other engines return their own F_fit."""
         return np.asarray(res['F_fit'], float)
 
-    def _pre_zero(self, res, x, v, t_us, tf):
+    def _pre_zero(self, res, x, v, t_us, tf, t_eng=None):
         """Display-only extension of a result back through t < 0 (before t0).
 
-        The engines drop the pre-t0 samples (deer._crop_pre_zero: the kernel
-        evaluates |ω·t|, so a t<0 sample would be modelled as +|t| evolution and
-        pile P(r) mass at short r), so nothing they return is defined there. This
+        Extends only below the engine's OWN first sample, not below t = 0: the
+        Tikhonov path's `pre_zero='even'` policy keeps the pre-t0 samples that pass
+        a mirror test (deer._crop_pre_zero), so those are fitted, not extrapolated.
+        `t_eng` is the engine's time array; without it the old drop-everything-
+        below-zero assumption is used.
+
+        The engines drop the remaining pre-t0 samples (the kernel evaluates |ω·t|,
+        so such a sample would be modelled as +|t| evolution and pile P(r) mass at
+        short r), so nothing they return is defined there. This
         refits nothing: B(t) and F(t) = K(|t|)·P are both exactly EVEN in t, so
         the fitted curves are read off the engine's own positive-time arrays at
         |t| — evaluation, not extrapolation. The data are put on the engine's
@@ -2814,7 +2855,8 @@ class MainWindow(QMainWindow):
         Returns None when the trace starts at or after the zero time.
         """
         t_us = np.asarray(t_us, float)
-        pre = t_us < 0
+        t_first = 0.0 if t_eng is None or not len(t_eng) else float(np.min(t_eng))
+        pre = t_us < t_first
         if not pre.any():
             return None
         bg = res['background']
