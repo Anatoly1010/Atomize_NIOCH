@@ -485,6 +485,7 @@ class MainWindow(QMainWindow):
         icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                  'gui', 'icon_seqcalc.ico')
         self.setWindowIcon(QIcon(icon_path))
+
         self._click_seq = 0            # monotonic counter for reload-signal nonces
         self._building = True          # suppress recompute while wiring widgets
         self.grid = DEFAULT_GRID       # selectable hardware grid (ns); see GRID_STEPS
