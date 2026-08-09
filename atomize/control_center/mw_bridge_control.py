@@ -35,7 +35,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Load the UI Page
         path_to_main = os.path.dirname(os.path.abspath(__file__))
         gui_path = os.path.join(path_to_main,'gui/mw_main_window.ui')
-        icon_path = os.path.join(path_to_main, 'gui/icon_mw.png')
+        icon_path = os.path.join(path_to_main, 'gui/icon_mw.ico')
         self.setWindowIcon( QIcon(icon_path) )
 
         uic.loadUi(gui_path, self)                        # Design file
@@ -530,7 +530,7 @@ def main():
     """
     app = QtWidgets.QApplication(sys.argv)
     from atomize.general_modules.gui_style import apply_app_style
-    apply_app_style(app, app_id='Atomize.NIOCH.MWBridge')
+    apply_app_style(app, app_id='Atomize.NIOCH.MWBridge', desktop='mw')
     main = MainWindow()
     main.show()
     sys.exit(app.exec())
