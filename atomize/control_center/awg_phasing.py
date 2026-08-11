@@ -1836,6 +1836,8 @@ class MainWindow(QMainWindow):
 
         self.save2d = 0
         self.save_hdf5 = 0
+        # extension the save dialog offers; snapshotted at every experiment start
+        self.cur_save_fmt = 'csv'
 
         gridLayout.setColumnStretch(2, 1)
         gridLayout.setRowStretch(8, 1)
@@ -3769,6 +3771,8 @@ class MainWindow(QMainWindow):
         self.errors.clear()
         worker = Worker()
         worker.save_hdf5 = self.save_hdf5
+        # the primary file is the 2D array itself only when iq_cor is off
+        self.cur_save_fmt = 'h5' if ( self.save_hdf5 == 1 and self.iq_cor == 0 ) else 'csv'
         self._hand_correction_to_worker(worker)
 
         self.p1_exp = [self.p1_typ, self.p1_start, self.p1_length,
@@ -4194,11 +4198,12 @@ class MainWindow(QMainWindow):
             sys.exit()
 
     def open_dialog(self):
-        file_data = self.file_handler.create_file_dialog(multiprocessing = True)        
+        file_data = self.file_handler.create_file_dialog(multiprocessing = True,
+            fmt = self.cur_save_fmt)
 
         if file_data:
             if file_data != 'None':
-                self.save_file(file_data.split(".csv")[0])
+                self.save_file(file_data.rsplit('.', 1)[0])
             self.parent_conn_dig.send( 'FL' + str( file_data ) )
         else:
             self.parent_conn_dig.send( 'FL' + '' )
@@ -4242,6 +4247,8 @@ class MainWindow(QMainWindow):
 
         worker = Worker()
         worker.save_hdf5 = self.save_hdf5
+        # the primary file is the 2D array itself only when iq_cor is off
+        self.cur_save_fmt = 'h5' if ( self.save_hdf5 == 1 and self.iq_cor == 0 ) else 'csv'
         self._hand_correction_to_worker(worker)
         self.parent_conn_dig, self.child_conn_dig = Pipe()
         
