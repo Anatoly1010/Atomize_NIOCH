@@ -16,10 +16,12 @@ import atomize.general_modules.inversion_param as inv_par
 
 class Saver_Opener(csv_base.Saver_Opener):
 
-    def save_data(self, filename, data, header = '', mode = 'w',
+    def save_data(self, filename, data, header = '', mode = 'w', axes = None,
+                  fmt = '%.6e', dtype = None,
                   plot = None, label = None, y_columns = (1, 2)):
         if plot is None or label is None:
-            return super().save_data(filename, data, header = header, mode = mode)
+            return super().save_data(filename, data, header = header, mode = mode,
+                                     axes = axes, fmt = fmt, dtype = dtype)
 
         try:
             phase = inv_par.applied_phase(plot, label)
@@ -48,4 +50,5 @@ class Saver_Opener(csv_base.Saver_Opener):
                 # np.genfromtxt skips it, so open_1d needs no changes
                 header = header + '\n' + note if header else note
 
-        return super().save_data(filename, data, header = header, mode = mode)
+        return super().save_data(filename, data, header = header, mode = mode,
+                                 axes = axes, fmt = fmt, dtype = dtype)
