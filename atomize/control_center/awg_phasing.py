@@ -5497,6 +5497,7 @@ class Worker():
                         general.wait('200 ms')
 
                     axes_2d = ( np.arange(points_window) * dec_calc, x_axis_plot )
+                    axes_units_2d = ( 's', 's' )
                     base_data = os.path.splitext(file_data)[0]
 
                     if iq_cor == 0:
@@ -5505,7 +5506,7 @@ class Worker():
                             data,
                             header = header,
                             mode = 'w',
-                            axes = axes_2d
+                            axes = axes_2d, axes_units = axes_units_2d
                         )
                     elif iq_cor == 1:
 
@@ -5524,7 +5525,7 @@ class Worker():
                                 data,
                                 header = header,
                                 mode = 'w',
-                                axes = axes_2d
+                                axes = axes_2d, axes_units = axes_units_2d
                         )
 
                     conn.send( ('', f'Experiment {EXP_NAME} finished') )
@@ -6195,6 +6196,7 @@ class Worker():
                         general.wait('200 ms')
 
                     axes_2d = ( np.arange(points_window) * dec_calc, x_axis_plot )
+                    axes_units_2d = ( 's', 's' )
                     base_data = os.path.splitext(file_data)[0]
 
                     if iq_cor == 0:
@@ -6203,7 +6205,7 @@ class Worker():
                             data,
                             header = header,
                             mode = 'w',
-                            axes = axes_2d
+                            axes = axes_2d, axes_units = axes_units_2d
                         )
                     elif iq_cor == 1:
 
@@ -6222,7 +6224,7 @@ class Worker():
                                 data,
                                 header = header,
                                 mode = 'w',
-                                axes = axes_2d
+                                axes = axes_2d, axes_units = axes_units_2d
                         )
 
                     # Optionally save every cycle's own trace alongside the
@@ -6242,7 +6244,7 @@ class Worker():
                                 cdat = (idx + 1) * Mc - idx * cycle_snapshots[idx - 1]
                             if iq_cor == 0:
                                 cpath = f"{base_data}_cycle{idx}{os.path.splitext(file_data)[1]}"
-                                file_handler.save_data(cpath, cdat, header = header, mode = 'w', axes = axes_2d)
+                                file_handler.save_data(cpath, cdat, header = header, mode = 'w', axes = axes_2d, axes_units = axes_units_2d)
                             elif iq_cor == 1:
                                 cpath = f"{base_data}_cycle{idx}.csv"
                                 cdx, cdy = dig.digitizer_demodulate(cdat[0], cdat[1], iq_freq, zp, first_order, sec_order, integral = True)
@@ -6699,6 +6701,7 @@ class Worker():
                         general.wait('200 ms')
 
                     axes_2d = ( np.arange(points_window) * dec_calc, x_axis )
+                    axes_units_2d = ( 's', 'G' )
                     base_data = os.path.splitext(file_data)[0]
 
                     if iq_cor == 0:
@@ -6707,7 +6710,7 @@ class Worker():
                             data,
                             header = header,
                             mode = 'w',
-                            axes = axes_2d
+                            axes = axes_2d, axes_units = axes_units_2d
                         )
                     elif iq_cor == 1:
 
@@ -6727,7 +6730,7 @@ class Worker():
                                 data,
                                 header = header,
                                 mode = 'w',
-                                axes = axes_2d
+                                axes = axes_2d, axes_units = axes_units_2d
                             )
 
                     conn.send( ('', f'Experiment {EXP_NAME} finished') )
@@ -7283,6 +7286,7 @@ class Worker():
                         general.wait('200 ms')
 
                     axes_2d = ( np.arange(points_window) * dec_calc, x_axis_plot )
+                    axes_units_2d = ( 's', 's' )
                     base_data = os.path.splitext(file_data)[0]
 
                     if iq_cor == 0:
@@ -7291,7 +7295,7 @@ class Worker():
                             data,
                             header = header,
                             mode = 'w',
-                            axes = axes_2d
+                            axes = axes_2d, axes_units = axes_units_2d
                         )
                     elif iq_cor == 1:
 
@@ -7310,7 +7314,7 @@ class Worker():
                                 data,
                                 header = header,
                                 mode = 'w',
-                                axes = axes_2d
+                                axes = axes_2d, axes_units = axes_units_2d
                             )
 
                     conn.send( ('', f'Experiment {EXP_NAME} finished') )
@@ -7826,6 +7830,7 @@ class Worker():
                         general.wait('200 ms')
 
                     axes_2d = ( np.arange(points_window) * dec_calc, x_axis_plot )
+                    axes_units_2d = ( 's', '%' )
                     base_data = os.path.splitext(file_data)[0]
 
                     if iq_cor == 0:
@@ -7834,7 +7839,7 @@ class Worker():
                             data,
                             header = header,
                             mode = 'w',
-                            axes = axes_2d
+                            axes = axes_2d, axes_units = axes_units_2d
                         )
                     elif iq_cor == 1:
 
@@ -7853,7 +7858,7 @@ class Worker():
                                 data,
                                 header = header,
                                 mode = 'w',
-                                axes = axes_2d
+                                axes = axes_2d, axes_units = axes_units_2d
                             )
 
                     conn.send( ('', f'Experiment {EXP_NAME} finished') )
