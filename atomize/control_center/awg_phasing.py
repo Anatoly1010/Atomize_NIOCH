@@ -2082,16 +2082,26 @@ class MainWindow(QMainWindow):
         in the worker with a full test-mode rebuild.
         """
         valid = {'+x', '-x', '+y', '-y', 'x', 'y', 'i', '-i', '+', '-', '0'}
+        coeff = re.compile(r'[+-]?\d+\.?\d*')
         simple_lens = []
+        receiver = None
         for i in range(1, 10):
             length = float(str(getattr(self, f'p{i}_length')).split(' ')[0])
             if length == 0:
                 continue
+            if receiver is None:
+                receiver = i
             raw = getattr(self, f'Phase_{i}').toPlainText().strip()
             if '[' in raw or '(' in raw:
                 continue
             toks = [t.strip().lower().replace(' ', '')
                     for t in raw.split(',') if t.strip()]
+            if i == receiver and not any(c in raw.lower() for c in 'xy'):
+                # coherence-order coefficients, one per pulse, not a phase list
+                for t in toks:
+                    if coeff.fullmatch(t) is None:
+                        return f'unrecognized receiver coefficient "{t}" in pulse P{i}.'
+                continue
             for t in toks:
                 if t not in valid:
                     return f'unrecognized phase "{t}" in pulse P{i}.'
