@@ -261,6 +261,6 @@ The original [C library](http://www.spincore.com/support/spinapi/using_spin_api_
 
 ![Script editor and experiment queue](screenshots/screenshot.png)
 
-![Liveplot with synthetic demonstration data](screenshots/screenshot2.png)
+![Liveplot with two noisy 1D traces](screenshots/screenshot2.png)
 
-![EPR Endstation Control](screenshots/screenshot3.png)
+![Liveplot with a noisy 2D echo map](screenshots/screenshot3.png)
