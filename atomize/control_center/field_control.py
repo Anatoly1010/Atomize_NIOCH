@@ -3,6 +3,7 @@
 
 import os
 import sys
+from atomize.general_modules.gui_style import REFINED_STYLES, style_file_dialog, apply_app_style
 from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import Qt, QEventLoop, QTimer, QEvent
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QDoubleSpinBox, QSpinBox, QPushButton, QGridLayout, QFrame
@@ -49,7 +50,7 @@ class MainWindow(QMainWindow):
 
         self.setObjectName("MainWindow")
         self.setWindowTitle("Field Control")
-        self.setStyleSheet("background-color: rgb(42,42,64);")
+        self.setStyleSheet(REFINED_STYLES['WINDOW_STYLE'])
 
         path_to_main = os.path.dirname(os.path.abspath(__file__))
         icon_path = os.path.join(path_to_main, 'gui/icon_field.ico')
@@ -72,7 +73,7 @@ class MainWindow(QMainWindow):
             lbl = QLabel(name)
             lbl.setFixedSize(190, 26)
             setattr(self, attr_name, lbl)
-            lbl.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
+            lbl.setStyleSheet(REFINED_STYLES['LABEL_STYLE'])
 
         self.label_lock = QLabel("")
         self.label_lock.setFixedSize(320, 26)
@@ -87,10 +88,10 @@ class MainWindow(QMainWindow):
             spin_box = widget_class()
             if isinstance(spin_box, QDoubleSpinBox):
                 spin_box.setRange(v_min, v_max)
-                spin_box.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); selection-background-color: rgb(211, 194, 78); selection-color: rgb(63, 63, 97);}")                
+                spin_box.setStyleSheet(REFINED_STYLES['COMPACT_FIELD_STYLE'])
             else:
                 spin_box.setRange(int(v_min), int(v_max))
-                spin_box.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); selection-background-color: rgb(211, 194, 78); selection-color: rgb(63, 63, 97);}")                
+                spin_box.setStyleSheet(REFINED_STYLES['COMPACT_FIELD_STYLE'])
             spin_box.setSingleStep(v_step)
             spin_box.setValue(cur_val)
             if isinstance(spin_box, QDoubleSpinBox):
@@ -119,7 +120,7 @@ class MainWindow(QMainWindow):
             btn = QPushButton(name)
             btn.setFixedSize(140, 40)
             btn.clicked.connect(func)
-            btn.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97); border-style: outset; color: rgb(193, 202, 227); font-weight: bold; } QPushButton:pressed {background-color: rgb(211, 194, 78); border-style: inset; font-weight: bold; }")
+            btn.setStyleSheet(REFINED_STYLES['BUTTON_STYLE'])
             setattr(self, attr_name, btn)
 
         # ---- Separators ----
@@ -232,7 +233,7 @@ class MainWindow(QMainWindow):
         if not self.device_ok:
             sys.exit()
 
-        self.button_stop.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(211, 194, 78); border-style: outset; color: rgb(63, 63, 97); font-weight: bold; } ")
+        self.button_stop.setStyleSheet(REFINED_STYLES['PRIMARY_BUTTON_STYLE'])
 
         QApplication.processEvents()
 
@@ -252,7 +253,7 @@ class MainWindow(QMainWindow):
         self.field = 0
         self.itc_fc.magnet_field( self.cur_field )
         self.Set_point.setValue(self.cur_field)
-        self.button_stop.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97); border-style: outset; color: rgb(193, 202, 227); font-weight: bold; } ")
+        self.button_stop.setStyleSheet(REFINED_STYLES['BUTTON_STYLE'])
 
         sys.exit()
 
@@ -276,7 +277,7 @@ class MainWindow(QMainWindow):
         if not self.device_ok:
             sys.exit()
 
-        self.button_stop.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(211, 194, 78); border-style: outset; color: rgb(63, 63, 97); font-weight: bold; } ")
+        self.button_stop.setStyleSheet(REFINED_STYLES['PRIMARY_BUTTON_STYLE'])
 
         QApplication.processEvents()
 
@@ -296,7 +297,7 @@ class MainWindow(QMainWindow):
         self.field = 0
         self.itc_fc.magnet_field( self.cur_field )
         self.Set_point.setValue(self.cur_field)
-        self.button_stop.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97); border-style: outset; color: rgb(193, 202, 227); font-weight: bold; } ")
+        self.button_stop.setStyleSheet(REFINED_STYLES['BUTTON_STYLE'])
 
         sys.exit()
 
@@ -336,7 +337,7 @@ class MainWindow(QMainWindow):
 
         self.cur_field = self.cur_field_2
 
-        self.button_stop.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(211, 194, 78); border-style: outset; color: rgb(63, 63, 97); font-weight: bold; } ")
+        self.button_stop.setStyleSheet(REFINED_STYLES['PRIMARY_BUTTON_STYLE'])
 
         QApplication.processEvents()
         
@@ -376,7 +377,7 @@ class MainWindow(QMainWindow):
             self.Set_point.setValue(self.cur_field)
             self.Set_point.blockSignals(False)
 
-        self.button_stop.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97); border-style: outset; color: rgb(193, 202, 227); font-weight: bold; } ")
+        self.button_stop.setStyleSheet(REFINED_STYLES['BUTTON_STYLE'])
 
     def update_stop(self):
         """

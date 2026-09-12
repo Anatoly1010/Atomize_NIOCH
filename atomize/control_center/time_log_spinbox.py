@@ -24,6 +24,7 @@ Drop this file at atomize/control_center/time_log_spinbox.py when integrating.
 """
 
 import math
+from atomize.general_modules.gui_style import REFINED_STYLES
 
 from PyQt6.QtWidgets import QWidget, QDoubleSpinBox, QComboBox, QHBoxLayout
 from PyQt6.QtCore import pyqtSignal, Qt
@@ -110,9 +111,7 @@ class TimeLogSpinBox(QWidget):
         self._spin.setKeyboardTracking(False)
         self._spin.setFixedHeight(26)
         self._spin.setStyleSheet(
-            "QDoubleSpinBox { color: rgb(193, 202, 227); "
-            "selection-background-color: rgb(211, 194, 78); "
-            "selection-color: rgb(63, 63, 97); }"
+            REFINED_STYLES['COMPACT_FIELD_STYLE']
         )
 
         self._unit = QComboBox()
@@ -121,9 +120,7 @@ class TimeLogSpinBox(QWidget):
         self._unit.setFixedHeight(26)
         self._unit.setFixedWidth(48)
         self._unit.setStyleSheet(
-            "QComboBox { color: rgb(193, 202, 227); "
-            "selection-background-color: rgb(63, 63, 97); "
-            "selection-color: rgb(211, 194, 78); }"
+            REFINED_STYLES['COMBO_STYLE']
         )
 
         layout = QHBoxLayout(self)

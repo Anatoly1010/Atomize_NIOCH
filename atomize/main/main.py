@@ -11,9 +11,9 @@ from PyQt6 import QtWidgets, uic, QtCore, QtGui
 from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import QWidget, QGridLayout, QLabel, QPushButton, QComboBox, QCheckBox, QVBoxLayout, QApplication
 from PyQt6.QtGui import QColor
-from atomize.main.main_window import MainWindow, NameList
+from atomize.main.main_window import MainWindow, NameList, TAB_MARGINS
 from atomize.main import widgets_invert
-from atomize.general_modules.gui_style import apply_app_style, CHECKBOX_STYLE
+from atomize.general_modules.gui_style import apply_app_style, CHECKBOX_STYLE, REFINED_STYLES
 import atomize.general_modules.inversion_param as inversion_param
 os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 
@@ -394,67 +394,66 @@ class MainExtended(MainWindow):
         
         tab3 = QWidget()
         main_layout = QVBoxLayout(tab3)
-        gridlayout = QGridLayout()
-        gridlayout.setContentsMargins(5, 7, 5, 5)
-        main_layout.addLayout(gridlayout)
-
+        main_layout.setContentsMargins(*TAB_MARGINS)
+        main_layout.setSpacing(12)
         self.tabwidget.addTab(tab3, "EPR Endstation Control")
-        self.tabwidget.tabBar().setTabTextColor(2, QColor(193, 202, 227))
-        self.tabwidget.tabBar().setStyleSheet(" font-weight: bold ") 
 
-        button_list = []
+        groups = [
+            ('Acquisition', [
+                ('RECT Channel', self.start_rect_phasing, 'rect'),
+                ('AWG Channel', self.start_awg_phasing, 'awg'),
+                ('Resonator Tuning', self.start_tune_preset, 'tune'),
+            ]),
+            ('Instrument controls', [
+                ('Pulsed MW Bridge', self.start_mw_control, 'mw'),
+                ('Oscilloscope', self.start_osc_control, 'osc21'),
+                ('Set Magnetic Field', self.start_field_control, 'field'),
+            ]),
+            ('Analysis', [
+                ('Data Treatment', self.start_treatment_control, 'treat'),
+                ('Data Treatment 2D', self.start_treatment_2d_control, 'treat2d'),
+                ('DEER / PDS', self.start_deer_analysis, 'deer'),
+                ('Pulse Sequence', self.start_sequence_calculator, 'seqcalc'),
+                ('Excitation Profile', self.start_excitation_profile, 'excprof'),
+                ('Spin Dynamics', self.start_spin_sim, 'spin'),
+            ]),
+        ]
+        grid = QGridLayout()
+        grid.setSpacing(16)
+        icon_dir = Path(__file__).resolve().parents[1] / 'control_center' / 'gui'
+        for column, (heading, actions) in enumerate(groups):
+            panel = QWidget()
+            panel.setObjectName("launcherPanel")
+            layout = QVBoxLayout(panel)
+            layout.setContentsMargins(16, 16, 16, 16)
+            layout.setSpacing(8)
+            label = QLabel(heading)
+            label.setStyleSheet(REFINED_STYLES['SECTION_HEADING_STYLE'])
+            layout.addWidget(label)
+            layout.addSpacing(8)
+            for name, callback, icon_name in actions:
+                button = QPushButton(name)
+                button.setMinimumSize(208, 42)
+                button.setStyleSheet(REFINED_STYLES['BUTTON_STYLE'] + "QPushButton { text-align: left; padding-left: 12px; }")
+                button.setIcon(QtGui.QIcon(str(icon_dir / f'icon_{icon_name}.ico')))
+                button.setIconSize(QtCore.QSize(22, 22))
+                button.clicked.connect(callback)
+                layout.addWidget(button)
+            layout.addStretch()
+            grid.addWidget(panel, 0, column)
+            grid.setColumnStretch(column, 1)
+        main_layout.addLayout(grid)
 
-        button_name_1 = ["", "Set MF", "Oscilloscope"]
-        button_name_2 = ["Pulsed MW Bridge", "", "RECT Channel", "AWG Channel"]
-        button_name_3 = ["Resonator Tuning", "", "Data Treatment", "Data Treatment 2D", "DEER / PDS", "Pulse Sequence", "Excitation Profile", "Spin Dynamics"]
-
-        actions_1 = [None, self.start_field_control, self.start_osc_control]
-        actions_2 = [self.start_mw_control, None, self.start_rect_phasing, self.start_awg_phasing]
-        actions_3 = [self.start_tune_preset, None, self.start_treatment_control, self.start_treatment_2d_control, self.start_deer_analysis, self.start_sequence_calculator, self.start_excitation_profile, self.start_spin_sim]
-
-        columns_data = [(button_name_1, actions_1, 1), (button_name_2, actions_2, 2), (button_name_3, actions_3, 3)]
-
-        for names, actions, col_idx in columns_data:
-            for row_idx, name in enumerate(names):
-                if not name:
-                    continue
-                
-                btn = QPushButton(name)
-                btn.setFixedSize(140, 40)
-                btn.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97); border-style: outset; color: rgb(193, 202, 227); font-weight: bold; } QPushButton:pressed {background-color: rgb(211, 194, 78); border-style: inset; font-weight: bold; }")
-
-                if actions and row_idx < len(actions) and actions[row_idx]:
-                    btn.clicked.connect(actions[row_idx])
-                    
-                gridlayout.addWidget(btn, row_idx , col_idx)
-                button_list.append(btn)
-
-        # Test option
-        label_2 = QLabel("Test Scripts:")
-        label_2.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
-        label_2.setFixedWidth(100)
-        gridlayout.addWidget(label_2, 0, 4)
-
-        self.checkTests = QCheckBox("")
-        gridlayout.addWidget(self.checkTests, 0, 5)
-        self.checkTests.setStyleSheet(CHECKBOX_STYLE)
-
-        self.checkTests.setFixedSize(140, 40)
+        self.checkTests = QCheckBox("Test Scripts")
+        self.checkTests.setStyleSheet(REFINED_STYLES['CHECKBOX_STYLE'])
         self.checkTests.setChecked(True)
-        self.checkTests.setLayoutDirection(QtCore.Qt.LayoutDirection.LeftToRight)
-
-
-        #gridlayout.setColumnMinimumWidth(0, 20)
-        #gridlayout.setRowMinimumHeight(0, 12)
-        gridlayout.setHorizontalSpacing(15)
-        gridlayout.setColumnStretch(6, 3)
-        # Stretch row sits below the tallest button column (column 3 now has a
-        # button on row 7), so the version label stays pinned to the bottom.
-        gridlayout.setRowStretch(8, 3)
+        main_layout.addWidget(self.checkTests)
+        main_layout.addStretch()
 
         bottom_label = QLabel("https://anatoly1010.github.io/atomize_docs/; Version 0.3.2; 01/03/2026")
-        bottom_label.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
+        bottom_label.setStyleSheet(REFINED_STYLES['HINT_STYLE'])
         main_layout.addWidget(bottom_label)
+
 
     # redefined method
     def closeEvent(self, event):
@@ -576,7 +575,7 @@ class MainExtended(MainWindow):
             return
         elif self.test_flag == 0 and exec_code == True:
             self.process_python.setArguments([name])
-            self.button_start.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(211, 194, 78); border-style: outset; color: rgb(63, 63, 97); font-weight: bold; } ")
+            self.button_start.setStyleSheet(REFINED_STYLES['PRIMARY_BUTTON_STYLE'])
             self.process_python.start()
             self.pid = self.process_python.processId()
             print(f'SCRIPT PROCESS ID: {self.pid}')
@@ -604,7 +603,7 @@ class MainExtended(MainWindow):
             file_to_read.close()
             # mod
 
-        self.button_test.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97); border-style: outset; color: rgb(193, 202, 227); font-weight: bold; } ")
+        self.button_test.setStyleSheet(REFINED_STYLES['WORKSPACE_ACTION_STYLE'])
 
         self.success = (exit_status == QtCore.QProcess.ExitStatus.NormalExit and exit_code == 0)
         loop.quit()

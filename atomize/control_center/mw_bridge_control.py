@@ -3,6 +3,7 @@
 
 import os
 import sys
+from atomize.general_modules.gui_style import REFINED_STYLES, style_file_dialog, apply_app_style
 import datetime
 import struct
 import socket
@@ -39,6 +40,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowIcon( QIcon(icon_path) )
 
         uic.loadUi(gui_path, self)                        # Design file
+        self.setStyleSheet(REFINED_STYLES['WINDOW_STYLE'])
 
         # configuration data
         path_config_file = os.path.join(path_to_main,'mw_config.ini')
@@ -50,59 +52,53 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Connection of different action to different Menus and Buttons
         self.button_initialize.clicked.connect(self.initialize)
-        self.button_initialize.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227); font-weight: bold; }\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); border-style: inset; font-weight: bold; }")
+        self.button_initialize.setStyleSheet(REFINED_STYLES['BUTTON_STYLE'])
         self.button_off.clicked.connect(self.turn_off)
-        self.button_off.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227); font-weight: bold; }\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); border-style: inset; font-weight: bold; }")
+        self.button_off.setStyleSheet(REFINED_STYLES['BUTTON_STYLE'])
         self.button_telemetry.clicked.connect(self.telemetry)
-        self.button_telemetry.setStyleSheet("QPushButton {border-radius: 4px; background-color: rgb(63, 63, 97);\
-         border-style: outset; color: rgb(193, 202, 227); font-weight: bold; }\
-          QPushButton:pressed {background-color: rgb(211, 194, 78); border-style: inset; font-weight: bold; }")
+        self.button_telemetry.setStyleSheet(REFINED_STYLES['BUTTON_STYLE'])
 
         # text labels
-        self.label.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
-        self.label_2.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
-        self.label_3.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
-        self.label_4.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
-        self.label_5.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
-        self.label_6.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
-        self.label_7.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
-        self.label_8.setStyleSheet("QLabel { color : rgb(193, 202, 227); font-weight: bold; }")
+        self.label.setStyleSheet(REFINED_STYLES['LABEL_STYLE'])
+        self.label_2.setStyleSheet(REFINED_STYLES['LABEL_STYLE'])
+        self.label_3.setStyleSheet(REFINED_STYLES['LABEL_STYLE'])
+        self.label_4.setStyleSheet(REFINED_STYLES['LABEL_STYLE'])
+        self.label_5.setStyleSheet(REFINED_STYLES['LABEL_STYLE'])
+        self.label_6.setStyleSheet(REFINED_STYLES['LABEL_STYLE'])
+        self.label_7.setStyleSheet(REFINED_STYLES['LABEL_STYLE'])
+        self.label_8.setStyleSheet(REFINED_STYLES['LABEL_STYLE'])
 
-        self.telemetry_text.setStyleSheet("QPlainTextEdit { color : rgb(211, 194, 78); }") # rgb(193, 202, 227)
+        self.telemetry_text.setStyleSheet(REFINED_STYLES['COMPACT_TEXT_STYLE']) # rgb(193, 202, 227)
         
         # Spinboxes
         self.Att1_prd.valueChanged.connect(self.att1_prd)
         self.Att1_prd.lineEdit().setReadOnly( True )   # block input from keyboard
-        self.Att1_prd.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
+        self.Att1_prd.setStyleSheet(REFINED_STYLES['COMPACT_FIELD_STYLE'])
         self.Att2_prd.valueChanged.connect(self.att2_prd)
         self.Att2_prd.lineEdit().setReadOnly( True )
-        self.Att2_prd.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
+        self.Att2_prd.setStyleSheet(REFINED_STYLES['COMPACT_FIELD_STYLE'])
         self.Fv_ctrl.valueChanged.connect(self.fv_ctrl)
         self.Fv_ctrl.lineEdit().setReadOnly( True )
-        self.Fv_ctrl.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
+        self.Fv_ctrl.setStyleSheet(REFINED_STYLES['COMPACT_FIELD_STYLE'])
         self.Fv_prm.valueChanged.connect(self.fv_prm)
         self.Fv_prm.lineEdit().setReadOnly( True )
-        self.Fv_prm.setStyleSheet("QDoubleSpinBox { color : rgb(193, 202, 227); }")
+        self.Fv_prm.setStyleSheet(REFINED_STYLES['COMPACT_FIELD_STYLE'])
         self.Att_prm.valueChanged.connect(self.att_prm)
         self.Att_prm.lineEdit().setReadOnly( True )
-        self.Att_prm.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        self.Att_prm.setStyleSheet(REFINED_STYLES['COMPACT_FIELD_STYLE'])
         self.K_prm.valueChanged.connect(self.k_prm)
         self.K_prm.lineEdit().setReadOnly( True )
-        self.K_prm.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        self.K_prm.setStyleSheet(REFINED_STYLES['COMPACT_FIELD_STYLE'])
         self.Synt.valueChanged.connect(self.synt)
-        self.Synt.setStyleSheet("QSpinBox { color : rgb(193, 202, 227); }")
+        self.Synt.setStyleSheet(REFINED_STYLES['COMPACT_FIELD_STYLE'])
 
         # Radio Buttons
         self.cutoff_1.clicked.connect(self.cutoff_changed_1)
-        self.cutoff_1.setStyleSheet("QRadioButton { color : rgb(193, 202, 227); font-weight: bold; }")
+        self.cutoff_1.setStyleSheet(REFINED_STYLES['RADIO_STYLE'])
         self.cutoff_2.clicked.connect(self.cutoff_changed_2)
-        self.cutoff_2.setStyleSheet("QRadioButton { color : rgb(193, 202, 227); font-weight: bold; }")
+        self.cutoff_2.setStyleSheet(REFINED_STYLES['RADIO_STYLE'])
         self.cutoff_3.clicked.connect(self.cutoff_changed_3)
-        self.cutoff_3.setStyleSheet("QRadioButton { color : rgb(193, 202, 227); font-weight: bold; }")
+        self.cutoff_3.setStyleSheet(REFINED_STYLES['RADIO_STYLE'])
 
         #self.synt()
         # Defence-in-depth: never let bridge init abort the constructor, or the
