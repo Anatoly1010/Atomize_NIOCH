@@ -480,33 +480,12 @@ class MainExtended(MainWindow):
             event.ignore()
             self.text_errors.appendPlainText(f"{len(active_processes)} process is still running. Please terminate it")
         else:
-            sys.exit()
+            event.accept()
 
     # redefined method
     def quit(self):
-        """
-        A function to quit the programm
-        """
-        processes = [
-            self.process_python,
-            self.process_field, self.process_mw, self.process_tune_preset,
-            self.process_phasing, self.process_awg_phasing, self.process_sequence_calc,
-            self.process_excitation, self.process_treatment, self.process_treatment_2d,
-            self.process_deer, self.process_spin_sim, self.process_osc
-        ]
-
-        active_processes = []
-        for p in processes:
-            try:
-                if p and p.state() != QtCore.QProcess.ProcessState.NotRunning:
-                    active_processes.append(p)
-            except AttributeError:
-                pass
-
-        if active_processes:
-            self.text_errors.appendPlainText(f"{len(active_processes)} process is still running. Please terminate it")
-        else:
-            sys.exit()
+        """Use the same close checks as the title-bar button."""
+        QtWidgets.QMainWindow.close(self)
 
     # redefined method
     def _phasing_busy(self):
