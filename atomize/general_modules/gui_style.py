@@ -402,7 +402,7 @@ _TEMPLATES = {
     QScrollBar::handle:horizontal:hover { background: $accent; }
     QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0px; }
     QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal { background: none; }
-    QScrollBar::corner { background: $track; }
+    QAbstractScrollArea::corner { background: $track; }
 """),
 
     'TAB_STYLE': Template("""
@@ -497,6 +497,7 @@ def build_refined_styles(theme=REFINED_THEME):
         QTabBar::tab:focus {{ border-color: {accent}; }}
     """
     styles['ANALYSIS_TAB_STYLE'] = styles['TAB_STYLE'] + "QTabWidget::pane { padding: 10px 8px 8px 8px; }"
+    styles['RUN_STATUS_STYLE'] = f"QLabel {{ color: {accent}; padding: 0px 6px; font-weight: bold; }}"
     styles['CHECKBOX_STYLE'] += f"""
         QCheckBox::indicator:unchecked {{ background: {base}; border-color: {border}; }}
         QCheckBox::indicator:unchecked:hover {{ border-color: {accent}; }}
