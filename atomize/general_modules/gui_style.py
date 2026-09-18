@@ -497,6 +497,10 @@ def build_refined_styles(theme=REFINED_THEME):
         QTabBar::tab:focus {{ border-color: {accent}; }}
     """
     styles['ANALYSIS_TAB_STYLE'] = styles['TAB_STYLE'] + "QTabWidget::pane { padding: 10px 8px 8px 8px; }"
+    styles['BUFFER_WARNING_STYLE'] = f"""
+        QLabel {{ background: {panel}; color: {accent}; border: 1px solid {border};
+            border-left: 3px solid {accent}; padding: 3px 6px; font-weight: bold; }}
+    """
     styles['RUN_STATUS_STYLE'] = f"QLabel {{ color: {accent}; padding: 0px 6px; font-weight: bold; }}"
     styles['CHECKBOX_STYLE'] += f"""
         QCheckBox::indicator:unchecked {{ background: {base}; border-color: {border}; }}
