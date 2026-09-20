@@ -18,15 +18,16 @@ class Saver_Opener(csv_base.Saver_Opener):
 
     def save_data(self, filename, data, header = '', mode = 'w', axes = None,
                   fmt = '%.6e', dtype = None,
-                  plot = None, label = None, y_columns = (1, 2)):
-        if plot is None or label is None:
-            return super().save_data(filename, data, header = header, mode = mode,
-                                     axes = axes, fmt = fmt, dtype = dtype)
-
-        try:
-            phase = inv_par.applied_phase(plot, label)
-        except OSError:
-            phase = 0.0
+                  plot = None, label = None, y_columns = (1, 2), axes_units = None, phase = None):
+        """Save with a supplied phase in degrees, or read the current plot/label correction."""
+        if phase is None:
+            if plot is None or label is None:
+                return super().save_data(filename, data, header = header, mode = mode,
+                                         axes = axes, fmt = fmt, dtype = dtype, axes_units = axes_units)
+            try:
+                phase = inv_par.applied_phase(plot, label)
+            except OSError:
+                phase = 0.0
 
         if phase and np.ndim(data) == 2:
             col_i, col_q = y_columns
@@ -51,4 +52,4 @@ class Saver_Opener(csv_base.Saver_Opener):
                 header = header + '\n' + note if header else note
 
         return super().save_data(filename, data, header = header, mode = mode,
-                                 axes = axes, fmt = fmt, dtype = dtype)
+                                 axes = axes, fmt = fmt, dtype = dtype, axes_units = axes_units)

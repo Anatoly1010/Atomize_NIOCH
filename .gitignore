@@ -15,6 +15,8 @@ atomize/temp.param
 atomize/temp.csv
 atomize/control_center/digitizer.param
 atomize/general_modules/inversion.param
+atomize/general_modules/inversion.param.lock
+atomize/general_modules/inversion.param.tmp
 libs/treatment_buffer.csv
 libs/treatment_lastdir.txt
 libs/excitation_lastdir.txt

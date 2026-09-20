@@ -116,6 +116,8 @@ create_file_dialog(directory='', fmt='csv')    # -> path to file.csv
 
 This function returns the path to the file specified in the dialog box that opens. It can be used to manually save your data inside the experimental script to specified file.
 
+Cancelling returns the string `'None'` and suspends `save_data()` and `save_header()` on the same `Saver_Opener` instance until another save dialog successfully selects a file. This also suppresses saves to derived filenames and explicitly specified paths. Use a separate `Saver_Opener` instance for independent saves that must continue after cancellation. Direct writes through Python or NumPy are not affected.
+
 | Argument    | Description |
 | ----------- | ----------- |
 | `directory` | Path to preopened directory in the dialog window |
@@ -130,7 +132,7 @@ This function returns the path to the file specified in the dialog box that open
 create_file_parameters('.param')
 ```
 
-This function has the full functionality of the [`create_file_dialog()`](#create_file_dialog) function, but also returns a second file for saving parameters / header.
+This function has the full functionality of the [`create_file_dialog()`](#create_file_dialog) function, but also returns a second file for saving parameters / header. Cancellation returns `('None', 'None')` and suspends saving on the same instance as described above.
 
 | Argument    | Description |
 | ----------- | ----------- |
@@ -175,6 +177,9 @@ file_handler.save_data(file_data, data, header=header, mode='w')
 | `dtype`  | HDF5 data type; `None` derives it from `fmt`, so `'%.6e'` (7 significant digits) gives `float32` and anything wider gives `float64`. Pass `'float64'` to store the array exactly whatever the CSV format is |
 
 ---
+
+!!! note
+    In Atomize_NIOCH, `csv_opener_saver_invert.Saver_Opener.save_data(..., plot=..., label=..., phase=None)` applies the manual I/Q correction for the specified plot and curve. By default it reads the current correction; an explicit `phase` supplies a fixed angle in degrees. The AWG experiment saver captures this angle once after the save dialog and uses it for the integrated average and all ESEEM cycle files. Raw 2D data is not phase-corrected.
 
 ## HDF5 files
 

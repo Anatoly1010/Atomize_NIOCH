@@ -17,6 +17,7 @@ from PyQt6.QtGui import QIcon, QColor, QAction, QTextCursor
 from PyQt6.QtCore import Qt, QTimer
 import atomize.general_modules.general_functions as general
 import atomize.general_modules.csv_opener_saver as openfile
+import atomize.general_modules.inversion_param as inv_par
 import atomize.general_modules.last_dir as ldir
 import atomize.control_center.field_param as field_param
 from atomize.control_center.time_log_spinbox import TimeLogSpinBox
@@ -4904,6 +4905,13 @@ class Worker():
                             msg = conn.recv()
                             if msg.startswith('FL'):
                                 file_data = msg[2:]
+                                file_handler.save_cancelled = file_data in (None, '', 'None')
+                                save_phase = 0.0
+                                if iq_cor == 1 and not file_handler.save_cancelled:
+                                    try:
+                                        save_phase = inv_par.applied_phase(EXP_NAME, curve_name)
+                                    except OSError:
+                                        pass
                                 break
                         general.wait('200 ms')
 
@@ -4926,7 +4934,7 @@ class Worker():
                             np.c_[x_axis_plot, data_x, data_y],
                             header = header2,
                             mode = 'w',
-                            plot = EXP_NAME, label = curve_name
+                            plot = EXP_NAME, label = curve_name, phase = save_phase
                             )
                         if save2d == 1:
                             file_data2 = f"{base_data}_2d.h5" if self.save_hdf5 == 1 else f"{base_data}_2d.csv"
@@ -5603,6 +5611,13 @@ class Worker():
                             msg = conn.recv()
                             if msg.startswith('FL'):
                                 file_data = msg[2:]
+                                file_handler.save_cancelled = file_data in (None, '', 'None')
+                                save_phase = 0.0
+                                if iq_cor == 1 and not file_handler.save_cancelled:
+                                    try:
+                                        save_phase = inv_par.applied_phase(EXP_NAME, curve_name)
+                                    except OSError:
+                                        pass
                                 break
                         general.wait('200 ms')
 
@@ -5625,7 +5640,7 @@ class Worker():
                             np.c_[x_axis_plot, data_x, data_y],
                             header = header2,
                             mode = 'w',
-                            plot = EXP_NAME, label = curve_name
+                            plot = EXP_NAME, label = curve_name, phase = save_phase
                             )
                         if save2d == 1:
                             file_data2 = f"{base_data}_2d.h5" if self.save_hdf5 == 1 else f"{base_data}_2d.csv"
@@ -5660,7 +5675,7 @@ class Worker():
                                 cpath = f"{base_data}_cycle{idx}.csv"
                                 cdx, cdy = dig.digitizer_demodulate(cdat[0], cdat[1], iq_freq, zp, first_order, sec_order, integral = True)
                                 # same run -> same clock state: per-cycle traces follow the average's sign
-                                file_handler.save_data(cpath, np.c_[x_axis_plot, cdx, cdy], header = header2, mode = 'w', plot = EXP_NAME, label = curve_name)
+                                file_handler.save_data(cpath, np.c_[x_axis_plot, cdx, cdy], header = header2, mode = 'w', plot = EXP_NAME, label = curve_name, phase = save_phase)
 
                     conn.send( ('', f'Experiment {EXP_NAME} finished') )
 
@@ -6108,6 +6123,13 @@ class Worker():
                             msg = conn.recv()
                             if msg.startswith('FL'):
                                 file_data = msg[2:]
+                                file_handler.save_cancelled = file_data in (None, '', 'None')
+                                save_phase = 0.0
+                                if iq_cor == 1 and not file_handler.save_cancelled:
+                                    try:
+                                        save_phase = inv_par.applied_phase(EXP_NAME, curve_name)
+                                    except OSError:
+                                        pass
                                 break
                         general.wait('200 ms')
 
@@ -6130,7 +6152,7 @@ class Worker():
                             np.c_[x_axis, data_x, data_y],
                             header = header2,
                             mode = 'w',
-                            plot = EXP_NAME, label = curve_name
+                            plot = EXP_NAME, label = curve_name, phase = save_phase
                             )
 
                         if save2d == 1:
@@ -6693,6 +6715,13 @@ class Worker():
                             msg = conn.recv()
                             if msg.startswith('FL'):
                                 file_data = msg[2:]
+                                file_handler.save_cancelled = file_data in (None, '', 'None')
+                                save_phase = 0.0
+                                if iq_cor == 1 and not file_handler.save_cancelled:
+                                    try:
+                                        save_phase = inv_par.applied_phase(EXP_NAME, curve_name)
+                                    except OSError:
+                                        pass
                                 break
                         general.wait('200 ms')
 
@@ -6715,7 +6744,7 @@ class Worker():
                             np.c_[x_axis_plot, data_x, data_y],
                             header = header2,
                             mode = 'w',
-                            plot = EXP_NAME, label = curve_name
+                            plot = EXP_NAME, label = curve_name, phase = save_phase
                             )
 
                         if save2d == 1:
@@ -7237,6 +7266,13 @@ class Worker():
                             msg = conn.recv()
                             if msg.startswith('FL'):
                                 file_data = msg[2:]
+                                file_handler.save_cancelled = file_data in (None, '', 'None')
+                                save_phase = 0.0
+                                if iq_cor == 1 and not file_handler.save_cancelled:
+                                    try:
+                                        save_phase = inv_par.applied_phase(EXP_NAME, curve_name)
+                                    except OSError:
+                                        pass
                                 break
                         general.wait('200 ms')
 
@@ -7259,7 +7295,7 @@ class Worker():
                             np.c_[x_axis_plot, data_x, data_y],
                             header = header2,
                             mode = 'w',
-                            plot = EXP_NAME, label = curve_name
+                            plot = EXP_NAME, label = curve_name, phase = save_phase
                             )
                         if save2d == 1:
                             file_data2 = f"{base_data}_2d.h5" if self.save_hdf5 == 1 else f"{base_data}_2d.csv"

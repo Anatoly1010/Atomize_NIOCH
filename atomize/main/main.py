@@ -312,13 +312,15 @@ class MainExtended(MainWindow):
     def create_namelist(self):
         return MyExtendedNameList(self)
 
-    def add_new_plot(self, rank, name):
+    def add_new_plot(self, rank, name, select=True):
         # 1D docks come from widgets_invert: the upstream CrosshairDock plus
         # "i" + legend-click manual sign inversion (the 125 MHz clock-flip
         # correction); widgets.py itself stays aligned with upstream
         pw = widgets_invert.get_widget(rank, name)
         self.add_plot(pw)
         self.namelist[name] = pw
+        if select:
+            self.namelist.select_plot(name)
         return pw
 
     def handle_output_control_center(self):

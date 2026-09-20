@@ -12,14 +12,11 @@
 #       that curve pair by the GUI, keyed by the base curve of the pair
 #       (0 / absent = none).
 #
-# Two writers (GUI click, acquisition worker). Both go through the locked
-# read-modify-write + atomic tmp + os.replace below, so readers never see a
-# torn file; the freq is written once per run (write-if-changed cache), so a
-# cross-process write collision is practically impossible. Wiped at every
-# GUI start.
+# Writers share a process lock; readers see atomic file replacements.
 
 import os
 import threading
+from contextlib import contextmanager
 
 _KEY_SEP = ':  '
 _DET_KEY = 'Detection freq'
@@ -31,6 +28,34 @@ _last_freq = None   # in-process cache so per-scan digitizer_demodulate calls sk
 def path():
     base = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(base, 'inversion.param')
+
+
+@contextmanager
+def _locked_registry():
+    """Serialize registry updates across threads and GUI/acquisition processes."""
+    with _io_lock:
+        lock_path = path() + '.lock'
+        os.makedirs(os.path.dirname(os.path.abspath(lock_path)), exist_ok=True)
+        with open(lock_path, 'a+b') as lock_file:
+            if os.name == 'nt':
+                import msvcrt
+                lock_file.seek(0, os.SEEK_END)
+                if lock_file.tell() == 0:
+                    lock_file.write(b'\0')
+                    lock_file.flush()
+                lock_file.seek(0)
+                msvcrt.locking(lock_file.fileno(), msvcrt.LK_LOCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                if os.name == 'nt':
+                    lock_file.seek(0)
+                    msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
 
 def key(plot, label):
@@ -75,7 +100,7 @@ def applied_phase(plot, label):
 
 
 def set_phase(plot, label, deg):
-    with _io_lock:
+    with _locked_registry():
         data = read()
         k = key(plot, label)
         if deg:
@@ -98,7 +123,7 @@ def set_detection_freq(freq):
     freq = float(freq)
     if _last_freq == freq:
         return
-    with _io_lock:
+    with _locked_registry():
         data = read()
         if data.get(_DET_KEY) != freq:
             data[_DET_KEY] = freq
@@ -108,6 +133,6 @@ def set_detection_freq(freq):
 
 def reset():
     global _last_freq
-    with _io_lock:
+    with _locked_registry():
         _write({})
         _last_freq = None
