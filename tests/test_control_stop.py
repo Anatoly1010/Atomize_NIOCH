@@ -23,6 +23,7 @@ def test_preflight_completion(monkeypatch, name, action, experiment):
         is_experiment=experiment, opened=0, rep_active=1,
         dig_points=1024, posttrigger=512, _write_run_status=Mock(), p1_length='100 ns', cur_win_left=0, cur_win_right=10, decimation=1,
         timer=Mock(), monitor_timer=Mock(), progress_bar=Mock(), errors=Mock(),
+        button_track=Mock(), _track_available=Mock(return_value=False), message_panel=Mock(),
         button_start=Mock(), button_start_exp=Mock(), button_update=Mock(),
         run_main_experiment=Mock(), run_experiment=Mock(), stop_rep_countdown=Mock(),
         start_rep_countdown=Mock(), message=Mock(), button_blue=Mock(),
