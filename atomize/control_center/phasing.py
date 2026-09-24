@@ -642,7 +642,7 @@ class MainWindow(QMainWindow):
         self.button_reset_links = QPushButton("×")
         self.button_reset_links.setFixedSize(26, 26)
         self._set_glyph_style(self.button_reset_links,
-            REFINED_STYLES['DOCK_CLOSE_STYLE'] + "QPushButton { font-size: 17px; }")
+            REFINED_STYLES['DOCK_CLOSE_STYLE'] + "QPushButton { font-size: 16px; }")
         self.button_reset_links.setAccessibleName("Reset all links")
         self.button_reset_links.setToolTip(
             "Reset all links: set every factor to No and the parameter to Off. Pulse values stay unchanged.")
@@ -705,7 +705,7 @@ class MainWindow(QMainWindow):
         self.button_track = QPushButton("T")
         self.button_track.setFixedSize(26, 26)
         self.button_track.setEnabled(False)
-        self.button_track.setStyleSheet(
+        self._set_glyph_style(self.button_track,
             REFINED_STYLES['DOCK_CLOSE_STYLE'] + "QPushButton { font-size: 15px; }")
         self.button_track.setAccessibleName("Capture reference curves")
         self.button_track.setToolTip(
@@ -717,7 +717,7 @@ class MainWindow(QMainWindow):
         self.button_track_clear = QPushButton("×")
         self.button_track_clear.setFixedSize(26, 26)
         self._set_glyph_style(self.button_track_clear,
-            REFINED_STYLES['DOCK_CLOSE_STYLE'] + "QPushButton { font-size: 17px; }")
+            REFINED_STYLES['DOCK_CLOSE_STYLE'] + "QPushButton { font-size: 16px; }")
         self.button_track_clear.setAccessibleName("Clear reference curves")
         self.button_track_clear.setToolTip("Clear the reference curves.")
         self.button_track_clear.clicked.connect(lambda: self._track_command('clear'))
@@ -993,7 +993,7 @@ class MainWindow(QMainWindow):
         aw_layout.addSpacing(20)
         self.button_auto_window = QPushButton("A")
         self.button_auto_window.setFixedSize(26, 26)
-        self.button_auto_window.setStyleSheet(
+        self._set_glyph_style(self.button_auto_window,
             REFINED_STYLES['DOCK_CLOSE_STYLE'] + "QPushButton { font-size: 15px; }")
         self.button_auto_window.setAccessibleName("Auto window")
         self.button_auto_window.setToolTip(
@@ -1072,9 +1072,9 @@ class MainWindow(QMainWindow):
             lbl.setStyleSheet(REFINED_STYLES['LABEL_STYLE'])
 
         # ---- Boxes ----
-        double_boxes = [(QSpinBox, "P_to_drop", "p_to_drop", self.p_to_drop_func, 0, 1e4, 0, 1, 0, ""),
+        double_boxes = [(QSpinBox, "P_to_drop", "p_to_drop", self.p_to_drop_func, 0, 32000, 0, 1, 0, " pts"),
                       (QDoubleSpinBox, "Zero_order", "zero_order", self.zero_order_func, -0.1, 360.1, 0, 0.1, 4, " deg"),
-                      (QDoubleSpinBox, "First_order", "first_order", self.first_order_func, -100, 100, 0, 0.001, 4, " deg/MHz"),
+                      (QDoubleSpinBox, "First_order", "first_order", self.first_order_func, -23040, 23040, 0, 0.001, 4, " deg/MHz"),
                       (QDoubleSpinBox, "Second_order", "second_order", self.second_order_func, -100, 100, 0, 0.001, 4, ' deg/MHz²')
                         ]
 
@@ -1136,7 +1136,7 @@ class MainWindow(QMainWindow):
 
         self.fft_box.setToolTip('Show the FFT; Phase Correction selects amplitude or phase-corrected I/Q.')
         
-        self.Quad_cor.setToolTip('Unchecked: Zero Order on the time trace, with Auto phase. Checked: orders 0–2 on the FFT after Points to Drop; Auto phase is disabled.')
+        self.Quad_cor.setToolTip('Unchecked: Zero Order on the time trace, with Auto phase. Checked: orders 0–2 on the FFT after Points to Drop; Auto phase is disabled. First and Second Order affect only the FFT view.')
 
         # ---- Separators ----
         def hline():
@@ -1167,7 +1167,7 @@ class MainWindow(QMainWindow):
         zo_layout.addSpacing(20)
         self.button_auto_phase = QPushButton("A")
         self.button_auto_phase.setFixedSize(26, 26)
-        self.button_auto_phase.setStyleSheet(
+        self._set_glyph_style(self.button_auto_phase,
             REFINED_STYLES['DOCK_CLOSE_STYLE'] + "QPushButton { font-size: 15px; }")
         self.button_auto_phase.setAccessibleName("Auto phase")
         self.button_auto_phase.setToolTip(
@@ -2487,11 +2487,10 @@ class MainWindow(QMainWindow):
         file_to_read.write('CH1 Offset: ' + str( 0 ) +'\n')
         file_to_read.write('Window Left: ' + str( int(self.cur_win_left) ) +'\n')
         file_to_read.write('Window Right: ' + str( int(self.cur_win_right) ) +'\n')
-        # phase corrections (worker units: rad, rad/s, rad/s^2) so acquisition
-        # scripts pick them up via digitizer_read_settings() without a preset
+        # zero order for acquisition scripts; first/second order are FFT-view only
         file_to_read.write('Zero order: ' + str( getattr(self, 'zero_order', 0.0) ) +'\n')
-        file_to_read.write('First order: ' + str( getattr(self, 'first_order', 0.0) ) +'\n')
-        file_to_read.write('Second order: ' + str( getattr(self, 'second_order', 0.0) ) +'\n')
+        file_to_read.write('First order: 0.0\n')
+        file_to_read.write('Second order: 0.0\n')
         file_to_read.close()
 
         if self.opened == 0:
@@ -3385,7 +3384,7 @@ class Worker():
                             general.message('Maximum length of the data achieved. A number of drop points was corrected.')
                         # fixed resolution of digitizer; 2 ns
                         freq, fft_x, fft_y = fft.fft( x_axis[p_to_drop:] * 1e9 , data_x[p_to_drop:], data_y[p_to_drop:], t_res, re = 'True' )
-                        data_fft = fft.ph_correction( freq, fft_x, fft_y, zero_order, first_order * 1e-9, second_order * 1e-18 )
+                        data_fft = fft.ph_correction( freq, fft_x, fft_y, -zero_order, -first_order * 1e-9, -second_order * 1e-18 )
                         general.wait('1 ms')
                         general.plot_1d('FFT', freq * 1e6, ( data_fft[0], data_fft[1] ),
                             xname = 'Freq Offset', xscale = 'Hz',
@@ -3411,6 +3410,13 @@ class Worker():
                     if np.isfinite(envelope).all() and np.any(envelope > 0):
                         smooth = np.convolve(envelope, np.ones(width) / width, mode = 'same')
                         centre = int(np.argmax(smooth))
+                        # centre on the half-maximum centroid of the echo inside the window
+                        for _ in range(3):
+                            lo = min(max(centre - width // 2, 0), WIN_ADC - width)
+                            part = envelope[lo:lo + width] - np.median(envelope)
+                            part = np.clip(part - 0.5 * part.max(), 0, None)
+                            if part.sum() > 0:
+                                centre = int(round(lo + np.sum(np.arange(width) * part) / part.sum()))
                         left = min(max(centre - width // 2, 0), WIN_ADC - width)
                         right = left + width
                         conn.send(('AutoWindow', (left * t_res, right * t_res, centre * t_res)))

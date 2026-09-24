@@ -843,7 +843,7 @@ class MainWindow(QMainWindow):
         self.button_reset_links = QPushButton("×")
         self.button_reset_links.setFixedSize(26, 26)
         self._set_glyph_style(self.button_reset_links,
-            REFINED_STYLES['DOCK_CLOSE_STYLE'] + "QPushButton { font-size: 17px; }")
+            REFINED_STYLES['DOCK_CLOSE_STYLE'] + "QPushButton { font-size: 16px; }")
         self.button_reset_links.setAccessibleName("Reset all links")
         self.button_reset_links.setToolTip(
             "Reset all links: set every factor to No and the parameter to Off. Pulse values stay unchanged.")
@@ -905,7 +905,7 @@ class MainWindow(QMainWindow):
         self.button_track = QPushButton("T")
         self.button_track.setFixedSize(26, 26)
         self.button_track.setEnabled(False)
-        self.button_track.setStyleSheet(
+        self._set_glyph_style(self.button_track,
             REFINED_STYLES['DOCK_CLOSE_STYLE'] + "QPushButton { font-size: 15px; }")
         self.button_track.setAccessibleName("Capture reference curves")
         self.button_track.setToolTip(
@@ -917,7 +917,7 @@ class MainWindow(QMainWindow):
         self.button_track_clear = QPushButton("×")
         self.button_track_clear.setFixedSize(26, 26)
         self._set_glyph_style(self.button_track_clear,
-            REFINED_STYLES['DOCK_CLOSE_STYLE'] + "QPushButton { font-size: 17px; }")
+            REFINED_STYLES['DOCK_CLOSE_STYLE'] + "QPushButton { font-size: 16px; }")
         self.button_track_clear.setAccessibleName("Clear reference curves")
         self.button_track_clear.setToolTip("Clear the reference curves.")
         self.button_track_clear.clicked.connect(lambda: self._track_command('clear'))
@@ -1206,7 +1206,7 @@ class MainWindow(QMainWindow):
         aw_layout.addSpacing(20)
         self.button_auto_window = QPushButton("A")
         self.button_auto_window.setFixedSize(26, 26)
-        self.button_auto_window.setStyleSheet(
+        self._set_glyph_style(self.button_auto_window,
             REFINED_STYLES['DOCK_CLOSE_STYLE'] + "QPushButton { font-size: 15px; }")
         self.button_auto_window.setAccessibleName("Auto window")
         self.button_auto_window.setToolTip(
@@ -1290,9 +1290,9 @@ class MainWindow(QMainWindow):
             lbl.setStyleSheet(REFINED_STYLES['LABEL_STYLE'])
 
         # ---- Boxes ----
-        double_boxes = [(QSpinBox, "P_to_drop", "p_to_drop", self.p_to_drop_func, 0, 1e4, 0, 1, 0, ""),
+        double_boxes = [(QSpinBox, "P_to_drop", "p_to_drop", self.p_to_drop_func, 0, 20000, 0, 1, 0, " pts"),
                       (QDoubleSpinBox, "Zero_order", "zero_order", self.zero_order_func, -0.1, 360.1, 0, 0.5, 4, " deg"),
-                      (QDoubleSpinBox, "First_order", "first_order", self.first_order_func, -100, 100, 0, 0.001, 4, " deg/MHz"),
+                      (QDoubleSpinBox, "First_order", "first_order", self.first_order_func, -14400, 14400, 0, 0.001, 4, " deg/MHz"),
                       (QDoubleSpinBox, "Second_order", "second_order", self.second_order_func, -100, 100, 0, 0.001, 4, ' deg/MHz²')
                         ]
 
@@ -1349,7 +1349,7 @@ class MainWindow(QMainWindow):
 
         self.fft_box.setToolTip('Show the FFT; Phase Correction selects amplitude or phase-corrected I/Q.')
         
-        self.Quad_cor.setToolTip('Unchecked: Zero Order on the time trace, with Auto phase. Checked: orders 0–2 on the FFT after Points to Drop; Auto phase is disabled.')
+        self.Quad_cor.setToolTip('Unchecked: Zero Order on the time trace, with Auto phase. Checked: orders 0–2 on the FFT after Points to Drop; Auto phase is disabled. First and Second Order affect only the FFT view.')
 
         self.IQ_corr.setToolTip('Shift the preview by the DETECTION frequency. Phase Correction chooses the phase domain. For experiments, select integrated I/Q instead of full 2D data.')
 
@@ -1384,7 +1384,7 @@ class MainWindow(QMainWindow):
         zo_layout.addSpacing(20)
         self.button_auto_phase = QPushButton("A")
         self.button_auto_phase.setFixedSize(26, 26)
-        self.button_auto_phase.setStyleSheet(
+        self._set_glyph_style(self.button_auto_phase,
             REFINED_STYLES['DOCK_CLOSE_STYLE'] + "QPushButton { font-size: 15px; }")
         self.button_auto_phase.setAccessibleName("Auto phase")
         self.button_auto_phase.setToolTip(
@@ -3334,11 +3334,10 @@ class MainWindow(QMainWindow):
         file_to_read.write('CH1 Offset: ' + str( 0 ) +'\n')
         file_to_read.write('Window Left: ' + str( int(self.cur_win_left) ) +'\n')
         file_to_read.write('Window Right: ' + str( int(self.cur_win_right) ) +'\n')
-        # phase corrections (worker units: rad, rad/s, rad/s^2) so acquisition
-        # scripts pick them up via digitizer_read_settings() without a preset
+        # zero order for acquisition scripts; first/second order are FFT-view only
         file_to_read.write('Zero order: ' + str( getattr(self, 'zero_order', 0.0) ) +'\n')
-        file_to_read.write('First order: ' + str( getattr(self, 'first_order', 0.0) ) +'\n')
-        file_to_read.write('Second order: ' + str( getattr(self, 'second_order', 0.0) ) +'\n')
+        file_to_read.write('First order: 0.0\n')
+        file_to_read.write('Second order: 0.0\n')
         file_to_read.close()
 
         if self.opened == 0:
@@ -4513,7 +4512,7 @@ class Worker():
                             general.message('Maximum length of the data achieved. A number of drop points was corrected.')
                         # fixed resolution of digitizer; 2 ns
                         freq, fft_x, fft_y = fft.fft( x_axis[p_to_drop:] * 1e9, data_x[p_to_drop:], data_y[p_to_drop:], t_res, re = 'True' )
-                        data_fft = fft.ph_correction( freq, fft_x, fft_y, zero_order, first_order * 1e-9, second_order * 1e-18 )
+                        data_fft = fft.ph_correction( freq, fft_x, fft_y, -zero_order, -first_order * 1e-9, -second_order * 1e-18 )
                         # ph_correction uses freq in MHz; the axis auto-SI-prefixes, so plot Hz
                         general.wait('1 ms')
                         general.plot_1d('FFT', freq * 1e6, ( data_fft[0], data_fft[1] ),
@@ -4541,6 +4540,13 @@ class Worker():
                     if np.isfinite(envelope).all() and np.any(envelope > 0):
                         smooth = np.convolve(envelope, np.ones(width) / width, mode = 'same')
                         centre = int(np.argmax(smooth))
+                        # centre on the half-maximum centroid of the echo inside the window
+                        for _ in range(3):
+                            lo = min(max(centre - width // 2, 0), WIN_ADC - width)
+                            part = envelope[lo:lo + width] - np.median(envelope)
+                            part = np.clip(part - 0.5 * part.max(), 0, None)
+                            if part.sum() > 0:
+                                centre = int(round(lo + np.sum(np.arange(width) * part) / part.sum()))
                         left = min(max(centre - width // 2, 0), WIN_ADC - width)
                         right = left + width
                         conn.send(('AutoWindow', (left * sample_ns, right * sample_ns, centre * sample_ns)))
@@ -4964,7 +4970,7 @@ class Worker():
                                         zname = 'Intensity', zscale = 'mV',
                                         text = f"Scan / Time: {k} / {j * STEP:.1f}", pr = process)
                             elif iq_cor == 1:
-                                area_x, area_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                                area_x, area_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, 0, 0, integral = True)
                                 if step != 1:
                                     general.plot_1d(EXP_NAME, x_axis_plot, ( area_x, area_y ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Time: ' + str(k) + ' / ' + str(round(j*STEP, 1)))
                                 else:
@@ -5032,7 +5038,7 @@ class Worker():
                             text = f"Scan / Time: {k} / {j * STEP:.1f}"
                         )
                 elif iq_cor == 1:
-                    data_x, data_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                    data_x, data_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, 0, 0, integral = True)
                     if step != 1:
                         general.plot_1d(EXP_NAME, x_axis_plot, ( data_x, data_y ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Time: ' + str(k) + ' / ' + str(round(j*STEP, 1)))
                     else:
@@ -5627,7 +5633,7 @@ class Worker():
                                         pr = process
                                     )
                             elif iq_cor == 1:
-                                area_x, area_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                                area_x, area_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, 0, 0, integral = True)
                                 if step != 1:
                                     general.plot_1d(EXP_NAME, x_axis_plot, ( area_x, area_y ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = f'Cycle {cycle + 1}/{CYCLES} Scan {k}')
                                 else:
@@ -5681,7 +5687,7 @@ class Worker():
                         else:
                             general.plot_2d(EXP_NAME, data, start_step = ((0, dec_calc), (0, 1)), xname = 'Time', xscale = 's', yname = 'Point', yscale = '', zname = 'Intensity', zscale = 'mV', text = f"ESEEM average over {completed_cycles} cycle(s)")
                     elif iq_cor == 1:
-                        rdx, rdy = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                        rdx, rdy = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, 0, 0, integral = True)
                         if step != 1:
                             general.plot_1d(EXP_NAME, x_axis_plot, ( rdx, rdy ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = f"ESEEM average over {completed_cycles} cycle(s)")
                         else:
@@ -5729,7 +5735,7 @@ class Worker():
                             text = f"ESEEM average over {completed_cycles} cycle(s)"
                         )
                 elif iq_cor == 1:
-                    data_x, data_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                    data_x, data_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, 0, 0, integral = True)
                     if step != 1:
                         general.plot_1d(EXP_NAME, x_axis_plot, ( data_x, data_y ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = f"ESEEM average over {completed_cycles} cycle(s)")
                     else:
@@ -5877,7 +5883,7 @@ class Worker():
                                 file_handler.save_data(cpath, cdat, header = header, mode = 'w', axes = axes_2d, axes_units = axes_units_2d)
                             elif iq_cor == 1:
                                 cpath = f"{base_data}_cycle{idx}.csv"
-                                cdx, cdy = dig.digitizer_demodulate(cdat[0], cdat[1], iq_freq, zp, first_order, sec_order, integral = True)
+                                cdx, cdy = dig.digitizer_demodulate(cdat[0], cdat[1], iq_freq, zp, 0, 0, integral = True)
                                 # same run -> same clock state: per-cycle traces follow the average's sign
                                 file_handler.save_data(cpath, np.c_[x_axis_plot, cdx, cdy], header = header2, mode = 'w', plot = EXP_NAME, label = curve_name, phase = save_phase)
 
@@ -5993,6 +5999,8 @@ class Worker():
 
             # DETECTION pulse
             iq_freq = -int( rect1[6].split(" MHz")[0] )
+            if script_test and rect1[4] != '0.0 ns':
+                raise ValueError("Please remove Start Increments for all pulses")
             if int(float(rect1[2].split(' ')[0])) != 0:
                 pb.pulser_pulse(name='P1', channel=rect1[0], start=rect1[1], length=rect1[2], phase_list=rect1[3], delta_start=rect1[4], length_increment=rect1[5])
 
@@ -6046,6 +6054,8 @@ class Worker():
 
                 if script_test and int(float(rect2[1].split(' ')[0])) == 0:
                     raise ValueError("LASER pulse has zero length")
+                if script_test and rect2[2] != '0.0 ns':
+                    raise ValueError("Please remove Start Increments for all pulses")
                 #p7 is LASER pulse
                 pb.pulser_pulse(
                     name=f'L1',
@@ -6201,7 +6211,7 @@ class Worker():
                                     pr = process
                                 )
                             elif iq_cor == 1:
-                                area_x, area_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                                area_x, area_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, 0, 0, integral = True)
                                 process = general.plot_1d(EXP_NAME, x_axis, ( area_x, area_y ), xname = 'Field', xscale = 'G', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Field: ' + str(k) + ' / ' + str(field), pr = process)
 
                         field = round( (FIELD_STEP + field), 3 )
@@ -6255,7 +6265,7 @@ class Worker():
                         text = f"Scan / Field: {k} / {field}"
                         )
                 elif iq_cor == 1:
-                    data_x, data_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                    data_x, data_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, 0, 0, integral = True)
                     general.plot_1d(EXP_NAME, x_axis, ( data_x, data_y ), xname = 'Field', xscale = 'G', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Field: ' + str(k) + ' / ' + str(field))
 
                 now = datetime.datetime.now().strftime("%d-%m-%Y %H-%M-%S")
@@ -6772,7 +6782,7 @@ class Worker():
                                     pr = process
                                 )
                             elif iq_cor == 1:
-                                area_x, area_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                                area_x, area_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, 0, 0, integral = True)
                                 process = general.plot_1d(EXP_NAME, x_axis_plot, ( area_x, area_y ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Point: ' + str(k) + ' / ' + str(j), pr = process)
 
                         # nonlinear (log) spacing: redefine both the pulser pulses and
@@ -6830,7 +6840,7 @@ class Worker():
                         text = f"Scan / Point: {k} / {j}"
                     )
                 elif iq_cor == 1:
-                    data_x, data_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                    data_x, data_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, 0, 0, integral = True)
                     general.plot_1d(EXP_NAME, x_axis_plot, ( data_x, data_y ), xname = 'Time', xscale = 's', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Point: ' + str(k) + ' / ' + str(j))
 
                 now = datetime.datetime.now().strftime("%d-%m-%Y %H-%M-%S")
@@ -7323,7 +7333,7 @@ class Worker():
                                         pr = process
                                     )
                             elif iq_cor == 1:
-                                area_x, area_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                                area_x, area_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, 0, 0, integral = True)
                                 if point_flag != 1:
                                     general.plot_1d(EXP_NAME, x_axis_plot, ( area_x, area_y ), xname = 'Amplitude', xscale = '%', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Amplitude: ' + str(k) + ' / ' + str(round(f_delay + j * STEP, 1)))
                                 else:
@@ -7335,10 +7345,11 @@ class Worker():
                         # Reset the AWG pulses to base and set the new per-pulse amplitude (%).
                         awg.awg_pulse_reset()
 
-                        delta = STEP * (j + 1)
-                        ampl_list_cur = [x + delta for x in ampl_list]
+                        if j + 1 < POINTS:
+                            delta = STEP * (j + 1)
+                            ampl_list_cur = [x + delta for x in ampl_list]
 
-                        awg.awg_redefine_amplitude(name = name_list, amplitude = ampl_list_cur )
+                            awg.awg_redefine_amplitude(name = name_list, amplitude = ampl_list_cur )
 
                         if not script_test:
                             conn.send( ('Status', int( 100 * (( k - 1 ) * POINTS + j + 1) / POINTS / SCANS)) )
@@ -7396,7 +7407,7 @@ class Worker():
                             pr = process
                         )
                 elif iq_cor == 1:
-                    data_x, data_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, first_order, sec_order, integral = True)
+                    data_x, data_y = dig.digitizer_demodulate(data[0], data[1], iq_freq, zp, 0, 0, integral = True)
                     if point_flag != 1:
                         general.plot_1d(EXP_NAME, x_axis_plot, ( data_x, data_y ), xname = 'Amplitude', xscale = '%', yname = 'Area', yscale = 'A.U.', label = curve_name, text = 'Scan / Amplitude: ' + str(k) + ' / ' + str(round(f_delay + j * STEP, 1)))
                     else:
