@@ -778,9 +778,9 @@ class MainWindow(QMainWindow):
             if i == 1:
                 combo.addItems(combo_boxes[i-1][4])
                 combo.setCurrentText(combo_boxes[i][0])
-            elif i == 2:
-                combo.addItems(combo_boxes[i-1][4])
-                combo.setCurrentText(combo_boxes[i][0])
+            elif i in (2, 3):
+                combo.addItems(combo_boxes[1][4])
+                combo.setCurrentText(combo_boxes[2][0])
             else:
                 combo.addItems(combo_boxes[2][4])
                 combo.setCurrentText(combo_boxes[2][0])
@@ -1886,10 +1886,10 @@ class MainWindow(QMainWindow):
     def _live_active_awg(self):
         """
         GUI indices of the active AWG pulses, in the same order and with the
-        same filter dig_on setup uses (rect3.. in LASER mode, rect2.. otherwise;
+        same filter dig_on setup uses (rect{2+laser_flag}.., after the LASER rows;
         active == non-zero length). This is exactly the order of pb.pulse_array_awg.
         """
-        rng = range(3, 10) if self.laser_flag == 1 else range(2, 10)
+        rng = range(2 + self.laser_flag, 10)
         out = []
         for k in rng:
             length = float(str(getattr(self, f'p{k}_length')).split(' ')[0])
@@ -1931,7 +1931,8 @@ class MainWindow(QMainWindow):
         """
         Everything that is NOT live-editable: phase-cycle length, laser mode,
         active-pulse count and per-pulse length. Amplitude / frequency / start /
-        sigma / type all re-arm live. A LASER on/off is caught via laser_flag; a
+        sigma / type all re-arm live. A LASER on/off is caught via laser_flag, and
+        the LASER rows' start / length and the laser source are included too; a
         Length change is caught here (it changes dac_window). The DETECTION pulse
         (P1) length sets the digitizer window, so its change forces a restart.
         NIOCH is point/posttrigger-based, so there is no decimation term.
@@ -1945,7 +1946,10 @@ class MainWindow(QMainWindow):
         phase_sig = self._phase_sig()
         fixed = tuple((e[0], str(getattr(self, f'p{e[0]}_length'))) for e in snap['pulses'])
         det_len = str(getattr(self, 'p1_length', ''))
-        return (phases, phase_sig, self.laser_flag, fixed, det_len)
+        lasers = tuple((str(getattr(self, f'p{k}_start_rect')), str(getattr(self, f'p{k}_length')))
+                       for k in range(2, 2 + self.laser_flag))
+        return (phases, phase_sig, self.laser_flag, fixed, det_len,
+                lasers, getattr(self, 'combo_laser_num', None))
 
     def _phase_sig(self):
         """Normalized phase text of every active (non-zero-length) pulse, keyed by
@@ -1957,6 +1961,8 @@ class MainWindow(QMainWindow):
                 if float(str(getattr(self, f'p{i}_length')).split(' ')[0]) == 0:
                     continue
             except (ValueError, AttributeError):
+                continue
+            if getattr(self, f'p{i}_typ', '') == 'LASER':
                 continue
             box = getattr(self, f'Phase_{i}', None)
             if box is not None:
@@ -2012,7 +2018,7 @@ class MainWindow(QMainWindow):
         receiver = None
         for i in range(1, 10):
             length = float(str(getattr(self, f'p{i}_length')).split(' ')[0])
-            if length == 0:
+            if length == 0 or getattr(self, f'p{i}_typ') == 'LASER':
                 continue
             if receiver is None:
                 receiver = i
@@ -2072,8 +2078,9 @@ class MainWindow(QMainWindow):
         if self._structure_sig(snap) != self.live_sig:
             self.update()
             self.errors.appendPlainText(
-                'Live Edit: rebuild-only parameter changed (length / LASER / phase '
-                'cycle / pulse count / detection window) — full restart performed.')
+                'Live Edit: rebuild-only parameter changed (length / LASER rows, '
+                'start or source / phase cycle / pulse count / detection window) — '
+                'full restart performed.')
             return
 
         if self._live_starts(snap) != self.live_starts and not self._live_start_safe(snap):
@@ -2225,16 +2232,41 @@ class MainWindow(QMainWindow):
         combo = getattr(self, f"P{index}_type")
         text = combo.currentText()
 
+        if index == 3 and text == 'LASER' and self.p2_typ != 'LASER':
+            self.errors.appendPlainText('P3 can be LASER only when P2 is LASER; P3 is set to SINE.')
+            combo.setCurrentText('SINE')
+            return
+
         setattr(self, f"p{index}_typ", text)
 
-        if index == 2:
-            self.laser_flag = 1 if text == 'LASER' else 0
+        if index == 2 and text != 'LASER' and self.p3_typ == 'LASER':
+            self.P3_type.setCurrentText('SINE')
+
+        if index in (2, 3):
+            self.laser_flag = 0 if self.p2_typ != 'LASER' else (2 if self.p3_typ == 'LASER' else 1)
+            self._apply_laser_row(index)
 
         #print(f"Pulse {index} type set to: {text}")
         # Type applies live (span-preserving; the worker sets function + freq
-        # shape atomically). A LASER on/off instead flips laser_flag, which is in
-        # the structure signature, so that case auto-restarts.
+        # shape atomically). A LASER on/off instead changes laser_flag (the laser
+        # row count), which is in the structure signature, so that case
+        # auto-restarts.
         self.schedule_live_apply()
+
+    def _apply_laser_row(self, index):
+        """Enable/disable the MW-only widgets of a LASER row and set its Length range."""
+        is_laser = getattr(self, f'p{index}_typ') == 'LASER'
+        for sfx in ('_sig', '_fr', '_sw', '_cf'):
+            getattr(self, f'P{index}{sfx}').setEnabled(not is_laser)
+        getattr(self, f'Phase_{index}').setEnabled(not is_laser)
+        self._linking = True
+        try:
+            getattr(self, f'P{index}_len').setMaximum(15000 if is_laser else 1900)
+        finally:
+            self._linking = False
+        self._seed_link_prev()
+        self.update_pulse_phase(index)
+        self._raise_laser_len_ndyag()
 
     ###
     def update_pulse_phase(self, index):
@@ -2249,6 +2281,9 @@ class MainWindow(QMainWindow):
                 attr_name = f"ph_{i}"
                 p_len = getattr(self, f"P{i}_len").value()
 
+                if getattr(self, f"p{i}_typ", '') == 'LASER':
+                    setattr(self, attr_name, ['+x'])
+                    continue
                 if not hasattr(self, attr_name) or p_len != 0.0:
                     phase_text = getattr(self, f"Phase_{i}").toPlainText().strip()
                     if p_len != 0.0:
@@ -2356,6 +2391,25 @@ class MainWindow(QMainWindow):
         elif txt == 'NovoFEL':
             self.combo_laser_num = 2
             self.laser_q_switch_delay = 0
+        self._raise_laser_len_ndyag()
+        self.schedule_live_apply()
+
+    def _raise_laser_len_ndyag(self):
+        """Nd:YAG needs laser trigger pulses of at least 1000 ns: lengthen shorter LASER rows to the minimum."""
+        if getattr(self, 'combo_laser_num', 0) != 1:
+            return
+        changed = False
+        self._linking = True
+        try:
+            for i in range(2, 2 + getattr(self, 'laser_flag', 0)):
+                box = getattr(self, f'P{i}_len', None)
+                if box is not None and box.value() < 1000:
+                    box.setValue(1000)
+                    changed = True
+        finally:
+            self._linking = False
+        if changed:
+            self._seed_link_prev()
 
     def combo_synt_fun(self):
         """
@@ -3247,14 +3301,14 @@ class MainWindow(QMainWindow):
         """
         self.repetition_rate = str( self.Rep_rate.value() ) + ' Hz'
 
-        if self.laser_flag != 1:
+        if self.laser_flag == 0:
             pass
-        elif self.laser_flag == 1 and self.combo_laser_num == 1:
+        elif self.laser_flag >= 1 and self.combo_laser_num == 1:
             self.repetition_rate = '9.9 Hz'
             ###self.pb.pulser_repetition_rate( self.repetition_rate )
             self.Rep_rate.setValue(9.9)
             self.errors.appendPlainText( '9.9 Hz is a maximum repetiton rate with LASER pulse' )
-        elif self.laser_flag == 1 and self.combo_laser_num == 2:
+        elif self.laser_flag >= 1 and self.combo_laser_num == 2:
             pass
 
         self._update_rep_time_display()
@@ -3401,7 +3455,7 @@ class MainWindow(QMainWindow):
         # preflight test pass.
         self.eseem_inc2 = [ getattr(self, f'p{i}_st_increment2') for i in range(1, 10) ]
 
-        if self.laser_flag == 1:
+        if self.laser_flag >= 1:
             if self.combo_laser_num == 1:
                 self.Rep_rate.setValue(9.9)
             elif self.combo_laser_num == 2:
@@ -3559,7 +3613,7 @@ class MainWindow(QMainWindow):
             ]
             setattr(self, f'p{i}_awg_list', awg_data)
 
-        if self.laser_flag == 1:
+        if self.laser_flag >= 1:
             if self.combo_laser_num == 1:
                 self.Rep_rate.setValue(9.9)
             elif self.combo_laser_num == 2:
@@ -4102,106 +4156,65 @@ class Worker():
             if int(float(rect1[2].split(' ')[0])) != 0:
                 pb.pulser_pulse(name='P1', channel=rect1[0], start=rect1[1], length=rect1[2], phase_list=rect1[3])
 
-            #Laser flag
-            if laser_flag != 1:
-
-                trigger_pulses = [rect2, rect3, rect4, rect5, rect6, rect7, rect8, rect9]
-                awg_params = [awg2, awg3, awg4, awg5, awg6, awg7, awg8, awg9]
-
-                for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
-                    if int(float(tp[1].split(' ')[0])) != 0:
-                        
-                        is_complex = ap[0] in ['WURST', 'SECH/TANH']
-                        freq = (ap[1], ap[2]) if is_complex else ap[1]
-                        
-                        awg_kwargs = {
-                            'name': f'P{2*i + 2}',
-                            'channel': 'CH0',
-                            'func': ap[0],
-                            'frequency': freq,
-                            'length': ap[3],
-                            'sigma': ap[4],
-                            'start': ap[5],
-                            'amplitude': ap[6],
-                            'phase_list': ap[7]
-                        }
-
-                        if is_complex:
-                            awg_kwargs.update({'n': n_wurst, 'b': b_sech})
-
-                        awg.awg_pulse(**awg_kwargs)
-
-                        # per-pulse 'AWG' amp-gate marker (RECT_AWG/AMP_ON); NOT a
-                        # trigger. The single sequence trigger is P0 (TRIGGER_AWG).
-                        if ap[0] != 'BLANK':
-                            pb.pulser_pulse(
-                                name=f'P{2*i + 3}',
-                                channel='AWG',
-                                start=tp[0],
-                                length=tp[1]
-                            )
-                pb.pulser_repetition_rate( str(rep_rate) + ' Hz' )
-
-            else:
-
-                if script_test and int(float(rect2[1].split(' ')[0])) == 0:
-                    raise ValueError("LASER pulse has zero length")
-                #rect2 is LASER pulse
+            # LASER rows (P2, and P3 when both are LASER) are pulser-only
+            laser_rects = [rect2, rect3][:laser_flag]
+            for n, lr in enumerate(laser_rects, start=1):
+                if script_test and int(float(lr[1].split(' ')[0])) == 0:
+                    raise ValueError(f"LASER_{n} pulse has zero length")
+                if script_test and laser_num == 1 and float(lr[1].split(' ')[0]) < 1000:
+                    raise ValueError(f"LASER_{n} pulse is shorter than the Nd:YAG minimum of 1000 ns")
                 pb.pulser_pulse(
-                    name=f'L1',
-                    channel='LASER',
-                    start=rect2[0],
-                    length=rect2[1]
+                    name=f'L{n}',
+                    channel=f'LASER_{n}',
+                    start=lr[0],
+                    length=lr[1]
                 )
 
-                trigger_pulses = [rect3, rect4, rect5, rect6, rect7, rect8, rect9]
-                awg_params = [awg3, awg4, awg5, awg6, awg7, awg8, awg9]
+            trigger_pulses = [rect2, rect3, rect4, rect5, rect6, rect7, rect8, rect9][laser_flag:]
+            awg_params = [awg2, awg3, awg4, awg5, awg6, awg7, awg8, awg9][laser_flag:]
 
-                for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
-
-                    if int(float(tp[1].split(' ')[0])) != 0:
+            for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
+                if int(float(tp[1].split(' ')[0])) != 0:
+                    if laser_flag >= 1:
                         # add q_delay
                         start_val = float(tp[0].split(' ')[0]) + laser_qsw_delay
                         tp[0] = f"{self.round_to_closest(start_val, 2)} ns"
                         start_val_awg = float(ap[5].split(' ')[0]) + laser_qsw_delay
                         ap[5] = f"{self.round_to_closest(start_val_awg, 2)} ns"
 
-                        is_complex = ap[0] in ['WURST', 'SECH/TANH']
-                        freq = (ap[1], ap[2]) if is_complex else ap[1]
+                    is_complex = ap[0] in ['WURST', 'SECH/TANH']
+                    freq = (ap[1], ap[2]) if is_complex else ap[1]
 
-                        awg_kwargs = {
-                            'name': f'P{2*i + 2}',
-                            'channel': 'CH0',
-                            'func': ap[0],
-                            'frequency': freq,
-                            'length': ap[3],
-                            'sigma': ap[4],
-                            'start': ap[5],
-                            'amplitude': ap[6],
-                            'phase_list': ap[7]
-                        }
+                    awg_kwargs = {
+                        'name': f'P{2*i + 2}',
+                        'channel': 'CH0',
+                        'func': ap[0],
+                        'frequency': freq,
+                        'length': ap[3],
+                        'sigma': ap[4],
+                        'start': ap[5],
+                        'amplitude': ap[6],
+                        'phase_list': ap[7]
+                    }
 
-                        if is_complex:
-                            awg_kwargs.update({'n': n_wurst, 'b': b_sech})
+                    if is_complex:
+                        awg_kwargs.update({'n': n_wurst, 'b': b_sech})
 
-                        awg.awg_pulse(**awg_kwargs)
+                    awg.awg_pulse(**awg_kwargs)
 
-                        if ap[0] != 'BLANK':
-                            pb.pulser_pulse(
-                                name=f'P{2*i + 3}',
-                                channel='AWG',
-                                start=tp[0],
-                                length=tp[1]
-                            )
+                    # per-pulse 'AWG' amp-gate marker; the single sequence trigger is P0 (TRIGGER_AWG)
+                    if ap[0] != 'BLANK':
+                        pb.pulser_pulse(
+                            name=f'P{2*i + 3}',
+                            channel='AWG',
+                            start=tp[0],
+                            length=tp[1]
+                        )
 
-                if laser_num == 1:
-                    pb.pulser_repetition_rate( '9.9 Hz' )
-                    #q_delay = laser_qsw_delay
-                elif laser_num == 2:
-                    pb.pulser_repetition_rate( str(rep_rate) + ' Hz' )
-                    #q_delay = laser_qsw_delay
-                else:
-                    pb.pulser_repetition_rate( str(rep_rate) + ' Hz' )
+            if laser_flag >= 1 and laser_num == 1:
+                pb.pulser_repetition_rate( '9.9 Hz' )
+            else:
+                pb.pulser_repetition_rate( str(rep_rate) + ' Hz' )
 
 
             # NIOCH: compile the AWG buffer (zero-filled waveform) after all pulses
@@ -4340,7 +4353,7 @@ class Worker():
                             new_pul_start['P1'] = _shift_start(_orig_pul_start['P1'], snap['p1_d'])
                         for entry in snap['pulses']:
                             k, amp, freq, a_delta, t_delta, typ, sigma = entry
-                            trg_name = f'P{2*(k-3)+3}' if laser_flag == 1 else f'P{2*(k-2)+3}'
+                            trg_name = f'P{2*(k-2-laser_flag)+3}'
                             if trg_name in _orig_pul_start:
                                 new_pul_start[trg_name] = _shift_start(_orig_pul_start[trg_name], t_delta)
 
@@ -4389,12 +4402,8 @@ class Worker():
 
                             for entry in snap['pulses']:
                                 k, amp, freq, a_delta, t_delta, typ, sigma = entry
-                                if laser_flag == 1:
-                                    awg_name = f'P{2*(k-3)+2}'
-                                    trg_name = f'P{2*(k-3)+3}'
-                                else:
-                                    awg_name = f'P{2*(k-2)+2}'
-                                    trg_name = f'P{2*(k-2)+3}'
+                                awg_name = f'P{2*(k-2-laser_flag)+2}'
+                                trg_name = f'P{2*(k-2-laser_flag)+3}'
 
                                 is_complex = typ in ('WURST', 'SECH/TANH')
                                 # AWG pulse dict stores frequency as the build did
@@ -4768,121 +4777,73 @@ class Worker():
             if int(float(rect1[2].split(' ')[0])) != 0:
                 pb.pulser_pulse(name='P1', channel=rect1[0], start=rect1[1], length=rect1[2], phase_list=rect1[3], delta_start=rect1[4], length_increment=rect1[5])
 
-            #Laser flag
-            if laser_flag != 1:
-
-                trigger_pulses = [rect2, rect3, rect4, rect5, rect6, rect7, rect8, rect9]
-                awg_params = [
-                                awg2, awg3, awg4, awg5, 
-                                awg6, awg7, awg8, awg9
-                             ]
-
-                for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
-                    if ap[9] != '0.0 ns':
-                        increment = 1
-
-                    if int(float(tp[1].split(' ')[0])) != 0:
-                        
-                        is_complex = ap[0] in ['WURST', 'SECH/TANH']
-                        freq = (ap[1], ap[2]) if is_complex else ap[1]
-                        
-                        awg_kwargs = {
-                            'name': f'P{2*i + 2}',
-                            'channel': 'CH0',
-                            'func': ap[0],
-                            'frequency': freq,
-                            'length': ap[3],
-                            'sigma': ap[4],
-                            'start': ap[5],
-                            'amplitude': ap[6],
-                            'phase_list': ap[7],
-                            'delta_start': ap[8],
-                            'length_increment': ap[9]
-                        }
-                        
-                        if is_complex:
-                            awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
-                            
-                        awg.awg_pulse(**awg_kwargs)
-
-                        if ap[0] != 'BLANK':
-                            pb.pulser_pulse(
-                                name=f'P{2*i + 3}',
-                                channel='AWG',
-                                start=tp[0], 
-                                length=tp[1], 
-                                delta_start=tp[2], 
-                                length_increment=tp[3]
-                            )
-                pb.pulser_repetition_rate( REP_RATE )
-
-            else:
-
-                if script_test and int(float(rect2[1].split(' ')[0])) == 0:
-                    raise ValueError("LASER pulse has zero length")
-                #p7 is LASER pulse
+            # LASER rows (P2, and P3 when both are LASER) are pulser-only
+            laser_rects = [rect2, rect3][:laser_flag]
+            for n, lr in enumerate(laser_rects, start=1):
+                if script_test and int(float(lr[1].split(' ')[0])) == 0:
+                    raise ValueError(f"LASER_{n} pulse has zero length")
+                if script_test and laser_num == 1 and float(lr[1].split(' ')[0]) < 1000:
+                    raise ValueError(f"LASER_{n} pulse is shorter than the Nd:YAG minimum of 1000 ns")
                 pb.pulser_pulse(
-                    name=f'L1',
-                    channel='LASER',
-                    start=rect2[0],
-                    length=rect2[1],
-                    delta_start=rect2[2],
-                    length_increment=rect2[3]
+                    name=f'L{n}',
+                    channel=f'LASER_{n}',
+                    start=lr[0],
+                    length=lr[1],
+                    delta_start=lr[2],
+                    length_increment=lr[3]
                 )
 
-                trigger_pulses = [rect3, rect4, rect5, rect6, rect7, rect8, rect9]
-                awg_params = [
-                                awg3, awg4, awg5,
-                                awg6, awg7, awg8, awg9
-                             ]
+            trigger_pulses = [rect2, rect3, rect4, rect5, rect6, rect7, rect8, rect9][laser_flag:]
+            awg_params = [awg2, awg3, awg4, awg5, awg6, awg7, awg8, awg9][laser_flag:]
 
-                for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
-                    if ap[9] != '0.0 ns':
-                        increment = 1
+            for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
+                if ap[9] != '0.0 ns':
+                    increment = 1
 
-                    if int(float(tp[1].split(' ')[0])) != 0:
+                if int(float(tp[1].split(' ')[0])) != 0:
+                    if laser_flag >= 1:
                         # add q_delay
                         start_val = float(tp[0].split(' ')[0]) + q_switch_delay
                         tp[0] = f"{self.round_to_closest(start_val, 2)} ns"
                         start_val_awg = float(ap[5].split(' ')[0]) + q_switch_delay
                         ap[5] = f"{self.round_to_closest(start_val_awg, 2)} ns"
 
-                        is_complex = ap[0] in ['WURST', 'SECH/TANH']
-                        freq = (ap[1], ap[2]) if is_complex else ap[1]
+                    is_complex = ap[0] in ['WURST', 'SECH/TANH']
+                    freq = (ap[1], ap[2]) if is_complex else ap[1]
 
-                        awg_kwargs = {
-                            'name': f'P{2*i + 2}',
-                            'channel': 'CH0',
-                            'func': ap[0],
-                            'frequency': freq,
-                            'length': ap[3],
-                            'sigma': ap[4],
-                            'start': ap[5],
-                            'amplitude': ap[6],
-                            'phase_list': ap[7],
-                            'delta_start': ap[8],
-                            'length_increment': ap[9]
-                        }
+                    awg_kwargs = {
+                        'name': f'P{2*i + 2}',
+                        'channel': 'CH0',
+                        'func': ap[0],
+                        'frequency': freq,
+                        'length': ap[3],
+                        'sigma': ap[4],
+                        'start': ap[5],
+                        'amplitude': ap[6],
+                        'phase_list': ap[7],
+                        'delta_start': ap[8],
+                        'length_increment': ap[9]
+                    }
 
-                        if is_complex:
-                            awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
+                    if is_complex:
+                        awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
 
-                        awg.awg_pulse(**awg_kwargs)
+                    awg.awg_pulse(**awg_kwargs)
 
-                        if ap[0] != 'BLANK':
-                            pb.pulser_pulse(
-                                name=f'P{2*i + 3}',
-                                channel='AWG',
-                                start=tp[0],
-                                length=tp[1],
-                                delta_start=tp[2],
-                                length_increment=tp[3]
-                            )
+                    if ap[0] != 'BLANK':
+                        pb.pulser_pulse(
+                            name=f'P{2*i + 3}',
+                            channel='AWG',
+                            start=tp[0],
+                            length=tp[1],
+                            delta_start=tp[2],
+                            length_increment=tp[3]
+                        )
 
-                if laser_num == 1:
-                    pb.pulser_repetition_rate( '9.9 Hz' )
-                else:
-                    pb.pulser_repetition_rate( REP_RATE )
+            if laser_flag >= 1 and laser_num == 1:
+                pb.pulser_repetition_rate( '9.9 Hz' )
+            else:
+                pb.pulser_repetition_rate( REP_RATE )
 
 
             # NIOCH: compile the zero-filled AWG buffer after all pulses
@@ -5375,126 +5336,76 @@ class Worker():
                 pb.pulser_pulse(name='P1', channel=rect1[0], start=rect1[1], length=rect1[2], phase_list=rect1[3], delta_start=rect1[4], length_increment=rect1[5])
                 _eseem_add('P1', 0, rect1[4])
 
-            #Laser flag
-            if laser_flag != 1:
-
-                trigger_pulses = [rect2, rect3, rect4, rect5, rect6, rect7, rect8, rect9]
-                awg_params = [
-                                awg2, awg3, awg4, awg5,
-                                awg6, awg7, awg8, awg9
-                             ]
-
-                for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
-                    if ap[9] != '0.0 ns':
-                        increment = 1
-
-                    if int(float(tp[1].split(' ')[0])) != 0:
-
-                        is_complex = ap[0] in ['WURST', 'SECH/TANH']
-                        freq = (ap[1], ap[2]) if is_complex else ap[1]
-
-                        awg_kwargs = {
-                            'name': f'P{2*i + 2}',
-                            'channel': 'CH0',
-                            'func': ap[0],
-                            'frequency': freq,
-                            'length': ap[3],
-                            'sigma': ap[4],
-                            'start': ap[5],
-                            'amplitude': ap[6],
-                            'phase_list': ap[7],
-                            'delta_start': ap[8],
-                            'length_increment': ap[9]
-                        }
-
-                        if is_complex:
-                            awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
-
-                        awg.awg_pulse(**awg_kwargs)
-                        _eseem_add_awg(f'P{2*i + 2}', i + 1, ap[8])
-
-                        if ap[0] != 'BLANK':
-                            pb.pulser_pulse(
-                                name=f'P{2*i + 3}',
-                                channel='AWG',
-                                start=tp[0],
-                                length=tp[1],
-                                delta_start=tp[2],
-                                length_increment=tp[3]
-                            )
-                            _eseem_add(f'P{2*i + 3}', i + 1, tp[2])
-                pb.pulser_repetition_rate( REP_RATE )
-
-            else:
-
-                if script_test and int(float(rect2[1].split(' ')[0])) == 0:
-                    raise ValueError("LASER pulse has zero length")
-                #p7 is LASER pulse
+            # LASER rows (P2, and P3 when both are LASER) are pulser-only
+            laser_rects = [rect2, rect3][:laser_flag]
+            for n, lr in enumerate(laser_rects, start=1):
+                if script_test and int(float(lr[1].split(' ')[0])) == 0:
+                    raise ValueError(f"LASER_{n} pulse has zero length")
+                if script_test and laser_num == 1 and float(lr[1].split(' ')[0]) < 1000:
+                    raise ValueError(f"LASER_{n} pulse is shorter than the Nd:YAG minimum of 1000 ns")
                 pb.pulser_pulse(
-                    name=f'L1',
-                    channel='LASER',
-                    start=rect2[0],
-                    length=rect2[1],
-                    delta_start=rect2[2],
-                    length_increment=rect2[3]
+                    name=f'L{n}',
+                    channel=f'LASER_{n}',
+                    start=lr[0],
+                    length=lr[1],
+                    delta_start=lr[2],
+                    length_increment=lr[3]
                 )
-                _eseem_add('L1', 1, rect2[2])
+                _eseem_add(f'L{n}', n, lr[2])
 
-                trigger_pulses = [rect3, rect4, rect5, rect6, rect7, rect8, rect9]
-                awg_params = [
-                                awg3, awg4, awg5,
-                                awg6, awg7, awg8, awg9
-                             ]
+            trigger_pulses = [rect2, rect3, rect4, rect5, rect6, rect7, rect8, rect9][laser_flag:]
+            awg_params = [awg2, awg3, awg4, awg5, awg6, awg7, awg8, awg9][laser_flag:]
 
-                for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
-                    if ap[9] != '0.0 ns':
-                        increment = 1
+            for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
+                if ap[9] != '0.0 ns':
+                    increment = 1
 
-                    if int(float(tp[1].split(' ')[0])) != 0:
+                if int(float(tp[1].split(' ')[0])) != 0:
+                    if laser_flag >= 1:
                         # add q_delay
                         start_val = float(tp[0].split(' ')[0]) + q_switch_delay
                         tp[0] = f"{self.round_to_closest(start_val, 2)} ns"
                         start_val_awg = float(ap[5].split(' ')[0]) + q_switch_delay
                         ap[5] = f"{self.round_to_closest(start_val_awg, 2)} ns"
 
-                        is_complex = ap[0] in ['WURST', 'SECH/TANH']
-                        freq = (ap[1], ap[2]) if is_complex else ap[1]
+                    is_complex = ap[0] in ['WURST', 'SECH/TANH']
+                    freq = (ap[1], ap[2]) if is_complex else ap[1]
 
-                        awg_kwargs = {
-                            'name': f'P{2*i + 2}',
-                            'channel': 'CH0',
-                            'func': ap[0],
-                            'frequency': freq,
-                            'length': ap[3],
-                            'sigma': ap[4],
-                            'start': ap[5],
-                            'amplitude': ap[6],
-                            'phase_list': ap[7],
-                            'delta_start': ap[8],
-                            'length_increment': ap[9]
-                        }
+                    awg_kwargs = {
+                        'name': f'P{2*i + 2}',
+                        'channel': 'CH0',
+                        'func': ap[0],
+                        'frequency': freq,
+                        'length': ap[3],
+                        'sigma': ap[4],
+                        'start': ap[5],
+                        'amplitude': ap[6],
+                        'phase_list': ap[7],
+                        'delta_start': ap[8],
+                        'length_increment': ap[9]
+                    }
 
-                        if is_complex:
-                            awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
+                    if is_complex:
+                        awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
 
-                        awg.awg_pulse(**awg_kwargs)
-                        _eseem_add_awg(f'P{2*i + 2}', i + 2, ap[8])
+                    awg.awg_pulse(**awg_kwargs)
+                    _eseem_add_awg(f'P{2*i + 2}', i + 1 + laser_flag, ap[8])
 
-                        if ap[0] != 'BLANK':
-                            pb.pulser_pulse(
-                                name=f'P{2*i + 3}',
-                                channel='AWG',
-                                start=tp[0],
-                                length=tp[1],
-                                delta_start=tp[2],
-                                length_increment=tp[3]
-                            )
-                            _eseem_add(f'P{2*i + 3}', i + 2, tp[2])
+                    if ap[0] != 'BLANK':
+                        pb.pulser_pulse(
+                            name=f'P{2*i + 3}',
+                            channel='AWG',
+                            start=tp[0],
+                            length=tp[1],
+                            delta_start=tp[2],
+                            length_increment=tp[3]
+                        )
+                        _eseem_add(f'P{2*i + 3}', i + 1 + laser_flag, tp[2])
 
-                if laser_num == 1:
-                    pb.pulser_repetition_rate( '9.9 Hz' )
-                else:
-                    pb.pulser_repetition_rate( REP_RATE )
+            if laser_flag >= 1 and laser_num == 1:
+                pb.pulser_repetition_rate( '9.9 Hz' )
+            else:
+                pb.pulser_repetition_rate( REP_RATE )
 
 
             # NIOCH: compile the zero-filled AWG buffer after all pulses
@@ -6004,120 +5915,73 @@ class Worker():
             if int(float(rect1[2].split(' ')[0])) != 0:
                 pb.pulser_pulse(name='P1', channel=rect1[0], start=rect1[1], length=rect1[2], phase_list=rect1[3], delta_start=rect1[4], length_increment=rect1[5])
 
-            #Laser flag
-            if laser_flag != 1:
-
-                trigger_pulses = [rect2, rect3, rect4, rect5, rect6, rect7, rect8, rect9]
-                awg_params = [
-                                awg2, awg3, awg4, awg5, 
-                                awg6, awg7, awg8, awg9
-                             ]
-
-                for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
-                    if int(float(tp[1].split(' ')[0])) != 0:
-                        if script_test and tp[2] != '0.0 ns':
-                            raise ValueError("Please remove Start Increments for all pulses")
-
-                        is_complex = ap[0] in ['WURST', 'SECH/TANH']
-                        freq = (ap[1], ap[2]) if is_complex else ap[1]
-
-                        # field sweep: pulses are static (no start/length increment)
-                        awg_kwargs = {
-                            'name': f'P{2*i + 2}',
-                            'channel': 'CH0',
-                            'func': ap[0],
-                            'frequency': freq,
-                            'length': ap[3],
-                            'sigma': ap[4],
-                            'start': ap[5],
-                            'amplitude': ap[6],
-                            'phase_list': ap[7]
-                        }
-
-                        if is_complex:
-                            awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
-
-                        awg.awg_pulse(**awg_kwargs)
-
-                        if ap[0] != 'BLANK':
-                            pb.pulser_pulse(
-                                name=f'P{2*i + 3}',
-                                channel='AWG',
-                                start=tp[0],
-                                length=tp[1],
-                                delta_start=tp[2],
-                                length_increment=tp[3]
-                            )
-                pb.pulser_repetition_rate( REP_RATE )
-
-            else:
-
-                if script_test and int(float(rect2[1].split(' ')[0])) == 0:
-                    raise ValueError("LASER pulse has zero length")
-                if script_test and rect2[2] != '0.0 ns':
+            # LASER rows (P2, and P3 when both are LASER) are pulser-only
+            laser_rects = [rect2, rect3][:laser_flag]
+            for n, lr in enumerate(laser_rects, start=1):
+                if script_test and int(float(lr[1].split(' ')[0])) == 0:
+                    raise ValueError(f"LASER_{n} pulse has zero length")
+                if script_test and laser_num == 1 and float(lr[1].split(' ')[0]) < 1000:
+                    raise ValueError(f"LASER_{n} pulse is shorter than the Nd:YAG minimum of 1000 ns")
+                if script_test and lr[2] != '0.0 ns':
                     raise ValueError("Please remove Start Increments for all pulses")
-                #p7 is LASER pulse
                 pb.pulser_pulse(
-                    name=f'L1',
-                    channel='LASER',
-                    start=rect2[0],
-                    length=rect2[1],
-                    delta_start=rect2[2],
-                    length_increment=rect2[3]
+                    name=f'L{n}',
+                    channel=f'LASER_{n}',
+                    start=lr[0],
+                    length=lr[1],
+                    delta_start=lr[2],
+                    length_increment=lr[3]
                 )
 
-                trigger_pulses = [rect3, rect4, rect5, rect6, rect7, rect8, rect9]
-                awg_params = [
-                                awg3, awg4, awg5,
-                                awg6, awg7, awg8, awg9
-                             ]
+            trigger_pulses = [rect2, rect3, rect4, rect5, rect6, rect7, rect8, rect9][laser_flag:]
+            awg_params = [awg2, awg3, awg4, awg5, awg6, awg7, awg8, awg9][laser_flag:]
 
-                for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
+            for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
+                if int(float(tp[1].split(' ')[0])) != 0:
+                    if script_test and tp[2] != '0.0 ns':
+                        raise ValueError("Please remove Start Increments for all pulses")
 
-                    if int(float(tp[1].split(' ')[0])) != 0:
-                        if script_test and tp[2] != '0.0 ns':
-                            raise ValueError("Please remove Start Increments for all pulses")
-
+                    if laser_flag >= 1:
                         start_val = float(tp[0].split(' ')[0]) + q_switch_delay
                         tp[0] = f"{self.round_to_closest(start_val, 2)} ns"
                         start_val_awg = float(ap[5].split(' ')[0]) + q_switch_delay
                         ap[5] = f"{self.round_to_closest(start_val_awg, 2)} ns"
 
-                        is_complex = ap[0] in ['WURST', 'SECH/TANH']
-                        freq = (ap[1], ap[2]) if is_complex else ap[1]
+                    is_complex = ap[0] in ['WURST', 'SECH/TANH']
+                    freq = (ap[1], ap[2]) if is_complex else ap[1]
 
-                        # field sweep: pulses are static (no start/length increment)
-                        awg_kwargs = {
-                            'name': f'P{2*i + 2}',
-                            'channel': 'CH0',
-                            'func': ap[0],
-                            'frequency': freq,
-                            'length': ap[3],
-                            'sigma': ap[4],
-                            'start': ap[5],
-                            'amplitude': ap[6],
-                            'phase_list': ap[7]
-                        }
+                    # field sweep: pulses are static (no start/length increment)
+                    awg_kwargs = {
+                        'name': f'P{2*i + 2}',
+                        'channel': 'CH0',
+                        'func': ap[0],
+                        'frequency': freq,
+                        'length': ap[3],
+                        'sigma': ap[4],
+                        'start': ap[5],
+                        'amplitude': ap[6],
+                        'phase_list': ap[7]
+                    }
 
-                        if is_complex:
-                            awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
+                    if is_complex:
+                        awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
 
-                        awg.awg_pulse(**awg_kwargs)
+                    awg.awg_pulse(**awg_kwargs)
 
-                        if ap[0] != 'BLANK':
-                            pb.pulser_pulse(
-                                name=f'P{2*i + 3}',
-                                channel='AWG',
-                                start=tp[0],
-                                length=tp[1],
-                                delta_start=tp[2],
-                                length_increment=tp[3]
-                            )
+                    if ap[0] != 'BLANK':
+                        pb.pulser_pulse(
+                            name=f'P{2*i + 3}',
+                            channel='AWG',
+                            start=tp[0],
+                            length=tp[1],
+                            delta_start=tp[2],
+                            length_increment=tp[3]
+                        )
 
-                if laser_num == 1:
-                    pb.pulser_repetition_rate( '9.9 Hz' )
-                else:
-                    pb.pulser_repetition_rate( REP_RATE )
+            if laser_flag >= 1 and laser_num == 1:
+                pb.pulser_repetition_rate( '9.9 Hz' )
+            else:
+                pb.pulser_repetition_rate( REP_RATE )
 
 
             # NIOCH: compile the zero-filled AWG buffer after all pulses
@@ -6519,22 +6383,17 @@ class Worker():
                 name_list.append('P1')
                 rel_shift = np.append(rel_shift, float(rect1[4].split(' ')[0]) )
 
-            # Laser pulse also is added manually
-            if laser_flag != 1:
-                pulses = [
-                        rect2, rect3, rect4, 
-                        rect5, rect6, rect7, rect8, 
-                        rect9
-                        ]
-            else:
-                if int(float(rect2[1].split(' ')[0])) != 0:
-                    name_list.append(f'L1')
-                    rel_shift = np.append(rel_shift, float(rect2[2].split(' ')[0]) ) 
-                pulses = [
-                        rect3, rect4, 
-                        rect5, rect6, rect7, rect8, 
-                        rect9
-                        ]
+            # LASER pulses are also added manually
+            laser_rects = [rect2, rect3][:laser_flag]
+            for n, lr in enumerate(laser_rects, start=1):
+                if int(float(lr[1].split(' ')[0])) != 0:
+                    name_list.append(f'L{n}')
+                    rel_shift = np.append(rel_shift, float(lr[2].split(' ')[0]) )
+            pulses = [
+                    rect2, rect3, rect4,
+                    rect5, rect6, rect7, rect8,
+                    rect9
+                    ][laser_flag:]
 
             for p in pulses:
                 length_str = p[1].split(' ')[0]
@@ -6574,136 +6433,83 @@ class Worker():
                 pb.pulser_redefine_delta_start(name = 'P1', delta_start = f"{self.round_to_closest( nonlinear_diff[0] * rel_shift[0], 2 )} ns")
             ####
             
-            #Laser flag
-            if laser_flag != 1:
+            # rel_shift slot counter in build order: P1 (if added), LASER rows, AWG pulses
+            rs_idx = 1 if 'P1' in name_list else 0
 
-                trigger_pulses = [rect2, rect3, rect4, rect5, rect6, rect7, rect8, rect9]
-                awg_params = [
-                                awg2, awg3, awg4, awg5,
-                                awg6, awg7, awg8, awg9
-                             ]
-
-                # rel_shift only got entries for non-zero pulses (see the
-                # build loop above), so we can't index it by the trigger-
-                # pulse position. Track the actual rel_shift slot with a
-                # counter that mirrors the build order.
-                rs_idx = 1 if 'P1' in name_list else 0
-
-                for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
-                    if int(float(tp[1].split(' ')[0])) != 0:
-
-                        is_complex = ap[0] in ['WURST', 'SECH/TANH']
-                        freq = (ap[1], ap[2]) if is_complex else ap[1]
-
-                        awg_kwargs = {
-                            'name': f'P{2*i + 2}',
-                            'channel': 'CH0',
-                            'func': ap[0],
-                            'frequency': freq,
-                            'length': ap[3],
-                            'sigma': ap[4],
-                            'start': ap[5],
-                            'amplitude': ap[6],
-                            'phase_list': ap[7],
-                            'delta_start': f"{self.round_to_closest( nonlinear_diff[0] * rel_shift[rs_idx], 2 )} ns"
-                        }
-
-                        if is_complex:
-                            awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
-
-                        awg.awg_pulse(**awg_kwargs)
-                        # AWG pulse tracks the same nonlinear delta as its pulser marker
-                        awg_name_list.append(f'P{2*i + 2}')
-                        awg_rel_shift.append(rel_shift[rs_idx])
-
-                        if ap[0] != 'BLANK':
-                            name_list.append(f'P{2*i + 3}')
-                            pb.pulser_pulse(
-                                name=f'P{2*i + 3}',
-                                channel='AWG',
-                                start=tp[0],
-                                length=tp[1],
-                                delta_start=f"{self.round_to_closest( nonlinear_diff[0] * rel_shift[rs_idx], 2 )} ns"
-                            )
-                        rs_idx += 1
-                pb.pulser_repetition_rate( REP_RATE )
-
-            else:
-
-                if script_test and int(float(rect2[1].split(' ')[0])) == 0:
-                    raise ValueError("LASER pulse has zero length")
-                #p7 is LASER pulse — its rel_shift slot sits right after P1's (if P1 was added).
-                if 'L1' in name_list:
-                    laser_rs_idx = 1 if 'P1' in name_list else 0
-                    laser_delta_start = f"{self.round_to_closest( nonlinear_diff[0] * rel_shift[laser_rs_idx], 2 )} ns"
+            # LASER rows (P2, and P3 when both are LASER) are pulser-only
+            laser_rects = [rect2, rect3][:laser_flag]
+            for n, lr in enumerate(laser_rects, start=1):
+                if script_test and int(float(lr[1].split(' ')[0])) == 0:
+                    raise ValueError(f"LASER_{n} pulse has zero length")
+                if script_test and laser_num == 1 and float(lr[1].split(' ')[0]) < 1000:
+                    raise ValueError(f"LASER_{n} pulse is shorter than the Nd:YAG minimum of 1000 ns")
+                if f'L{n}' in name_list:
+                    laser_delta_start = f"{self.round_to_closest( nonlinear_diff[0] * rel_shift[rs_idx], 2 )} ns"
+                    rs_idx += 1
                 else:
                     laser_delta_start = '0.0 ns'
                 pb.pulser_pulse(
-                    name=f'L1',
-                    channel='LASER',
-                    start=rect2[0],
-                    length=rect2[1],
+                    name=f'L{n}',
+                    channel=f'LASER_{n}',
+                    start=lr[0],
+                    length=lr[1],
                     delta_start=laser_delta_start
                 )
 
-                trigger_pulses = [rect3, rect4, rect5, rect6, rect7, rect8, rect9]
-                awg_params = [
-                                awg3, awg4, awg5,
-                                awg6, awg7, awg8, awg9
-                             ]
+            trigger_pulses = [rect2, rect3, rect4, rect5, rect6, rect7, rect8, rect9][laser_flag:]
+            awg_params = [awg2, awg3, awg4, awg5, awg6, awg7, awg8, awg9][laser_flag:]
 
-                # Same rel_shift indexing fix as the laser_flag != 1 branch.
-                rs_idx = (1 if 'P1' in name_list else 0) + (1 if 'L1' in name_list else 0)
+            for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
+                if ap[9] != '0.0 ns':
+                    increment = 1
 
-                for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
-                    if ap[9] != '0.0 ns':
-                        increment = 1
-
-                    if int(float(tp[1].split(' ')[0])) != 0:
+                if int(float(tp[1].split(' ')[0])) != 0:
+                    if laser_flag >= 1:
                         # add q_delay
                         start_val = float(tp[0].split(' ')[0]) + q_switch_delay
                         tp[0] = f"{self.round_to_closest(start_val, 2)} ns"
                         start_val_awg = float(ap[5].split(' ')[0]) + q_switch_delay
                         ap[5] = f"{self.round_to_closest(start_val_awg, 2)} ns"
 
-                        is_complex = ap[0] in ['WURST', 'SECH/TANH']
-                        freq = (ap[1], ap[2]) if is_complex else ap[1]
+                    is_complex = ap[0] in ['WURST', 'SECH/TANH']
+                    freq = (ap[1], ap[2]) if is_complex else ap[1]
 
-                        awg_kwargs = {
-                            'name': f'P{2*i + 2}',
-                            'channel': 'CH0',
-                            'func': ap[0],
-                            'frequency': freq,
-                            'length': ap[3],
-                            'sigma': ap[4],
-                            'start': ap[5],
-                            'amplitude': ap[6],
-                            'phase_list': ap[7],
-                            'delta_start': f"{self.round_to_closest( nonlinear_diff[0] * rel_shift[rs_idx], 2 )} ns"
-                        }
+                    awg_kwargs = {
+                        'name': f'P{2*i + 2}',
+                        'channel': 'CH0',
+                        'func': ap[0],
+                        'frequency': freq,
+                        'length': ap[3],
+                        'sigma': ap[4],
+                        'start': ap[5],
+                        'amplitude': ap[6],
+                        'phase_list': ap[7],
+                        'delta_start': f"{self.round_to_closest( nonlinear_diff[0] * rel_shift[rs_idx], 2 )} ns"
+                    }
 
-                        if is_complex:
-                            awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
+                    if is_complex:
+                        awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
 
-                        awg.awg_pulse(**awg_kwargs)
-                        # AWG pulse tracks the same nonlinear delta as its pulser marker
-                        awg_name_list.append(f'P{2*i + 2}')
-                        awg_rel_shift.append(rel_shift[rs_idx])
+                    awg.awg_pulse(**awg_kwargs)
+                    # AWG pulse tracks the same nonlinear delta as its pulser marker
+                    awg_name_list.append(f'P{2*i + 2}')
+                    awg_rel_shift.append(rel_shift[rs_idx])
 
-                        if ap[0] != 'BLANK':
-                            name_list.append(f'P{2*i + 3}')
-                            pb.pulser_pulse(
-                                name=f'P{2*i + 3}',
-                                channel='AWG',
-                                start=tp[0],
-                                length=tp[1],
-                                delta_start=f"{self.round_to_closest( nonlinear_diff[0] * rel_shift[rs_idx], 2 )} ns"
-                            )
-                        rs_idx += 1
-                if laser_num == 1:
-                    pb.pulser_repetition_rate( '9.9 Hz' )
-                else:
-                    pb.pulser_repetition_rate( REP_RATE )
+                    if ap[0] != 'BLANK':
+                        name_list.append(f'P{2*i + 3}')
+                        pb.pulser_pulse(
+                            name=f'P{2*i + 3}',
+                            channel='AWG',
+                            start=tp[0],
+                            length=tp[1],
+                            delta_start=f"{self.round_to_closest( nonlinear_diff[0] * rel_shift[rs_idx], 2 )} ns"
+                        )
+                    rs_idx += 1
+
+            if laser_flag >= 1 and laser_num == 1:
+                pb.pulser_repetition_rate( '9.9 Hz' )
+            else:
+                pb.pulser_repetition_rate( REP_RATE )
 
 
             # NIOCH: compile the zero-filled AWG buffer after all pulses
@@ -7095,139 +6901,81 @@ class Worker():
             if int(float(rect1[2].split(' ')[0])) != 0:
                 pb.pulser_pulse(name='P1', channel=rect1[0], start=rect1[1], length=rect1[2], phase_list=rect1[3], delta_start=rect1[4], length_increment=rect1[5])
 
-            #Laser flag
-            if laser_flag != 1:
-
-
-                trigger_pulses = [rect2, rect3, rect4, rect5, rect6, rect7, rect8, rect9]
-                awg_params = [
-                                awg2, awg3, awg4, awg5, 
-                                awg6, awg7, awg8, awg9
-                             ]
-
-                for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
-                    if int(float(tp[1].split(' ')[0])) != 0:
-                        if float(tp[2].split(' ')[0]) != 0:   # start increment != 0 selects this pulse
-                            name_list.append(f'P{2*i + 2}')
-                            f_delay = float( ap[6] )
-                            ampl_list.append( float( ap[6] ) )
-
-                        # the start increment was ONLY the amplitude-sweep selector;
-                        # zero it now so the pulser AWG gate marker (delta_start=tp[2])
-                        # carries no time shift -- every amplitude-sweep pulse is static.
-                        tp[2] = '0 ns'
-
-                        is_complex = ap[0] in ['WURST', 'SECH/TANH']
-                        freq = (ap[1], ap[2]) if is_complex else ap[1]
-
-                        # amplitude sweep: pulses are static in time; ap[8] (start
-                        # increment) is only the selector for which pulse changes
-                        # amplitude, so it must NOT be passed as the pulse delta_start.
-                        awg_kwargs = {
-                            'name': f'P{2*i + 2}',
-                            'channel': 'CH0',
-                            'func': ap[0],
-                            'frequency': freq,
-                            'length': ap[3],
-                            'sigma': ap[4],
-                            'start': ap[5],
-                            'amplitude': ap[6],
-                            'phase_list': ap[7],
-                            'length_increment': ap[9]
-                        }
-                        
-                        if is_complex:
-                            awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
-                            
-                        awg.awg_pulse(**awg_kwargs)
-
-                        if ap[0] != 'BLANK':
-                            pb.pulser_pulse(
-                                name=f'P{2*i + 3}',
-                                channel='AWG',
-                                start=tp[0], 
-                                length=tp[1], 
-                                delta_start=tp[2], 
-                                length_increment=tp[3]
-                            )
-                pb.pulser_repetition_rate( REP_RATE )
-
-            else:
-
-                if script_test and int(float(rect2[1].split(' ')[0])) == 0:
-                    raise ValueError("LASER pulse has zero length")
-                #p7 is LASER pulse
+            # LASER rows (P2, and P3 when both are LASER) are pulser-only
+            laser_rects = [rect2, rect3][:laser_flag]
+            for n, lr in enumerate(laser_rects, start=1):
+                if script_test and int(float(lr[1].split(' ')[0])) == 0:
+                    raise ValueError(f"LASER_{n} pulse has zero length")
+                if script_test and laser_num == 1 and float(lr[1].split(' ')[0]) < 1000:
+                    raise ValueError(f"LASER_{n} pulse is shorter than the Nd:YAG minimum of 1000 ns")
                 pb.pulser_pulse(
-                    name=f'L1',
-                    channel='LASER',
-                    start=rect2[0],
-                    length=rect2[1],
-                    delta_start=rect2[2],
-                    length_increment=rect2[3]
+                    name=f'L{n}',
+                    channel=f'LASER_{n}',
+                    start=lr[0],
+                    length=lr[1],
+                    delta_start='0.0 ns',
+                    length_increment=lr[3]
                 )
 
-                trigger_pulses = [rect3, rect4, rect5, rect6, rect7, rect8, rect9]
-                awg_params = [
-                                awg3, awg4, awg5,
-                                awg6, awg7, awg8, awg9
-                             ]
+            trigger_pulses = [rect2, rect3, rect4, rect5, rect6, rect7, rect8, rect9][laser_flag:]
+            awg_params = [awg2, awg3, awg4, awg5, awg6, awg7, awg8, awg9][laser_flag:]
 
-                for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
+            for i, (tp, ap) in enumerate(zip(trigger_pulses, awg_params)):
+                if int(float(tp[1].split(' ')[0])) != 0:
+                    if float(tp[2].split(' ')[0]) != 0:   # start increment != 0 selects this pulse
+                        name_list.append(f'P{2*i + 2}')
+                        f_delay = float( ap[6] )
+                        ampl_list.append( float( ap[6] ) )
 
-                    if int(float(tp[1].split(' ')[0])) != 0:
-                        if float(tp[2].split(' ')[0]) != 0:   # start increment != 0 selects this pulse
-                            name_list.append(f'P{2*i + 2}')
-                            f_delay = float( ap[6] )
-                            ampl_list.append( float( ap[6] ) )
+                    # the start increment was ONLY the amplitude-sweep selector;
+                    # zero it now so the pulser AWG gate marker (delta_start=tp[2])
+                    # carries no time shift -- every amplitude-sweep pulse is static.
+                    tp[2] = '0 ns'
 
-                        # the start increment was ONLY the amplitude-sweep selector;
-                        # zero it now so the pulser AWG gate marker (delta_start=tp[2])
-                        # carries no time shift -- every amplitude-sweep pulse is static.
-                        tp[2] = '0 ns'
-
+                    if laser_flag >= 1:
                         start_val = float(tp[0].split(' ')[0]) + q_switch_delay
                         tp[0] = f"{self.round_to_closest(start_val, 2)} ns"
                         start_val_awg = float(ap[5].split(' ')[0]) + q_switch_delay
                         ap[5] = f"{self.round_to_closest(start_val_awg, 2)} ns"
 
-                        is_complex = ap[0] in ['WURST', 'SECH/TANH']
-                        freq = (ap[1], ap[2]) if is_complex else ap[1]
+                    is_complex = ap[0] in ['WURST', 'SECH/TANH']
+                    freq = (ap[1], ap[2]) if is_complex else ap[1]
 
-                        # amplitude sweep: pulses are static in time; ap[8] (start
-                        # increment) is only the selector for which pulse changes
-                        # amplitude, so it must NOT be passed as the pulse delta_start.
-                        awg_kwargs = {
-                            'name': f'P{2*i + 2}',
-                            'channel': 'CH0',
-                            'func': ap[0],
-                            'frequency': freq,
-                            'length': ap[3],
-                            'sigma': ap[4],
-                            'start': ap[5],
-                            'amplitude': ap[6],
-                            'phase_list': ap[7],
-                            'length_increment': ap[9]
-                        }
+                    # amplitude sweep: pulses are static in time; ap[8] (start
+                    # increment) is only the selector for which pulse changes
+                    # amplitude, so it must NOT be passed as the pulse delta_start.
+                    awg_kwargs = {
+                        'name': f'P{2*i + 2}',
+                        'channel': 'CH0',
+                        'func': ap[0],
+                        'frequency': freq,
+                        'length': ap[3],
+                        'sigma': ap[4],
+                        'start': ap[5],
+                        'amplitude': ap[6],
+                        'phase_list': ap[7],
+                        'length_increment': ap[9]
+                    }
+                    
+                    if is_complex:
+                        awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
                         
-                        if is_complex:
-                            awg_kwargs.update({'n': n_wurst, 'b': b_sech_cur})
-                            
-                        awg.awg_pulse(**awg_kwargs)
+                    awg.awg_pulse(**awg_kwargs)
 
-                        if ap[0] != 'BLANK':
-                            pb.pulser_pulse(
-                                name=f'P{2*i + 3}',
-                                channel='AWG',
-                                start=tp[0], 
-                                length=tp[1], 
-                                delta_start=tp[2], 
-                                length_increment=tp[3]
-                            )
+                    if ap[0] != 'BLANK':
+                        pb.pulser_pulse(
+                            name=f'P{2*i + 3}',
+                            channel='AWG',
+                            start=tp[0], 
+                            length=tp[1], 
+                            delta_start=tp[2], 
+                            length_increment=tp[3]
+                        )
 
-                if laser_num == 1:
-                    pb.pulser_repetition_rate( '9.9 Hz' )
-                else:
-                    pb.pulser_repetition_rate( REP_RATE )
+            if laser_flag >= 1 and laser_num == 1:
+                pb.pulser_repetition_rate( '9.9 Hz' )
+            else:
+                pb.pulser_repetition_rate( REP_RATE )
 
 
             if len(name_list) != 0:
