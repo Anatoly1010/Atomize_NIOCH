@@ -22,6 +22,7 @@ libs/treatment_lastdir.txt
 libs/excitation_lastdir.txt
 libs/script_lastdir.txt
 libs/data_lastdir.txt
+libs/liveplot_layout.txt
 libs/phase_lastdir.txt
 libs/phase_awg_lastdir.txt
 instructions.out
