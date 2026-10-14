@@ -1280,7 +1280,7 @@ class MainWindow(QMainWindow):
         self.tab_pulse.tabBar().setTabTextColor(2, QColor(193, 202, 227))
 
         # ---- Labels & Inputs ----
-        labels = [("Points to Drop", "label_11"), ("Zero Order", "label_12"), ("First Order", "label_13"), ("Second Order", "label_14"), ("Live FFT", "label_15"), ("Phase Correction", "label_16"), ("Shift Offset", "label_fft1")]
+        labels = [("Points to Drop", "label_11"), ("Zero Order", "label_12"), ("First Order", "label_13"), ("Second Order", "label_14"), ("Live FFT", "label_15"), ("Phase Correction", "label_16"), ("Shift Offset", "label_fft1"), ("Detection Correction", "label_fft2")]
 
         #
         for name, attr_name in labels:
@@ -1339,7 +1339,8 @@ class MainWindow(QMainWindow):
         # ---- Check Boxes ----
         check_boxes = [("fft_box", self.fft_online),
                        ("Quad_cor", self.quad_online),
-                       ("IQ_corr", self.iq_online)]
+                       ("IQ_corr", self.iq_online),
+                       ("Det_cor", self.det_cor_online)]
 
         for attr_name, func in check_boxes:
             check = self._make_checkbox(func)
@@ -1352,6 +1353,8 @@ class MainWindow(QMainWindow):
         self.Quad_cor.setToolTip('Unchecked: Zero Order on the time trace, with Auto phase. Checked: orders 0–2 on the FFT after Points to Drop; Auto phase is disabled. First and Second Order affect only the FFT view.')
 
         self.IQ_corr.setToolTip('Shift the preview by the DETECTION frequency. Phase Correction chooses the phase domain. For experiments, select integrated I/Q instead of full 2D data.')
+
+        self.Det_cor.setToolTip('Divide the echo spectrum by the resonator response of the AWG-tab Correction Model, for the FFT preview and saved 2D data. Boost capped by LIMIT/LOW.')
 
         # ---- Separators ----
         def hline():
@@ -1369,11 +1372,13 @@ class MainWindow(QMainWindow):
         gridLayout.addWidget(self.Quad_cor, 1, 1)
         gridLayout.addWidget(self.label_fft1, 2, 0)
         gridLayout.addWidget(self.IQ_corr, 2, 1)
+        gridLayout.addWidget(self.label_fft2, 3, 0)
+        gridLayout.addWidget(self.Det_cor, 3, 1)
 
-        gridLayout.addWidget(hline(), 3, 0, 1, 2)
+        gridLayout.addWidget(hline(), 4, 0, 1, 2)
 
-        gridLayout.addWidget(self.label_11, 4, 0)
-        gridLayout.addWidget(self.P_to_drop, 4, 1)
+        gridLayout.addWidget(self.label_11, 5, 0)
+        gridLayout.addWidget(self.P_to_drop, 5, 1)
         zo_controls = QWidget()
         zo_controls.setFixedSize(360, 26)
         zo_layout = QHBoxLayout(zo_controls)
@@ -1394,15 +1399,15 @@ class MainWindow(QMainWindow):
         zo_layout.addWidget(self.button_auto_phase)
         zo_layout.addSpacing(4)
         zo_layout.addWidget(self.Zero_order)
-        gridLayout.addWidget(zo_controls, 5, 0, 1, 2)
-        gridLayout.addWidget(self.label_13, 6, 0)
-        gridLayout.addWidget(self.First_order, 6, 1)
-        gridLayout.addWidget(self.label_14, 7, 0)
-        gridLayout.addWidget(self.Second_order, 7, 1)
+        gridLayout.addWidget(zo_controls, 6, 0, 1, 2)
+        gridLayout.addWidget(self.label_13, 7, 0)
+        gridLayout.addWidget(self.First_order, 7, 1)
+        gridLayout.addWidget(self.label_14, 8, 0)
+        gridLayout.addWidget(self.Second_order, 8, 1)
 
-        gridLayout.addWidget(hline(), 8, 0, 1, 2)
+        gridLayout.addWidget(hline(), 9, 0, 1, 2)
 
-        gridLayout.setRowStretch(9, 2)
+        gridLayout.setRowStretch(10, 2)
         gridLayout.setColumnStretch(10, 2)
 
         # flag for not writing the data when digitizer is off
@@ -1411,6 +1416,7 @@ class MainWindow(QMainWindow):
         self.quad = 0
         self.double_change = 0
         self.iq_cor = 1
+        self.det_cor = 0
         self.quad_online()
 
     def design_tab_4(self):
@@ -2516,6 +2522,7 @@ class MainWindow(QMainWindow):
         worker.phase_cor_cur = self.phase_cor_cur
         worker.meas_freq_cur = self.meas_freq_cur
         worker.meas_H_cur = self.meas_H_cur
+        worker.det_cor_cur = self.det_cor
         worker.awg_output_shift = self.awg_output_shift
         worker.posttrigger = self.posttrigger
 
@@ -2546,6 +2553,16 @@ class MainWindow(QMainWindow):
 
         try:
             self.parent_conn_dig.send( 'QC' + str( self.quad ) )
+        except AttributeError:
+            pass
+
+    def det_cor_online(self):
+        """
+        Turn on/off the detection-side resonator correction
+        """
+        self.det_cor = int(self.Det_cor.isChecked())
+        try:
+            self.parent_conn_dig.send( 'DC' + str( self.det_cor ) )
         except AttributeError:
             pass
 
@@ -4079,6 +4096,8 @@ class Worker():
         # Lorentzian magnitude-only fit from correction.param)
         self.meas_freq_cur = None
         self.meas_H_cur = None
+        # detection-side correction of the echo spectrum (FFT tab)
+        self.det_cor_cur = 0
 
         # write the full 2D arrays as a single .h5 file instead of CSV; set by
         # the MainWindow before launch, default keeps the CSV behaviour
@@ -4303,6 +4322,8 @@ class Worker():
                     fft_flag = int( self.command[2:] )
                 elif self.command[0:2] == 'QC':
                     quad = int( self.command[2:] )
+                elif self.command[0:2] == 'DC':
+                    self.det_cor_cur = int( self.command[2:] )
                 elif self.command[0:2] == 'ZO':
                     zero_order = float( self.command[2:] )
                 elif self.command[0:2] == 'AP':
@@ -4508,6 +4529,9 @@ class Worker():
                     if quad == 0:
                         # x_axis is in s, t_res is in ns -> convert x_axis to ns
                         freq_axis, abs_values = fft.fft(x_axis * 1e9, data_x, data_y, t_res)
+                        det_k = self._det_factor(awg, freq_axis, iq_freq if iq_cor == 1 else 0, iq_freq)
+                        if det_k is not None:
+                            abs_values = abs_values * np.abs(det_k)
                         m_val = round( np.amax( abs_values ), 2 )
                         # fft.fft returns MHz; the axis auto-SI-prefixes, so pass Hz
                         general.wait('1 ms')
@@ -4521,6 +4545,10 @@ class Worker():
                             general.message('Maximum length of the data achieved. A number of drop points was corrected.')
                         # fixed resolution of digitizer; 2 ns
                         freq, fft_x, fft_y = fft.fft( x_axis[p_to_drop:] * 1e9, data_x[p_to_drop:], data_y[p_to_drop:], t_res, re = 'True' )
+                        det_k = self._det_factor(awg, freq, iq_freq if iq_cor == 1 else 0, iq_freq)
+                        if det_k is not None:
+                            spec = (fft_x + 1j * fft_y) * det_k
+                            fft_x, fft_y = spec.real, spec.imag
                         data_fft = fft.ph_correction( freq, fft_x, fft_y, -zero_order, -first_order * 1e-9, -second_order * 1e-18 )
                         # ph_correction uses freq in MHz; the axis auto-SI-prefixes, so plot Hz
                         general.wait('1 ms')
@@ -4643,6 +4671,82 @@ class Worker():
             model = self.cor_model_cur, f0 = self.f0_cur, q_factor = self.q_cur,
             phase_correction = self.phase_cor_cur,
             meas_freq = self.meas_freq_cur, meas_H = self.meas_H_cur )
+
+    def _det_factor(self, awg, freq_mhz, shift, iq_freq):
+        """Detection-side factor K(f) = g * exp(-1j * ph) on an offset axis in MHz; None when off.
+
+        f = lo + freq_mhz + shift, referenced to the DETECTION frequency lo + iq_freq;
+        lo = f0 as in the AWG correction here, boost capped by LIMIT / LOW.
+        """
+        if self.det_cor_cur == 0:
+            return None
+        path_file = os.path.join( os.path.abspath( os.getcwd() ),
+                                  '../atomize/control_center/correction.param' )
+        with open(path_file, 'r') as file_to_read:
+            text_from_file = file_to_read.read().splitlines()
+        coef = [ float( text_from_file[i].split(' ')[1] ) for i in range(10) ]
+        cap = float( text_from_file[11].split(' ')[1] ) / float( text_from_file[10].split(' ')[1] )
+        lo = self.f0_cur
+
+        # last element is the reference frequency
+        x = np.append( lo + np.asarray(freq_mhz, dtype = float) + shift, lo + iq_freq )
+        ph = np.zeros_like(x)
+        if self.cor_model_cur == 'ideal':
+            h = 1.0 / (1.0 + 1j * self.q_cur * (x / self.f0_cur - self.f0_cur / x))
+            mag = np.abs(h)
+            if self.phase_cor_cur == 'True':
+                ph = np.angle(h)
+        elif self.meas_H_cur is not None and len(self.meas_H_cur) >= 2:
+            order = np.argsort(self.meas_freq_cur)
+            fm = np.asarray(self.meas_freq_cur, dtype = float)[order]
+            hm = np.asarray(self.meas_H_cur)[order]
+            mag = np.interp(x, fm, np.abs(hm))
+            ph = np.interp(x, fm, np.unwrap(np.angle(hm)))
+        else:
+            mag = awg.triple_lorentzian(x - x[-1], *coef)
+            if mag is None:
+                return None
+        g = np.minimum(mag[-1] / mag[:-1], cap)
+        return g * np.exp(-1j * (ph[:-1] - ph[-1]))
+
+    def _det_corrected(self, awg, data, t_ns, iq_freq):
+        """Copy of raw 2D data (2, time, columns) with K(f) applied along time; data itself when off."""
+        if self.det_cor_cur == 0 or np.isnan(data).any():
+            return data
+        k = self._det_factor(awg, np.fft.fftfreq(data.shape[1], t_ns * 1e-3), 0, iq_freq)
+        if k is None:
+            return data
+        sig = np.fft.ifft(np.fft.fft(data[0] + 1j * data[1], axis = 0) * k[:, None], axis = 0)
+        return np.array((sig.real, sig.imag), dtype = data.dtype)
+
+    def _det_header(self, w):
+        """Detection-correction line for the 2D data header; empty when off."""
+        if self.det_cor_cur == 0:
+            return ''
+        if self.cor_model_cur == 'ideal':
+            model = 'Ideal RLC + phase' if self.phase_cor_cur == 'True' else 'Ideal RLC'
+            model += f', f0 = {self.f0_cur} MHz, Q = {self.q_cur}'
+        elif self.meas_H_cur is not None and len(self.meas_H_cur) >= 2:
+            model = 'Measured H(f)'
+        else:
+            model = 'Measured fit'
+        return f"{'Detection Correction:':<{w}} {model}\n"
+
+    def _save_det_curve(self, awg, file_handler, base_data, data, t_ns, iq_freq, w):
+        """Save K(f) next to the corrected 2D data; dividing the time-axis FFT by K retracts the correction."""
+        if self.det_cor_cur == 0 or np.isnan(data).any():
+            return
+        freq = np.fft.fftshift(np.fft.fftfreq(data.shape[1], t_ns * 1e-3))
+        k = self._det_factor(awg, freq, 0, iq_freq)
+        if k is None:
+            return
+        lo = self.f0_cur
+        header = (f"{self._det_header(w)}"
+                  f"{'LO = f0:':<{w}} {lo} MHz\n"
+                  f"{'Frequency Shift:':<{w}} {-iq_freq} MHz\n"
+                  f"{'Horizontal Resolution:':<{w}} {t_ns:g} ns\n"
+                  f"Offset (MHz), MW Frequency (MHz), Re K, Im K")
+        file_handler.save_data(f"{base_data}_det_cor.csv", np.c_[freq, lo + freq, k.real, k.imag], header = header, mode = 'w')
 
     def exp(self, conn, decimation, num_ave, scans, points,
             exp_name, curve_name, rect1, rect2,
@@ -5030,6 +5134,7 @@ class Worker():
                     f"{'Vertical Resolution:':<{w}} {STEP} ns\n"
                     f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
                     f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('2A')} K\n"
+                    f"{self._det_header(w)}"
                     f"{'-'*50}\n"
                     f"Pulse List:\n{pb.pulser_pulse_list()}"
                     f"{'-'*50}\n"
@@ -5092,7 +5197,7 @@ class Worker():
                     if iq_cor == 0:
                         file_handler.save_data(
                             file_data,
-                            data,
+                            self._det_corrected(awg, data, t_res, iq_freq),
                             header = header,
                             mode = 'w',
                             axes = axes_2d, axes_units = axes_units_2d
@@ -5111,11 +5216,14 @@ class Worker():
 
                             file_handler.save_data(
                                 file_data2,
-                                data,
+                                self._det_corrected(awg, data, t_res, iq_freq),
                                 header = header,
                                 mode = 'w',
                                 axes = axes_2d, axes_units = axes_units_2d
                         )
+
+                    if iq_cor == 0 or save2d == 1:
+                        self._save_det_curve(awg, file_handler, base_data, data, t_res, iq_freq, w)
 
                     conn.send( ('', f'Experiment {EXP_NAME} finished') )
 
@@ -5685,6 +5793,7 @@ class Worker():
                     f"{'Vertical Resolution:':<{w}} {STEP} ns\n"
                     f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
                     f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('2A')} K\n"
+                    f"{self._det_header(w)}"
                     f"{'-'*50}\n"
                     f"Pulse List:\n{pb.pulser_pulse_list()}"
                     f"{'-'*50}\n"
@@ -5749,7 +5858,7 @@ class Worker():
                     if iq_cor == 0:
                         file_handler.save_data(
                             file_data,
-                            data,
+                            self._det_corrected(awg, data, t_res, iq_freq),
                             header = header,
                             mode = 'w',
                             axes = axes_2d, axes_units = axes_units_2d
@@ -5768,7 +5877,7 @@ class Worker():
 
                             file_handler.save_data(
                                 file_data2,
-                                data,
+                                self._det_corrected(awg, data, t_res, iq_freq),
                                 header = header,
                                 mode = 'w',
                                 axes = axes_2d, axes_units = axes_units_2d
@@ -5791,12 +5900,15 @@ class Worker():
                                 cdat = (idx + 1) * Mc - idx * cycle_snapshots[idx - 1]
                             if iq_cor == 0:
                                 cpath = f"{base_data}_cycle{idx}{os.path.splitext(file_data)[1]}"
-                                file_handler.save_data(cpath, cdat, header = header, mode = 'w', axes = axes_2d, axes_units = axes_units_2d)
+                                file_handler.save_data(cpath, self._det_corrected(awg, cdat, t_res, iq_freq), header = header, mode = 'w', axes = axes_2d, axes_units = axes_units_2d)
                             elif iq_cor == 1:
                                 cpath = f"{base_data}_cycle{idx}.csv"
                                 cdx, cdy = dig.digitizer_demodulate(cdat[0], cdat[1], iq_freq, zp, 0, 0, integral = True)
                                 # same run -> same clock state: per-cycle traces follow the average's sign
                                 file_handler.save_data(cpath, np.c_[x_axis_plot, cdx, cdy], header = header2, mode = 'w', plot = EXP_NAME, label = curve_name, phase = save_phase)
+
+                    if iq_cor == 0 or save2d == 1:
+                        self._save_det_curve(awg, file_handler, base_data, data, t_res, iq_freq, w)
 
                     conn.send( ('', f'Experiment {EXP_NAME} finished') )
 
@@ -6158,6 +6270,7 @@ class Worker():
                     f"{'Vertical Resolution:':<{w}} {FIELD_STEP} G\n"
                     f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
                     f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('2A')} K\n"
+                    f"{self._det_header(w)}"
                     f"{'-'*50}\n"
                     f"Pulse List:\n{pb.pulser_pulse_list()}"
                     f"{'-'*50}\n"
@@ -6219,7 +6332,7 @@ class Worker():
                     if iq_cor == 0:
                         file_handler.save_data(
                             file_data,
-                            data,
+                            self._det_corrected(awg, data, t_res, iq_freq),
                             header = header,
                             mode = 'w',
                             axes = axes_2d, axes_units = axes_units_2d
@@ -6239,11 +6352,14 @@ class Worker():
 
                             file_handler.save_data(
                                 file_data2,
-                                data,
+                                self._det_corrected(awg, data, t_res, iq_freq),
                                 header = header,
                                 mode = 'w',
                                 axes = axes_2d, axes_units = axes_units_2d
                             )
+
+                    if iq_cor == 0 or save2d == 1:
+                        self._save_det_curve(awg, file_handler, base_data, data, t_res, iq_freq, w)
 
                     conn.send( ('', f'Experiment {EXP_NAME} finished') )
 
@@ -6692,6 +6808,7 @@ class Worker():
                     f"{'Lg(ΔX/ns):':<{w}} {T_end}\n"
                     f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
                     f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('2A')} K\n"
+                    f"{self._det_header(w)}"
                     f"{'-'*50}\n"
                     f"Pulse List:\n{pb.pulser_pulse_list()}"
                     f"{'-'*50}\n"
@@ -6754,7 +6871,7 @@ class Worker():
                     if iq_cor == 0:
                         file_handler.save_data(
                             file_data,
-                            data,
+                            self._det_corrected(awg, data, t_res, iq_freq),
                             header = header,
                             mode = 'w',
                             axes = axes_2d, axes_units = axes_units_2d
@@ -6773,11 +6890,14 @@ class Worker():
                             file_data2 = f"{base_data}_2d.h5" if self.save_hdf5 == 1 else f"{base_data}_2d.csv"
                             file_handler.save_data(
                                 file_data2,
-                                data,
+                                self._det_corrected(awg, data, t_res, iq_freq),
                                 header = header,
                                 mode = 'w',
                                 axes = axes_2d, axes_units = axes_units_2d
                             )
+
+                    if iq_cor == 0 or save2d == 1:
+                        self._save_det_curve(awg, file_handler, base_data, data, t_res, iq_freq, w)
 
                     conn.send( ('', f'Experiment {EXP_NAME} finished') )
 
@@ -7187,6 +7307,7 @@ class Worker():
                     f"{'Vertical Resolution:':<{w}} {STEP} %\n"
                     f"{'Temperature:':<{w}} {ptc.tc_temperature('2A')} K\n"
                     f"{'Temperature Cernox:':<{w}} {ptc.tc_temperature('2A')} K\n"
+                    f"{self._det_header(w)}"
                     f"{'-'*50}\n"
                     f"Pulse List:\n{pb.pulser_pulse_list()}"
                     f"{'-'*50}\n"
@@ -7249,7 +7370,7 @@ class Worker():
                     if iq_cor == 0:
                         file_handler.save_data(
                             file_data,
-                            data,
+                            self._det_corrected(awg, data, t_res, iq_freq),
                             header = header,
                             mode = 'w',
                             axes = axes_2d, axes_units = axes_units_2d
@@ -7268,11 +7389,14 @@ class Worker():
 
                             file_handler.save_data(
                                 file_data2,
-                                data,
+                                self._det_corrected(awg, data, t_res, iq_freq),
                                 header = header,
                                 mode = 'w',
                                 axes = axes_2d, axes_units = axes_units_2d
                             )
+
+                    if iq_cor == 0 or save2d == 1:
+                        self._save_det_curve(awg, file_handler, base_data, data, t_res, iq_freq, w)
 
                     conn.send( ('', f'Experiment {EXP_NAME} finished') )
 
